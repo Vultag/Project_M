@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using MusicNamespace;
 using TMPro;
 using Unity.Entities;
 using UnityEngine;
@@ -7,7 +8,7 @@ using UnityEngine;
 public class MetronomeMono : MonoBehaviour
 {
     [SerializeField]
-    private TextMeshPro TEMPOtext;
+    private TextMeshProUGUI TEMPOtext;
     [SerializeField]
     private Animator animator;
     [SerializeField]
@@ -22,13 +23,19 @@ public class MetronomeMono : MonoBehaviour
         UIsystem.OnUpdateTempo += ChangeTempo;
     }
 
-    private void ChangeTempo(int newtempo)
+    public void ChangeTempo(int change)
     {
 
-        TEMPOtext.text = newtempo.ToString();
-        animator.SetFloat("BPM", newtempo/60f);
+        //var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
+        MusicUtils.BPM += change;
+        TEMPOtext.text = MusicUtils.BPM.ToString();
+        animator.SetFloat("BPM", MusicUtils.BPM / 60f);
 
     }
-  
+
+    public void MuteToggle()
+    {
+        audioTick.mute = !audioTick.mute;
+    }
 
 }

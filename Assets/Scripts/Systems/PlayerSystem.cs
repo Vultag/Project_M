@@ -23,13 +23,19 @@ public partial class PlayerSystem : SystemBase
 
     PlayerControls input_actions;
 
-    //private InputAction Mouv_pressed;
+
+    public Action<String, String> OnUpdateMode;
+    public float modeSwitchBaseCD;
+    private float modeSwitchCD;
+
 
 
 
     protected override void OnCreate()
     {
         input_actions = new PlayerControls();
+        modeSwitchBaseCD = 7;
+        modeSwitchCD = modeSwitchBaseCD;
     }
     protected override void OnStartRunning()
     {
@@ -43,7 +49,7 @@ public partial class PlayerSystem : SystemBase
 
         }
 
-        //input_actions.ActionMap.Tempo.performed += ctx => updateTempo(ctx);
+        OnUpdateMode(WeaponSystem.mode.ToString(), "C4");
 
     }
     protected override void OnUpdate()
@@ -61,7 +67,6 @@ public partial class PlayerSystem : SystemBase
 
 
         }
-
         //test physics move
         //foreach (var (player_data, player_phy) in SystemAPI.Query<RefRO<PlayerData>, RefRW<PhyBodyData>>())
         //{
@@ -71,14 +76,16 @@ public partial class PlayerSystem : SystemBase
 
         //}
 
-        //if (input_actions.ActionMap.Tempo.IsPressed())
-        //{
-        //    int delta = (int)input_actions.ActionMap.Tempo.ReadValue<float>();
-        //    MusicUtils.BPM += delta;
-        //    //to remove ?
-        //    UpdateTempo.Invoke(MusicUtils.BPM);
-        //    //Debug.Log(MusicUtils.BPM);
-        //}
+        modeSwitchCD -= SystemAPI.Time.DeltaTime;
+
+        if (modeSwitchCD < 0)
+        {
+            WeaponSystem.mode = (MusicUtils.MusicalMode)Mathf.Abs((int)WeaponSystem.mode - UnityEngine.Random.Range(1,5));
+            OnUpdateMode(WeaponSystem.mode.ToString(), "C4");
+            modeSwitchCD = modeSwitchBaseCD;
+        }
+
+
 
 
     }
@@ -88,13 +95,5 @@ public partial class PlayerSystem : SystemBase
         input_actions.Disable();
     }
 
-    //void updateTempo(InputAction.CallbackContext context)
-    //{
-    //    Debug.Log(context.action.ReadValue<float>());
-    //    MusicUtils.BPM += (int)context.action.ReadValue<float>();
-    //    Debug.Log(MusicUtils.BPM);
-
-    //}
-    
 
 }

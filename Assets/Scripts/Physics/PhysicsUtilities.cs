@@ -64,23 +64,22 @@ public struct PhysicsUtilities
     }
 
     //Move away from physics utils ?
-    public static float DirectionToAngle(Vector2 dir)
+    public static float DirectionToRadians(Vector2 dir)
     {
 
         /*
         output:
-            180
-        90       90
-             0
+               pi
+        pi/2       pi/2
+               0
          */
 
-        //Debug.LogError("dir " +dir);
+        //angle in radians
+        float radians = Mathf.Abs(Mathf.Atan2(dir.x, dir.y));
 
-        float angle = 90 + ((dir.y/(Mathf.Abs(dir.x)+ Mathf.Abs(dir.y))) * 90);
+        //Debug.LogError(Mathf.PI - radians);
 
-        //Debug.LogError(angle);
-
-        return angle;
+        return Mathf.PI - radians;
     }
 
 

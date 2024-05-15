@@ -14,7 +14,7 @@ public class MonsterDataAuthoring : MonoBehaviour
 {
     //set to private for now
     private float Health = 10;
-    private float Speed = 5f;
+    private float Speed = 3f;
     private float Attack = 1;
 
     class MonsterDataBaker : Baker<MonsterDataAuthoring>

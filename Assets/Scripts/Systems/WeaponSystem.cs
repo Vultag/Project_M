@@ -15,6 +15,10 @@ public partial struct WeaponSystem : ISystem
 
     EntityCommandBuffer ECB;
 
+    //temp -> put on component
+    public static MusicUtils.MusicalMode mode;
+
+
     //private EntityQuery CirclesShapesQuery;
 
     void OnCreate(ref SystemState state)
@@ -23,7 +27,8 @@ public partial struct WeaponSystem : ISystem
         //CirclesShapesQuery = state.GetEntityQuery(typeof(PhyBodyData), typeof(CircleShapeData));
         //state.RequireAnyForUpdate(PhyResolutionSystem.CirclesShapesQuery);
         BeatCooldown = MusicUtils.BPM;
-
+        //temp -> put on component
+        mode = MusicUtils.MusicalMode.Lydian;
     }
 
 
@@ -61,11 +66,16 @@ public partial struct WeaponSystem : ISystem
                     var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
 
                     test.amplitude = 0.15f;
-                    float angle = PhysicsUtilities.DirectionToAngle(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position.normalized);
+                    float radians = PhysicsUtilities.DirectionToRadians(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position - new Vector2(trans.ValueRO.Position.x, trans.ValueRO.Position.y));
 
-                    float key = MusicUtils.getNearestKey(angle + 200f + 32.7032f);
+                    //float key = MusicUtils.getNearestKey(angle + 200f + 32.7032f);
 
-                    //Debug.Log(key);
+                    int note = MusicUtils.radiansToNote(radians);
+                    float key = MusicUtils.noteToFrequency(note, mode);
+
+                    //Debug.LogError(radians);
+                    //Debug.LogError(note);
+                    //Debug.LogError(key);
 
                     test.frequency = key;
 

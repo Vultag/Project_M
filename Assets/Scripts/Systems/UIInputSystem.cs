@@ -27,14 +27,14 @@ public partial class UIInputSystem : SystemBase
     {
 
 
-        if (input_actions.UI.TEMPO.IsPressed())
-        {
-            int delta = (int)input_actions.UI.TEMPO.ReadValue<float>();
-            MusicUtils.BPM += delta;
-            //to remove ?
-            OnUpdateTempo.Invoke(MusicUtils.BPM);
-            //Debug.Log(MusicUtils.BPM);
-        }
+        //if (input_actions.UI.TEMPO.IsPressed())
+        //{
+        //    int delta = (int)input_actions.UI.TEMPO.ReadValue<float>();
+        //    MusicUtils.BPM += delta;
+        //    //to remove ?
+        //    OnUpdateTempo.Invoke(MusicUtils.BPM);
+        //    //Debug.Log(MusicUtils.BPM);
+        //}
 
     }
 
