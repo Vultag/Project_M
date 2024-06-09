@@ -69,17 +69,35 @@ public struct PhysicsUtilities
 
         /*
         output:
-               pi
-        pi/2       pi/2
-               0
+             -pi|pi
+        -pi/2       pi/2
+              -0|0
          */
 
         //angle in radians
-        float radians = Mathf.Abs(Mathf.Atan2(dir.x, dir.y));
+        float radians = Mathf.Atan2(dir.x, dir.y);
 
-        //Debug.LogError(Mathf.PI - radians);
+        //Debug.LogError(radians);
 
-        return Mathf.PI - radians;
+        return (Mathf.Sign(radians) * Mathf.PI) - (radians);
+    }
+    //Move away from physics utils ?
+    public static float DirectionToRadians(Vector2 dir, float offset)
+    {
+
+        /*
+        output - offset: 
+             -pi|pi
+        -pi/2       pi/2
+              -0|0
+         */
+
+        //angle in radians
+        float radians = Mathf.Atan2(dir.x, dir.y) + offset;
+
+        //Debug.LogError(radians);
+
+        return (Mathf.Sign(radians) * Mathf.PI) - (radians);
     }
 
 

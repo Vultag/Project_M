@@ -9,6 +9,10 @@ public class AudioManager : MonoBehaviour
 
     [SerializeField]
     private GameObject AudioGeneratorPrefab;
+    [SerializeField]
+    private LineRenderer OscillatorLine;
+    [SerializeField]
+    private SliderMono waveformSlider;
     private List<GameObject> AudioSources;
 
     EntityQuery _query;
@@ -37,6 +41,8 @@ public class AudioManager : MonoBehaviour
                 var new_audio = Instantiate(AudioGeneratorPrefab);
                 AudioSources.Add(new_audio);
                 new_audio.GetComponent<AudioGenerator>().WeaponSynthEntity = SynthentityArray[i-1];
+                new_audio.GetComponent<AudioGenerator>().OscillatorLine = OscillatorLine;
+                waveformSlider.CurrentSynth = new_audio.GetComponent<AudioGenerator>();
 
                 i--;
             }

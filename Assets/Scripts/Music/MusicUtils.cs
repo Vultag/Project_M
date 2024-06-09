@@ -193,6 +193,19 @@ namespace MusicNamespace
 
         }
 
+        public static float Sin(float phase)
+        {
+            return Mathf.Sin(phase * 2 * Mathf.PI);
+        }
+        public static float Saw(float phase)
+        {
+            return (phase)%1;
+        }
+        public static float Square(float phase)
+        {
+            return Mathf.Round((phase) % 1) ;
+        }
+
     }
 
 

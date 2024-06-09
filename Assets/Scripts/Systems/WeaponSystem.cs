@@ -18,6 +18,8 @@ public partial struct WeaponSystem : ISystem
     //temp -> put on component
     public static MusicUtils.MusicalMode mode;
 
+    private NativeArray<float> Rythms;
+
 
     //private EntityQuery CirclesShapesQuery;
 
@@ -29,6 +31,17 @@ public partial struct WeaponSystem : ISystem
         BeatCooldown = MusicUtils.BPM;
         //temp -> put on component
         mode = MusicUtils.MusicalMode.Lydian;
+
+        ///todo
+        ///remplace beatcooldown by note cooldown and make randomly 60 for noir ; 30 for croche ; 15 for double croche .... upon played
+        Rythms = new NativeArray<float>(3, Allocator.Persistent)
+        {
+            [0] = 60,
+            [1] = 30,
+            [2] = 15,
+            ///do more ...
+        };
+
     }
 
 
@@ -37,7 +50,19 @@ public partial struct WeaponSystem : ISystem
 
 
         BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
-        
+
+        /// Think of something better -> ADSR ? -> waveform stacking problem 
+        if (BeatCooldown < 3 && BeatCooldown > 0)
+        {
+
+            //Debug.Log("stop");
+
+            var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
+
+            test.amplitude = 0f;
+            SystemAPI.SetSingleton<SynthData>(test);
+        }
+     
 
         if (BeatCooldown <= 0)
         {
@@ -66,7 +91,7 @@ public partial struct WeaponSystem : ISystem
                     var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
 
                     test.amplitude = 0.15f;
-                    float radians = PhysicsUtilities.DirectionToRadians(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position - new Vector2(trans.ValueRO.Position.x, trans.ValueRO.Position.y));
+                    float radians = Mathf.Abs(PhysicsUtilities.DirectionToRadians(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position - new Vector2(trans.ValueRO.Position.x, trans.ValueRO.Position.y)));
 
                     //float key = MusicUtils.getNearestKey(angle + 200f + 32.7032f);
 
@@ -87,9 +112,23 @@ public partial struct WeaponSystem : ISystem
                     //Debug.LogError("hit");
                     //Debug.LogError(PhysicsUtilities.Proximity(TreeInsersionSystem.AABBtree.nodes[0].box, CastSphere));
 
-                    //Debug.DrawLine(trans.ValueRO.Position, SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position, Color.yellow, 0.1f);
+                    Debug.DrawLine(trans.ValueRO.Position, SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position, Color.yellow, 0.3f);
 
-                    PhysicsCalls.DestroyPhysicsEntity(ECB, MonsterHitList[0]);
+                    MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(MonsterHitList[0]);
+                    //float Rhealth = newMonsterData.Health;
+                    newMonsterData.Health -= 3f;
+
+                    if (newMonsterData.Health > 0)
+                    {
+                        //Debug.Log(newMonsterData.Health);
+                        SystemAPI.SetComponent<MonsterData>(MonsterHitList[0], newMonsterData);
+                    }
+                    else
+                    {
+                        //Debug.Log("ded");
+                        PhysicsCalls.DestroyPhysicsEntity(ECB, MonsterHitList[0]);
+                    }
+
                 }
                 else
                 {
@@ -103,7 +142,10 @@ public partial struct WeaponSystem : ISystem
 
             }
 
-            BeatCooldown = 60;
+            float newRythm = Rythms[Random.Range(0,3)];
+
+
+            BeatCooldown = newRythm;
             //Debug.Log(BeatCooldown);
         }
 

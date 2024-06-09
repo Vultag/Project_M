@@ -15,6 +15,9 @@ public struct SynthData : IComponentData
     public float amplitude;
     public float frequency;
     public char Input_key;
+    public float SinFactor;
+    public float SawFactor;
+    public float SquareFactor;
 
 }
 
