@@ -27,6 +27,8 @@ public struct AABBTreeNode
     public AABB box;
     public Entity bodyIndex;
     public int parentIndex;
+    ///for coll filtering!:
+    public PhysicsUtilities.CollisionLayer LayerMask;
 
     //int parent;
     //int next;
@@ -62,7 +64,7 @@ public unsafe struct DynamicAABBTree<T>
     public int rootIndex;
 
 
-    public void InsertLeaf(Entity bodyIndex, AABB box, NativeQueue<int> comparequeue)
+    public void InsertLeaf(Entity bodyIndex, PhysicsUtilities.CollisionLayer colLayer, AABB box, NativeQueue<int> comparequeue)
     {
         //int newleafIndex = nodeCount;
         //nodeCount++;
@@ -77,7 +79,7 @@ public unsafe struct DynamicAABBTree<T>
 
         int newleafIndex = nodeCount;
         nodeCount++;
-        AABBTreeNode newleaf = nodes[newleafIndex] = new() { box = box, bodyIndex = bodyIndex, isLeaf = true };
+        AABBTreeNode newleaf = nodes[newleafIndex] = new() { box = box, bodyIndex = bodyIndex, LayerMask = colLayer, isLeaf = true };
         //int newleafIndex = AllocateLeafNode(bodyIndex, box);
         nodes[newleafIndex] = newleaf;
         if (nodeCount == 1)
@@ -742,7 +744,7 @@ public unsafe struct DynamicAABBTree<T>
                 if (nodes[nodeB].isLeaf)
                 {
                     //register the pair here
-                    //temp += 2;
+                    ///add filter if need for physics resolution
                     ColPair.Add(new CollisionPair {BodyA = nodes[nodeA].bodyIndex,BodyB = nodes[nodeB].bodyIndex });
 
                 }

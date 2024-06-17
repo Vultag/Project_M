@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -7,6 +8,18 @@ using UnityEngine.UIElements;
 
 public struct PhysicsUtilities
 {
+    //public CollisionLayer LayerMask;
+    //coll layer ?
+    [Flags]
+    public enum CollisionLayer
+    {
+        //None = 0,
+        //All = ~0,         // Represents all layers (1111...)
+        PlayerLayer = (1 << 0),    // 0001
+        MonsterLayer = (1 << 1),    // 0010
+        Unassigned = (1 << 2),    // 0100
+                                // Add more layers as needed
+    }
 
     public static float Proximity(AABB A, AABB B)
     {

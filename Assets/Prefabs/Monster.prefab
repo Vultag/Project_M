@@ -115,6 +115,7 @@ MonoBehaviour:
   shapeType: 0
   dimentions: {x: 1, y: 1}
   radius: 0.5
+  collisionLayer: 2
 --- !u!114 &6123507137649829777
 MonoBehaviour:
   m_ObjectHideFlags: 0

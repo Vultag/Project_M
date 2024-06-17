@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 using Unity.VisualScripting;
+using System;
+
 
 
 #if UNITY_EDITOR
@@ -41,6 +43,8 @@ public class PhyBodyAuthoring : MonoBehaviour
     [SerializeField,HideInInspector]
     public float radius;
 
+    public PhysicsUtilities.CollisionLayer collisionLayer;
+
     private void OnDrawGizmos()
     {
         if(shapeType == ShapeType.Circle)
@@ -70,13 +74,15 @@ public class PhyBodyAuthoring : MonoBehaviour
                 case ShapeType.Circle:
                     AddComponent(entity, new CircleShapeData
                     {
-                        radius = authoring.radius
+                        radius = authoring.radius,
+                        collisionLayer = authoring.collisionLayer
                     });
                     break;
                 case ShapeType.Box:
                     AddComponent(entity, new BoxShapeData
                     {
-                        dimentions = authoring.dimentions
+                        dimentions = authoring.dimentions,
+
 
                     });
                     break;

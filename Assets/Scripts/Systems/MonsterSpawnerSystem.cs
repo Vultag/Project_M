@@ -55,7 +55,7 @@ public partial struct MonsterSpawnerSystem : ISystem
                     //float newRadius = 0.5f;
                     //float fat = TreeInsersionSystem.AABBfat;
                     //NativeQueue<int> comparequeue = new NativeQueue<int>(Allocator.Temp);
-                    ecb.SetComponent<CircleShapeData>(monster, new CircleShapeData { Position = new Vector2(new_pos.x,new_pos.y), radius = 0.5f });
+                    ecb.SetComponent<CircleShapeData>(monster, new CircleShapeData { Position = new Vector2(new_pos.x,new_pos.y), radius = 0.5f, collisionLayer = PhysicsUtilities.CollisionLayer.MonsterLayer});
                     //var newAABB = new AABB
                     //{
                     //    UpperBound = new Vector2(new_pos.x + newRadius + fat, new_pos.y + newRadius + fat),

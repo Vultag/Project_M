@@ -6,15 +6,29 @@ using Unity.Entities;
 //using UnityEditor.PackageManager;
 using UnityEngine;
 
+//internal buffer capacity
+public struct KeyBufferData: IBufferElementData
+{
+    public int test;
+    ///here: frequency; Delta
+}
+
 unsafe
 public struct SynthData : IComponentData
 {
     //public NativeArray<float> AudioData;
     //public fixed float AudioData[2048];
 
+    //USE THIS ??
+    //public DynamicBuffer<KeyData> KeyBuffer;
+
     public float amplitude;
+
+    //remove ?
     public float frequency;
+    //remove ?
     public char Input_key;
+
     public float SinFactor;
     public float SawFactor;
     public float SquareFactor;
@@ -51,6 +65,8 @@ public class SynthAuthoring : MonoBehaviour
 
             Entity entity = GetEntity(TransformUsageFlags.None);
 
+            AddBuffer<KeyBufferData>(entity);
+
             //authoring.audioprefab = Instantiate(authoring.AudioOutputprefab);
 
             //authoring.audioprefab.GetComponent<AudioGenerator>().WeaponSynthEntity = entity;
@@ -60,9 +76,11 @@ public class SynthAuthoring : MonoBehaviour
             {
                 //AudioData = new NativeArray<float>(2048, Allocator.Persistent),
                 amplitude = authoring.amplitude,
-                frequency = authoring.frequency
+                frequency = authoring.frequency,
 
-            });
+                //KeyBuffer = new DynamicBuffer<KeyData>()
+
+        });
             //ComponentType.fixedArray
 
         }

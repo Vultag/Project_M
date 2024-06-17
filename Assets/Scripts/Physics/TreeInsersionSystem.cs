@@ -69,9 +69,9 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
         NativeQueue<int> comparequeue = new NativeQueue<int>(Allocator.Temp);
         foreach (var (circlesShapes, entity) in SystemAPI.Query<RefRO<CircleShapeData>>().WithAll<PhyBodyData>().WithEntityAccess().WithAll<TreeInsersionTag>())
         {
-           //Debug.LogError("node");
+            //Debug.LogError("node");
 
-           AABBtree.InsertLeaf(entity,
+            AABBtree.InsertLeaf(entity,circlesShapes.ValueRO.collisionLayer,
            new AABB
            {
                UpperBound = new Vector2(circlesShapes.ValueRO.Position.x + circlesShapes.ValueRO.radius + AABBfat, circlesShapes.ValueRO.Position.y + circlesShapes.ValueRO.radius + AABBfat),
@@ -122,6 +122,7 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
                     //Debug.Break();
 
                     Entity bodyIndex = AABBtree.nodes[i].bodyIndex;
+                    PhysicsUtilities.CollisionLayer colLayer = AABBtree.nodes[i].LayerMask;
 
 
                     //Debug.LogError("root = " + AABBtree.rootIndex);
@@ -150,7 +151,7 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
 
 
                     //AABBtree.RefitHierarchy(AABBtree.nodes[i].parentIndex);
-                    AABBtree.InsertLeaf(bodyIndex,
+                    AABBtree.InsertLeaf(bodyIndex, colLayer,
                      new AABB
                      {
                          UpperBound = tight_AABB.UpperBound + new Vector2(AABBfat, AABBfat),

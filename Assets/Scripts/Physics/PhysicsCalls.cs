@@ -413,21 +413,30 @@ public struct PhysicsCalls
     }
 
     //RENAME -> AMBIGUOUS
-    public static NativeList<Entity> GatherOverlappingNodes(CircleShapeData CastSphere)
+    public static NativeList<Entity> GatherOverlappingNodes(CircleShapeData CastSphere, PhysicsUtilities.CollisionLayer colLayer)
     {
 
         DynamicAABBTree<CircleShapeData> AABBtree = TreeInsersionSystem.AABBtree;
 
         //redondant ? OPTI ?
-        //NativeArray<CircleShapeData> CirclesShapes = TreeInsersionSystem.CirclesShapesQuery.ToComponentDataArray<CircleShapeData>(Allocator.TempJob);
+        NativeArray<CircleShapeData> CirclesShapes = TreeInsersionSystem.CirclesShapesQuery.ToComponentDataArray<CircleShapeData>(Allocator.TempJob);
 
         //internal capacity ? OPTI
-        NativeList<Entity> OverlapList = new NativeList<Entity>(30,Allocator.Temp);
+        NativeList<(Entity,float)> OverlapList = new NativeList<(Entity,float)>(30,Allocator.Temp);
+        //NativeList<float> OverlapListDistance = new NativeList<float>(30, Allocator.Temp);
+
 
         NativeQueue<int> comparequeue = new NativeQueue<int>(Allocator.Temp);
 
         //Debug.Log(AABBtree.rootIndex);
         //Debug.Log(AABBtree.nodeCount);
+
+        ///rejouter "&& isFiltterType au check de proximite ?
+        ///
+
+
+        NativeList<Entity> result;
+
 
         comparequeue.Enqueue(AABBtree.rootIndex);
         /*if there is a only a single body to check*/
@@ -436,18 +445,21 @@ public struct PhysicsCalls
             if(AABBtree.nodeCount == 1)
             {
                 AABBTreeNode node = AABBtree.nodes[comparequeue.Dequeue()];
-                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, CastSphere) < 0)
+                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, CastSphere) < 0 && AABBtree.nodes[0].LayerMask == colLayer)
                 {
-                    OverlapList.Add(AABBtree.nodes[0].bodyIndex);
+                    //    float prox = PhysicsUtilities.Proximity(CirclesShapes[OverlapList[i]], CastSphere);
+                    OverlapList.Add((AABBtree.nodes[0].bodyIndex,0f));
                 }
                 comparequeue.Dispose();
-                return OverlapList;
-                
+                result = NativeListUtils.SelectFirst(OverlapList);
+                return result;
+
             }
             else
             {
                 comparequeue.Dispose();
-                return OverlapList;
+                result = NativeListUtils.SelectFirst(OverlapList);
+                return result;
             }
     
         }
@@ -459,23 +471,42 @@ public struct PhysicsCalls
 
             if (!node.isLeaf)
             {
+                float nodeA = PhysicsUtilities.Proximity(AABBtree.nodes[node.child1].box, CastSphere);
+                float nodeB = PhysicsUtilities.Proximity(AABBtree.nodes[node.child2].box, CastSphere);
+
                 //proximity cirlce - box here ?
-                if (PhysicsUtilities.Proximity(AABBtree.nodes[node.child1].box,CastSphere) < 0)
+                if (nodeA < 0)
                 {
-                    if (AABBtree.nodes[node.child1].isLeaf)
-                        OverlapList.Add(AABBtree.nodes[node.child1].bodyIndex);
+                    //Debug.Log(AABBtree.nodes[node.child1].LayerMask);
+
+                    if (AABBtree.nodes[node.child1].isLeaf && AABBtree.nodes[node.child1].LayerMask == colLayer)
+                    { 
+                        OverlapList.Add((AABBtree.nodes[node.child1].bodyIndex, nodeA));
+                    }
                     else
                         comparequeue.Enqueue(node.child1);
                 }
-                if (PhysicsUtilities.Proximity(AABBtree.nodes[node.child2].box, CastSphere) < 0)
+                if (nodeB < 0)
                 {
-                    if (AABBtree.nodes[node.child2].isLeaf)
-                        OverlapList.Add(AABBtree.nodes[node.child2].bodyIndex);
+
+                    //Debug.Log(AABBtree.nodes[node.child2].LayerMask);
+
+                    if (AABBtree.nodes[node.child2].isLeaf && AABBtree.nodes[node.child2].LayerMask == colLayer)
+                    { 
+                        OverlapList.Add((AABBtree.nodes[node.child2].bodyIndex, nodeB));
+                    }
                     else
                         comparequeue.Enqueue(node.child2);
                 }
             }
         }
+
+        //testlist.CopyFrom(OverlapList);
+        //testlist.Zip(OverlapListDistance, (entity, distance) => (entity, distance)).Select(item => item.entity);
+
+        //OverlapList.Zip(OverlapListDistance, (entity, distance) => (entity, distance)).OrderBy(item => item.distance).Select(item => item.entity);
+
+        //OverlapList.Sort((a, b) => a.CompareTo(b.pathCost));
 
         //NativeList<float> compareProx = new NativeList<float>(OverlapList.Length, Allocator.Temp);
         //NativeArray<int> OrderedOverlapArray = new NativeArray<int>(OverlapList.Length, Allocator.Temp);
@@ -502,8 +533,12 @@ public struct PhysicsCalls
 
         //}
 
+        ///MAKE SURE DISPOSE ALL
+
         comparequeue.Dispose();
-        return OverlapList;
+        NativeListUtils.QuickSort(OverlapList, 0, OverlapList.Length - 1);
+        result = NativeListUtils.SelectFirst(OverlapList);
+        return result;
 
     }
 

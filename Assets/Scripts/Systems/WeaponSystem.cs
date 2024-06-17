@@ -83,11 +83,31 @@ public partial struct WeaponSystem : ISystem
                 };
 
 
-                NativeList<Entity> MonsterHitList = PhysicsCalls.GatherOverlappingNodes(CastSphere);
+                //NativeList<Entity> BodyHitList = PhysicsCalls.GatherOverlappingNodes(CastSphere,ComponentFilter);
 
+
+                NativeList<Entity> MonsterHitList = PhysicsCalls.GatherOverlappingNodes(CastSphere,PhysicsUtilities.CollisionLayer.MonsterLayer);
+
+                ///ICI LE SETUP POUR LE BUFFER DE NOTES
+
+                var testbugffer = SystemAPI.GetBuffer<KeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
+
+                //for i in testbuffer.lenght:
+                //testbugffer.ElementAt(0).test == "frequecy already playing"
+                //if playing -> just reset delta of buffer element
+                //if not -> add new element with frequecy/delta = 0;
+
+                //testbugffer.Add(new KeyBufferData { test = 0 });
+
+                //Debug.Log(testbugffer.Length);
 
                 if (!MonsterHitList.IsEmpty)
                 {
+
+      
+
+                    ///rempla
+
                     var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
 
                     test.amplitude = 0.15f;

@@ -41,6 +41,12 @@ public class AudioGenerator : MonoBehaviour
 
 
 
+
+    //public DynamicBuffer<KeyData> KeyBuffer;
+
+
+
+
     private const int NumChannels = 1; // Mono audio
 
     private void Start()
@@ -195,8 +201,22 @@ public struct AudioJob : IJob
 
         double phaseIncrement = _frequency / _sampleRate;
 
+        /// need Synth ADSR
+        /// - Make buffer of active keys containing [ Delta (0,1(depends on  synth parameter)) ; frequency ] (in a struct ?)
+        /// ->
+
+
         for (int sample = 0; sample < _audioData.Length; sample += tempChannels)
         {
+            /// float value = 0;
+            ///for each Key in KeyBuffer []
+            /// {
+            /// value += (sin/saw/square)
+            /// * Amplitude * (Filter & Key.Delta)
+            /// }
+            /// _audioData[sample + channel] = value;
+
+
             // get value of phase on a sine wave
             float value = ((MusicUtils.Sin((float)_audioPhase[0])*_SinFactor) + (MusicUtils.Saw((float)_audioPhase[0])*_SawFactor) + (MusicUtils.Square((float)_audioPhase[0])*_SquareFactor)) * _amplitude;
             //float value = Mathf.Sin((float)_audioPhase[0] * 2 * Mathf.PI) * _amplitude;
@@ -217,7 +237,8 @@ public struct AudioJob : IJob
         }
 
 
-
+        ///increment the delta of each KeyBufferElement
+        ///if the delta goes over 1 -> remove the element
 
 
 

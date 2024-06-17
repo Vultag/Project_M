@@ -8,6 +8,7 @@ public struct CircleShapeData : IComponentData
 {
     public Vector2 Position;
     public float radius;
+    public PhysicsUtilities.CollisionLayer collisionLayer;
 
 }
 // A SUPPR

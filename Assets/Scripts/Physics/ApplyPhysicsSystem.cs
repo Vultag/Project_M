@@ -7,6 +7,8 @@ using Unity.Transforms;
 using UnityEngine;
 
 
+///NEEDS TO BE IN A FIXED UPDATE ?
+
 [UpdateInGroup(typeof(GameSimulationSystemGroup), OrderLast = true)]
 public partial struct ApplyPhysicsSystem : ISystem
 {
@@ -42,7 +44,11 @@ public partial struct ApplyPhysicsSystem : ISystem
             //body.ValueRW.Force += body.ValueRO.Mass * gravity * SystemAPI.Time.DeltaTime;
             //body.ValueRW.Velocity += body.ValueRO.Force / body.ValueRO.Mass * SystemAPI.Time.DeltaTime;
             shape.ValueRW.Position += body.ValueRO.Velocity;
-            body.ValueRW.Velocity = Vector2.zero;
+
+            ///specify linear dampening in physics component
+            body.ValueRW.Velocity -= (body.ValueRO.Velocity*0.1f);
+            //body.ValueRW.Velocity = Vector2.zero;
+
             //Debug.Log(body.ValueRO.Velocity);
             //body.ValueRW.Force = Vector2.zero;
             //Debug.Log(new_force / body.ValueRO.Mass);
