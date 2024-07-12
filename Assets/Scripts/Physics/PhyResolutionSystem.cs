@@ -11,7 +11,6 @@ using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -138,7 +137,7 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
         CircleCollisionResolutionJob CircleColJob = new CircleCollisionResolutionJob()
         {
             //CirclesBodies = CirclesBodies,
-            CircleShapes = SystemAPI.GetComponentLookup<CircleShapeData>(true),
+            CircleShapes = SystemAPI.GetComponentLookup<CircleShapeData>(false),
             CircleBodies = SystemAPI.GetComponentLookup<PhyBodyData>(false),
             ColPair = ColPair,
             //CirclesNewVels = CirclesNewVels,
@@ -208,9 +207,9 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
 [BurstCompile]
 public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijobparralel ?
 {
-    //[DeallocateOnJobCompletion]
-    [ReadOnly]
-    public ComponentLookup<CircleShapeData> CircleShapes;
+    ////[DeallocateOnJobCompletion]
+    //[ReadOnly]
+    //public ComponentLookup<CircleShapeData> CircleShapes;
     [ReadOnly]
     public NativeList<CollisionPair> ColPair;
     //public NativeArray<CircleShapeData> CirclesShapes;
@@ -218,6 +217,8 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
 
     [NativeDisableParallelForRestriction]
     public ComponentLookup<PhyBodyData> CircleBodies;
+    [NativeDisableParallelForRestriction]
+    public ComponentLookup<CircleShapeData> CircleShapes;
 
 
     //[NativeDisableParallelForRestriction]
@@ -228,8 +229,8 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
 
         //Debug.Log(CirclesShapes.Length);
 
-        var a = CircleShapes.GetRefRO(ColPair[i].BodyA);
-        var b = CircleShapes.GetRefRO(ColPair[i].BodyB);
+        var newvelshapeA = CircleShapes.GetRefRW(ColPair[i].BodyA);
+        var newvelshapeB = CircleShapes.GetRefRW(ColPair[i].BodyB);
 
         var newvelbodyA = CircleBodies.GetRefRW(ColPair[i].BodyA);
         var newvelbodyB = CircleBodies.GetRefRW(ColPair[i].BodyB);
@@ -237,8 +238,8 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
         //Entity b = ColPair[i].BodyB;
 
         //math class ?? OPTI
-        var distance = math.distance(a.ValueRO.Position, b.ValueRO.Position);
-        var radii = a.ValueRO.radius + b.ValueRO.radius;
+        var distance = math.distance(newvelshapeA.ValueRO.Position, newvelshapeB.ValueRO.Position);
+        var radii = newvelshapeA.ValueRO.radius + newvelshapeB.ValueRO.radius;
         if (distance < radii)
         {
 
@@ -247,8 +248,45 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
             //CirclesNewVels[] += (-(b.ValueRO.Position - a.ValueRO.Position).normalized * (radii - distance)) * 0.5f;
             //CirclesNewVels[] += ((b.ValueRO.Position - a.ValueRO.Position).normalized * (radii - distance)) * 0.5f;
 
-            newvelbodyA.ValueRW.Velocity += (-(b.ValueRO.Position - a.ValueRO.Position).normalized * (radii - distance)) * 0.5f;
-            newvelbodyB.ValueRW.Velocity += ((b.ValueRO.Position - a.ValueRO.Position).normalized * (radii - distance)) * 0.5f;
+
+            //newvelbodyA.ValueRW.Velocity += (-(b.ValueRO.Position - a.ValueRO.Position).normalized * (radii - distance)) * 1f;
+            //newvelbodyB.ValueRW.Velocity += ((b.ValueRO.Position - a.ValueRO.Position).normalized * (radii - distance)) * 0.0f;
+
+            //do mass balance
+
+            if (newvelbodyA.ValueRO.Mass > newvelbodyB.ValueRO.Mass)
+            {
+                float massdif = newvelbodyB.ValueRO.Mass / newvelbodyA.ValueRO.Mass;
+
+                newvelshapeA.ValueRW.Position += (-(newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (0.5f * massdif);
+                newvelshapeB.ValueRW.Position += ((newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (1f - (0.5f * massdif)); 
+
+            }
+            else
+            {
+                float massdif = newvelbodyA.ValueRO.Mass / newvelbodyB.ValueRO.Mass;
+
+                newvelshapeA.ValueRW.Position += (-(newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (1f - (0.5f * massdif));
+                newvelshapeB.ValueRW.Position += ((newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (0.5f * massdif);
+            }
+
+
+            ///restitution response :
+
+            ///boncyness
+            float boncy = 1;
+
+            Vector2 relativeVel = (newvelbodyA.ValueRO.Velocity+ newvelbodyA.ValueRO.Force) - (newvelbodyB.ValueRO.Velocity+ newvelbodyB.ValueRO.Force);
+            Vector2 normal = (newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized;
+
+            ///ref video :
+            ///https://youtu.be/vQO_hPOE-1Y?list=PLSlpr6o9vURwq3oxVZSimY8iC-cdd3kIs&t=790
+
+            float j = -(1f + boncy) * math.dot(relativeVel, normal);
+            j /= (1f / newvelbodyA.ValueRO.Mass) + (1f / newvelbodyB.ValueRO.Mass);
+
+            newvelbodyA.ValueRW.Velocity += j/newvelbodyA.ValueRO.Mass * normal;
+            newvelbodyB.ValueRW.Velocity -= j / newvelbodyB.ValueRO.Mass * normal;
 
         }
 

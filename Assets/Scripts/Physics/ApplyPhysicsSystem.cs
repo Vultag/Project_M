@@ -43,10 +43,13 @@ public partial struct ApplyPhysicsSystem : ISystem
 
             //body.ValueRW.Force += body.ValueRO.Mass * gravity * SystemAPI.Time.DeltaTime;
             //body.ValueRW.Velocity += body.ValueRO.Force / body.ValueRO.Mass * SystemAPI.Time.DeltaTime;
+            body.ValueRW.Velocity += body.ValueRO.Force;
+            body.ValueRW.Force = Vector2.zero;
+
             shape.ValueRW.Position += body.ValueRO.Velocity;
 
             ///specify linear dampening in physics component
-            body.ValueRW.Velocity -= (body.ValueRO.Velocity*0.1f);
+            body.ValueRW.Velocity -= (body.ValueRO.Velocity*0.01f);
             //body.ValueRW.Velocity = Vector2.zero;
 
             //Debug.Log(body.ValueRO.Velocity);

@@ -2,9 +2,22 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.UIElements;
+
+public struct Ray
+{
+    public Vector2 Origin;
+    public Vector2 DirLength;
+}
+public struct RayCastHit
+{
+    public Entity entity;
+    public float distance;
+}
 
 public struct PhysicsUtilities
 {
@@ -20,6 +33,8 @@ public struct PhysicsUtilities
         Unassigned = (1 << 2),    // 0100
                                 // Add more layers as needed
     }
+
+    
 
     public static float Proximity(AABB A, AABB B)
     {
@@ -74,6 +89,69 @@ public struct PhysicsUtilities
 
         // < 0 -> out ; > 0 -> in
         return proximitySquared;
+    }
+    public static float Intersect(AABB A, Ray B)
+    {
+        ///WRONG
+        // return >0 if intersect and -1f if does not intersect
+
+        //float distance;
+
+        Vector2 dirfrac = new Vector2(1.0f / B.DirLength.x, 1.0f / B.DirLength.y);
+
+        float t1 = (A.LowerBound.x - B.Origin.x) * dirfrac.x;
+        float t2 = (A.UpperBound.x - B.Origin.x) * dirfrac.x;
+        float t3 = (A.LowerBound.y - B.Origin.y) * dirfrac.y;
+        float t4 = (A.UpperBound.y - B.Origin.y) * dirfrac.y;
+
+        float tmin = Mathf.Max(Mathf.Min(t1, t2), Mathf.Min(t3, t4));
+        float tmax = Mathf.Min(Mathf.Max(t1, t2), Mathf.Max(t3, t4));
+
+        // if tmax < 0, ray (line) is intersecting AABB, but the whole AABB is behind us
+        if (tmax < 0)
+        {
+            return -1f;
+        }
+
+        // if tmin > tmax, ray doesn't intersect AABB
+        if (tmin > tmax)
+        {
+            return -1f;
+        }
+
+        // tmin is the distance to the intersection point ; tmin negative if origin is inside
+        return Mathf.Abs(tmin);
+
+
+    }
+
+    public static float Intersect(CircleShapeData circle, Ray ray)
+    {
+        float maxRange = ray.DirLength.magnitude;
+        Vector2 m = ray.Origin - circle.Position;
+        float b = Vector2.Dot(m, ray.DirLength.normalized);
+        float c = Vector2.Dot(m, m) - circle.radius * circle.radius;
+
+        float discriminant = b * b - c;
+
+        // A negative discriminant corresponds to a ray missing the circle
+        if (discriminant < 0.0f)
+            return -1.0f;
+
+        // Compute the smallest t value of the intersection points
+        float t1 = -b - Mathf.Sqrt(discriminant);
+        float t2 = -b + Mathf.Sqrt(discriminant);
+
+        // Determine the smallest positive t value within the range [0, maxRange]
+        float t = Mathf.Min(t1, t2); // Take the minimum value to ensure non-negative
+
+        // Check if t is within the valid range 
+        if (t > maxRange)
+            return -1.0f;
+
+        // Ensure discriminant is positive and t is within the valid range, else return -1.0f
+        float noIntersectionMask = Mathf.Sign(discriminant) * Mathf.Sign(t); // If either is negative, return -1.0f
+        return t * noIntersectionMask;
     }
 
     //Move away from physics utils ?

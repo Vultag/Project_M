@@ -96,8 +96,9 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
 
         #endregion
 
-
+        ///put in job ?
         #region update the AABBtree
+
         for (int i = 0; i < AABBtree.nodeCount; i++)
         {
             if (AABBtree.nodes[i].isLeaf)
@@ -187,16 +188,16 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
         #endregion
 
 
-        //debug purpuse
-        //for (int i = 0; i < AABBtree.nodeCount; i++)
-        //{
-        //    if (AABBtree.nodes[i].isLeaf)
-        //        DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.red);
-        //    else
-        //    {
-        //        DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.green);
-        //    }
-        //}
+        /*debug purpuse*/
+        for (int i = 0; i < AABBtree.nodeCount; i++)
+        {
+            if (AABBtree.nodes[i].isLeaf)
+                DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.red);
+            else
+            {
+                DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.green);
+            }
+        }
 
 
 

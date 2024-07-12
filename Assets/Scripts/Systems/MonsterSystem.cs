@@ -31,7 +31,7 @@ public partial struct MonsterSystem : ISystem
         {
             Vector3 moveDirection = player_trans.Position - trans.ValueRO.Position;
 
-            body.ValueRW.Velocity = monster_data.ValueRO.Speed * moveDirection.normalized * SystemAPI.Time.DeltaTime;
+            //body.ValueRW.Force = monster_data.ValueRO.Speed * moveDirection.normalized * SystemAPI.Time.DeltaTime;
 
 
         }

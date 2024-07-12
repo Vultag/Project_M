@@ -44,6 +44,24 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Shoot"",
+                    ""type"": ""Button"",
+                    ""id"": ""1be44d5b-78ab-4cd0-8e3a-feed457843a3"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MousePos"",
+                    ""type"": ""Value"",
+                    ""id"": ""19caf939-a462-4f66-b680-f40ed7756bca"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -134,6 +152,28 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""Tempo"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b809e004-7a65-468d-b8f9-2607baaf312a"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Shoot"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d5d0fb00-39bb-42b0-af1d-86376e638cd2"",
+                    ""path"": ""<Mouse>/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MousePos"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -144,6 +184,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_ActionMap = asset.FindActionMap("ActionMap", throwIfNotFound: true);
         m_ActionMap_Mouvements = m_ActionMap.FindAction("Mouvements", throwIfNotFound: true);
         m_ActionMap_Tempo = m_ActionMap.FindAction("Tempo", throwIfNotFound: true);
+        m_ActionMap_Shoot = m_ActionMap.FindAction("Shoot", throwIfNotFound: true);
+        m_ActionMap_MousePos = m_ActionMap.FindAction("MousePos", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -207,12 +249,16 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private List<IActionMapActions> m_ActionMapActionsCallbackInterfaces = new List<IActionMapActions>();
     private readonly InputAction m_ActionMap_Mouvements;
     private readonly InputAction m_ActionMap_Tempo;
+    private readonly InputAction m_ActionMap_Shoot;
+    private readonly InputAction m_ActionMap_MousePos;
     public struct ActionMapActions
     {
         private @PlayerControls m_Wrapper;
         public ActionMapActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
         public InputAction @Mouvements => m_Wrapper.m_ActionMap_Mouvements;
         public InputAction @Tempo => m_Wrapper.m_ActionMap_Tempo;
+        public InputAction @Shoot => m_Wrapper.m_ActionMap_Shoot;
+        public InputAction @MousePos => m_Wrapper.m_ActionMap_MousePos;
         public InputActionMap Get() { return m_Wrapper.m_ActionMap; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -228,6 +274,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Tempo.started += instance.OnTempo;
             @Tempo.performed += instance.OnTempo;
             @Tempo.canceled += instance.OnTempo;
+            @Shoot.started += instance.OnShoot;
+            @Shoot.performed += instance.OnShoot;
+            @Shoot.canceled += instance.OnShoot;
+            @MousePos.started += instance.OnMousePos;
+            @MousePos.performed += instance.OnMousePos;
+            @MousePos.canceled += instance.OnMousePos;
         }
 
         private void UnregisterCallbacks(IActionMapActions instance)
@@ -238,6 +290,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Tempo.started -= instance.OnTempo;
             @Tempo.performed -= instance.OnTempo;
             @Tempo.canceled -= instance.OnTempo;
+            @Shoot.started -= instance.OnShoot;
+            @Shoot.performed -= instance.OnShoot;
+            @Shoot.canceled -= instance.OnShoot;
+            @MousePos.started -= instance.OnMousePos;
+            @MousePos.performed -= instance.OnMousePos;
+            @MousePos.canceled -= instance.OnMousePos;
         }
 
         public void RemoveCallbacks(IActionMapActions instance)
@@ -259,5 +317,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     {
         void OnMouvements(InputAction.CallbackContext context);
         void OnTempo(InputAction.CallbackContext context);
+        void OnShoot(InputAction.CallbackContext context);
+        void OnMousePos(InputAction.CallbackContext context);
     }
 }

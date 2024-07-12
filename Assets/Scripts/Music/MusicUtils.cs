@@ -199,11 +199,13 @@ namespace MusicNamespace
         }
         public static float Saw(float phase)
         {
-            return (phase)%1;
+            //??
+            return (((phase)%1)-0.5f)*2f;
         }
         public static float Square(float phase)
         {
-            return Mathf.Round((phase) % 1) ;
+            //??
+            return (Mathf.Round((phase) % 1)-0.5f) *2f ;
         }
 
     }

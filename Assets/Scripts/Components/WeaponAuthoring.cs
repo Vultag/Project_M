@@ -3,11 +3,15 @@ using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
+/// <summary>
+///  REMOVE ENTIRELY AND USE SYNTHDATA INSTEAD ?
+/// </summary>
 public struct WeaponData : IComponentData
 {
 
 
     public float tempShootRange;
+
 
     //Shooting on beat only for now...
     //public float tempShootSpeed;
@@ -17,6 +21,9 @@ public struct WeaponData : IComponentData
 
 public enum WeaponType // *
 {
+    /// <summary>
+    ///  Rifle, Shotgun, Raygun
+    /// </summary>
     todo,
     todoo,
 }

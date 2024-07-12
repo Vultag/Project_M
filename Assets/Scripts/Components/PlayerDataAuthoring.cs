@@ -6,11 +6,13 @@ using UnityEngine;
 public struct PlayerData : IComponentData
 {
     public float mouv_speed;
+    public Entity ActiveCanon;
 }
 public class PlayerDataAuthoring : MonoBehaviour
 {
 
     public float mouv_speed;
+    public GameObject ActiveCanon;
 
     class DelayedDestroyDataBaker : Baker<PlayerDataAuthoring>
     {
@@ -22,7 +24,8 @@ public class PlayerDataAuthoring : MonoBehaviour
             AddComponent(playerEntity,new PlayerData
             {
 
-                mouv_speed = authoring.mouv_speed
+                mouv_speed = authoring.mouv_speed,
+                ActiveCanon = GetEntity(authoring.ActiveCanon, TransformUsageFlags.None)
 
             });
         }
