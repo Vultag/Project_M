@@ -397,7 +397,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97b7368364385814383a8b21e5470117, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amplitude: 0.01
+  amplitude: 0.06
   frequency: 246.1
   ADSR:
     Attack: 0.6

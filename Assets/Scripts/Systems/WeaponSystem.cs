@@ -10,7 +10,7 @@ using Unity.Entities.UniversalDelegates;
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateAfter(typeof(PhyResolutionSystem))]
-public partial struct WeaponSystem : ISystem
+public partial class WeaponSystem : SystemBase
 {
 
     public float BeatCooldown;
@@ -18,12 +18,10 @@ public partial struct WeaponSystem : ISystem
     private float BeatProximityThreshold;
 
     EntityCommandBuffer ECB;
-    //private EntityManager entityManager;
 
     //temp -> put on component
     public static MusicUtils.MusicalMode mode;
 
-    //public static float PlayPressTime;
     public static bool PlayPressed;
     public static bool PlayReleased;
     private bool PlayActive;
@@ -37,11 +35,9 @@ public partial struct WeaponSystem : ISystem
 
     //private EntityQuery CirclesShapesQuery;
 
-    void OnCreate(ref SystemState state)
+    protected override void OnCreate()
     {
 
-        //CirclesShapesQuery = state.GetEntityQuery(typeof(PhyBodyData), typeof(CircleShapeData));
-        //state.RequireAnyForUpdate(PhyResolutionSystem.CirclesShapesQuery);
         BeatCooldown = MusicUtils.BPM;
         BeatProximityThreshold = 0.08f;
         //temp -> put on component
@@ -60,14 +56,12 @@ public partial struct WeaponSystem : ISystem
     }
 
 
-    void OnUpdate(ref SystemState state)
+    protected override void OnUpdate()
     {
-        //AudioGenerator._Audiojobhandle += state.Dependency;
-        //entityManager = state.EntityManager;
 
         BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
 
-        ECB = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+        ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
         BeatProximity = 0.5f - Mathf.Abs(0.5f - (BeatCooldown / MusicUtils.BPM));
 
@@ -85,7 +79,6 @@ public partial struct WeaponSystem : ISystem
             if (newDelta > ActiveSynth.ADSR.Release)
             {
                 RkeyBuffer.RemoveAt(i);
-                //AudioGenerator._audioPhase[i+SkeyBuffer.Length] = 0;
             }
             else
             {
@@ -100,7 +93,6 @@ public partial struct WeaponSystem : ISystem
         /// Move to Synth system all together ?
         foreach (var (Wtrans, trans, synth) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>, RefRO<SynthData>>())
         {
-            //Debug.Log(Wtrans.ValueRO.Position);
 
             if (!IsShooting)
             {
@@ -121,16 +113,6 @@ public partial struct WeaponSystem : ISystem
                     // 0 = not exist : 1 = in Skeybuffer
                     short noteExist = 0;
                     int i;
-                    /* No need to search Sbuffer ?
-                    for (i = 0; i < SkeyBuffer.Length; i++) 
-                    {
-                        if (SkeyBuffer[i].frequency == frequency)
-                        {
-                            noteExist = 1;
-                            break;
-                        }
-                    }
-                    */
 
                     for (i = 0; i < RkeyBuffer.Length; i++)
                     {
@@ -144,10 +126,7 @@ public partial struct WeaponSystem : ISystem
                     if (noteExist==0)
                     {
                         //add to play buffer
-                        //Debug.Log(SkeyBuffer.Length);
                         PlayedKeyIndex = SkeyBuffer.Length;
-                        //Debug.Log(AudioGenerator._audioPhase[PlayedKeyIndex]);
-                        //AudioGenerator._audioPhase[PlayedKeyIndex] = 0;
                         SkeyBuffer.Add(new SustainedKeyBufferData { Direction = direction, Delta = 0, Phase = 0 });
                     }
                     else
@@ -164,16 +143,11 @@ public partial struct WeaponSystem : ISystem
                         //noteExist == 2
                         else
                         {
-                            //Debug.Log("test");
                             //add to play buffer
                             PlayedKeyIndex = SkeyBuffer.Length;
-                            //AudioGenerator._audioPhase[PlayedKeyIndex] = 0;
-                            //AudioGenerator._audioPhase[i + SkeyBuffer.Length] = 0;
-                            //AudioGenerator._audioPhase[SkeyBuffer.Length] = AudioGenerator._audioPhase[i+ SkeyBuffer.Length];
                             SkeyBuffer.Add(new SustainedKeyBufferData { Direction = direction, Delta = 0 , Phase = RkeyBuffer[i].Phase, currentAmplitude = RkeyBuffer[i].currentAmplitude });
                             /// Set its delta to fade up to the new one ? (similar to synthorial)
                             RkeyBuffer.RemoveAt(i);
-                            //RkeyBuffer[i] = new ReleasedKeyBufferData { }
                         }
                     }
 
@@ -203,11 +177,6 @@ public partial struct WeaponSystem : ISystem
                             newDeltaFactor = (1 - synth.ValueRO.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay), 0, 1f);//1 - Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay * synth.ValueRO.ADSR.Sustain), 0, 1f);
                     }
 
-                    //float envelopeStage = SkeyBuffer[PlayedKeyIndex].Delta < synth.ValueRO.ADSR.Attack ? 1 : 0;
-                    //float newDelta = 1- (((SkeyBuffer[PlayedKeyIndex].Delta / synth.ValueRO.ADSR.Attack) * envelopeStage) + ((1 - Mathf.Clamp((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay, 0f, 1 - synth.ValueRO.ADSR.Sustain))) * (1 - envelopeStage));
-                    //Debug.Log(newDelta);
-                    ///ICI
-                    //AudioGenerator._audioPhase[RkeyBuffer.Length] = AudioGenerator._audioPhase[PlayedKeyIndex];
                     RkeyBuffer.Add(new ReleasedKeyBufferData { Direction = SkeyBuffer[PlayedKeyIndex].Direction, Delta = newDeltaFactor * synth.ValueRO.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
                     SkeyBuffer.RemoveAt(PlayedKeyIndex);
                 }
@@ -216,12 +185,8 @@ public partial struct WeaponSystem : ISystem
             }
 
 
-            //get the reference again to prevent unvalidating USELESS ?
-            SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
-            RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
-
             /*remplace with generic shape*/
-            ComponentLookup<CircleShapeData> ShapeComponentLookup = state.GetComponentLookup<CircleShapeData>(isReadOnly: true);
+            ComponentLookup<CircleShapeData> ShapeComponentLookup = GetComponentLookup<CircleShapeData>(isReadOnly: true);
 
             /// Damage processing
             for (int i = 0; i < SkeyBuffer.Length; i++)
@@ -267,120 +232,7 @@ public partial struct WeaponSystem : ISystem
             }
 
 
-            ///REMOVE FROM FOREACH -> 1 play at a time
-            if (false)
-            {
-                var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
-
-
-                if (PlayPressed)
-                {
-                    if(BeatProximity < BeatProximityThreshold)
-                    {
-
-                        //var testbugffer = SystemAPI.GetBuffer<KeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
-
-                        //for i in testbuffer.lenght:
-                        //testbugffer.ElementAt(0).test == "frequecy already playing"
-                        //if playing -> just reset delta of buffer element
-                        //if not -> add new element with frequecy/delta = 0;
-
-                        //testbugffer.Add(new KeyBufferData { test = 0 });
-
-                        Debug.Log("test");
-
-                        float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)));
-                        int note = MusicUtils.radiansToNote(randian);
-                        PlayKey = MusicUtils.noteToFrequency(note, mode);
-
-                        PlayActive = true;
-                    }
-                    else if (!PlayActive)
-                    {
-
-                        //&Debug.Log(BeatProximity);
-                        PlayPressed = false;
-                    }
-
-                    if (PlayActive)
-                    {
-                        ///rempla
-
-                        test.amplitude = 0.15f;
-
-                        //float key = MusicUtils.getNearestKey(angle + 200f + 32.7032f);
-
-                        //int note = MusicUtils.radiansToNote(PlayRadian);
-                        //float key = MusicUtils.noteToFrequency(note, mode);
-
-                        //Debug.LogError(radians);
-                        //Debug.LogError(note);
-                        //Debug.LogError(key);
-
-                        test.Delta += SystemAPI.Time.DeltaTime;
-                        test.frequency = PlayKey;
-
-                        SystemAPI.SetSingleton<SynthData>(test);
-
-                        //Debug.Log(test.Delta);
-                        //Debug.LogError(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position.normalized);
-
-
-                        //Debug.LogError("hit");
-                        //Debug.LogError(PhysicsUtilities.Proximity(TreeInsersionSystem.AABBtree.nodes[0].box, CastSphere));
-
-                        Debug.DrawLine(Wtrans.ValueRO.Position, mousepos, Color.yellow, SystemAPI.Time.DeltaTime);
-
-                        //PlayPressTime -= SystemAPI.Time.DeltaTime;
-                    }
-
-
-                }
-                else
-                {
-                    if(PlayActive)
-                    {
-                        test.amplitude = 0f;
-                        /// PREVENT SUSTAIN -> FIX WITH NOTE BUFFER
-                        test.Delta = 0f;
-                        SystemAPI.SetSingleton<SynthData>(test);
-                        PlayActive = false;
-                    }
-
-                    mousepos = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
-                    Vector2 dir = ((new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)) - (mousepos)).normalized;
-
-                    trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
-                }
-
-             
-
-
-                //MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(MonsterHitList[0]);
-                ////float Rhealth = newMonsterData.Health;
-                /////remetre
-                //newMonsterData.Health -= 3f;
-
-                //if (newMonsterData.Health > 0)
-                //{
-                //    //Debug.Log(newMonsterData.Health);
-                //    SystemAPI.SetComponent<MonsterData>(MonsterHitList[0], newMonsterData);
-                //}
-                //else
-                //{
-                //    //Debug.Log("ded");
-                //    PhysicsCalls.DestroyPhysicsEntity(ECB, MonsterHitList[0]);
-                //}
-
-            }
-
         }
-
-
- 
-    
-
-
 
 
 
@@ -523,80 +375,5 @@ public partial struct WeaponSystem : ISystem
 
 
     }
-
-    //UNUSED ??
-    ///cant call MONO -> ISYSTEM
-    //public void ActivateWeapon(ref SystemState state)
-    //{
-
-    //    /// Get Active Weapon instead !
-
-    //    Vector2 mousepos = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
-
-    //    foreach (var (Wtrans, trans, weapon) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>, RefRO<WeaponData>>())
-    //    {
-    //        Vector2 dir = ((new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)) - (mousepos)).normalized;
-
-    //        trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
-
-    //        //if(BeatCooldown <= 0)
-    //        {
-    //            if (PlayPressed && BeatProximity < BeatProximityThreshold)
-    //            {
-    //                Debug.Log(BeatProximity);
-
-    //                ///rempla
-    //                var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
-
-    //                test.amplitude = 0.15f;
-    //                float radians = Mathf.Abs(PhysicsUtilities.DirectionToRadians(mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)));
-
-    //                //float key = MusicUtils.getNearestKey(angle + 200f + 32.7032f);
-
-    //                int note = MusicUtils.radiansToNote(radians);
-    //                float key = MusicUtils.noteToFrequency(note, mode);
-
-    //                //Debug.LogError(radians);
-    //                //Debug.LogError(note);
-    //                //Debug.LogError(key);
-
-    //                test.frequency = key;
-
-    //                SystemAPI.SetSingleton<SynthData>(test);
-
-    //                //Debug.LogError(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position.normalized);
-
-
-    //                //Debug.LogError("hit");
-    //                //Debug.LogError(PhysicsUtilities.Proximity(TreeInsersionSystem.AABBtree.nodes[0].box, CastSphere));
-
-    //                Debug.DrawLine(Wtrans.ValueRO.Position, mousepos, Color.yellow, SystemAPI.Time.DeltaTime);
-
-    //                //PlayPressTime -= SystemAPI.Time.DeltaTime;
-
-    //            }
-
-
-    //            //MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(MonsterHitList[0]);
-    //            ////float Rhealth = newMonsterData.Health;
-    //            /////remetre
-    //            //newMonsterData.Health -= 3f;
-
-    //            //if (newMonsterData.Health > 0)
-    //            //{
-    //            //    //Debug.Log(newMonsterData.Health);
-    //            //    SystemAPI.SetComponent<MonsterData>(MonsterHitList[0], newMonsterData);
-    //            //}
-    //            //else
-    //            //{
-    //            //    //Debug.Log("ded");
-    //            //    PhysicsCalls.DestroyPhysicsEntity(ECB, MonsterHitList[0]);
-    //            //}
-
-    //        }
-
-    //    }
-
-    //}
 
 }
