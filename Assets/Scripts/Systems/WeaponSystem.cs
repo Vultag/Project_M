@@ -33,8 +33,6 @@ public partial class WeaponSystem : SystemBase
     private NativeArray<float> Rythms;
 
 
-    //private EntityQuery CirclesShapesQuery;
-
     protected override void OnCreate()
     {
 
@@ -104,12 +102,13 @@ public partial class WeaponSystem : SystemBase
 
             if (PlayPressed)
             {
+                /// FOR SHOOTING TIED TO BEAT
                 //if (BeatProximity < BeatProximityThreshold)
                 {
                     Vector2 direction = mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y);
                     float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));
                     int note = MusicUtils.radiansToNote(randian);
-                    //float frequency = MusicUtils.noteToFrequency(note, mode);
+
                     // 0 = not exist : 1 = in Skeybuffer
                     short noteExist = 0;
                     int i;
@@ -135,10 +134,6 @@ public partial class WeaponSystem : SystemBase
                         if (noteExist == 1)
                         {
                             Debug.LogError("can't happen ?");
-                            //reset delta ?
-                            ///PlayedKeyIndex = i;
-                            // sudden change in amplitude -> poping
-                            ///SkeyBuffer[i] = new SustainedKeyBufferData { frequency = MusicUtils.noteToFrequency(note, mode), Delta = 0, Phase = SkeyBuffer[i].Phase};
                         }
                         //noteExist == 2
                         else
@@ -233,145 +228,6 @@ public partial class WeaponSystem : SystemBase
 
 
         }
-
-
-
-        #region Survivor's like weapon approche
-        /*
-        /// Think of something better -> ADSR ? -> waveform stacking problem 
-        /// 
-
-        if (BeatCooldown <= 0)
-        {
-
-            //float newRythm = Rythms[UnityEngine.Random.Range(0, 3)];
-            float newRythm = Rythms[2];
-
-            BeatCooldown = newRythm;
-        }
-
-
-        if (BeatCooldown < 3 && BeatCooldown > 0)
-        {
-
-            //Debug.Log("stop");
-
-            var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
-
-            test.amplitude = 0f;
-            SystemAPI.SetSingleton<SynthData>(test);
-        }
-     
-
-        if (BeatCooldown <= 0)
-        {
-
-        
-
-            ECB = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-           
-
-            foreach (var (trans, weapon) in SystemAPI.Query<RefRW<LocalTransform>, RefRO<WeaponData>>())
-            {
-                //Debug.Log("cast");
-
-                CircleShapeData CastSphere = new CircleShapeData
-                {
-                    Position = new Vector2(trans.ValueRO.Position.x, trans.ValueRO.Position.y),
-                    radius = weapon.ValueRO.tempShootRange
-                };
-
-
-                //NativeList<Entity> BodyHitList = PhysicsCalls.GatherOverlappingNodes(CastSphere,ComponentFilter);
-
-
-                NativeList<Entity> MonsterHitList = PhysicsCalls.GatherOverlappingNodes(CastSphere,PhysicsUtilities.CollisionLayer.MonsterLayer);
-
-                ///ICI LE SETUP POUR LE BUFFER DE NOTES
-
-                var testbugffer = SystemAPI.GetBuffer<KeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
-
-                //for i in testbuffer.lenght:
-                //testbugffer.ElementAt(0).test == "frequecy already playing"
-                //if playing -> just reset delta of buffer element
-                //if not -> add new element with frequecy/delta = 0;
-
-                //testbugffer.Add(new KeyBufferData { test = 0 });
-
-                //Debug.Log(testbugffer.Length);
-
-                if (!MonsterHitList.IsEmpty)
-                {
-
-      
-
-                    ///rempla
-
-                    var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
-
-                    test.amplitude = 0.15f;
-                    float radians = Mathf.Abs(PhysicsUtilities.DirectionToRadians(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position - new Vector2(trans.ValueRO.Position.x, trans.ValueRO.Position.y)));
-
-                    //float key = MusicUtils.getNearestKey(angle + 200f + 32.7032f);
-
-                    int note = MusicUtils.radiansToNote(radians);
-                    float key = MusicUtils.noteToFrequency(note, mode);
-
-                    //Debug.LogError(radians);
-                    //Debug.LogError(note);
-                    //Debug.LogError(key);
-
-                    test.frequency = key;
-
-                    SystemAPI.SetSingleton<SynthData>(test);
-
-                    //Debug.LogError(SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position.normalized);
-
-
-                    //Debug.LogError("hit");
-                    //Debug.LogError(PhysicsUtilities.Proximity(TreeInsersionSystem.AABBtree.nodes[0].box, CastSphere));
-
-                    Debug.DrawLine(trans.ValueRO.Position, SystemAPI.GetComponent<CircleShapeData>(MonsterHitList[0]).Position, Color.yellow, 0.3f);
-
-                    MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(MonsterHitList[0]);
-                    //float Rhealth = newMonsterData.Health;
-                    ///remetre
-                    newMonsterData.Health -= 3f;
-
-                    if (newMonsterData.Health > 0)
-                    {
-                        //Debug.Log(newMonsterData.Health);
-                        SystemAPI.SetComponent<MonsterData>(MonsterHitList[0], newMonsterData);
-                    }
-                    else
-                    {
-                        //Debug.Log("ded");
-                        PhysicsCalls.DestroyPhysicsEntity(ECB, MonsterHitList[0]);
-                    }
-
-                }
-                else
-                {
-                    //Debug.Log("did not overlap");
-                    var test = SystemAPI.GetSingleton<SynthData>();//.amplitude = 0.2f;
-
-                    test.amplitude = 0f;
-                    SystemAPI.SetSingleton<SynthData>(test);
-                }
-                MonsterHitList.Dispose();
-
-            }
-
-
-            float newRythm = Rythms[UnityEngine.Random.Range(0,3)];
-
-
-            BeatCooldown = newRythm;
-            //Debug.Log(BeatCooldown);
-        }
-        */
-        #endregion
-
 
 
     }

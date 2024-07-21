@@ -180,8 +180,6 @@ namespace MusicNamespace
 
             while(localnote > 0)
             {
-                //Debug.LogError(intervalIndex-1 + localnote);
-                //Debug.LogError(intervals[intervalIndex-1 + localnote]);
                 note += intervals[intervalIndex-1 + localnote];
                 localnote--;
             }

@@ -26,25 +26,7 @@ public partial class UIInputSystem : SystemBase
     protected override void OnUpdate()
     {
 
-
-        //if (input_actions.UI.TEMPO.IsPressed())
-        //{
-        //    int delta = (int)input_actions.UI.TEMPO.ReadValue<float>();
-        //    MusicUtils.BPM += delta;
-        //    //to remove ?
-        //    OnUpdateTempo.Invoke(MusicUtils.BPM);
-        //    //Debug.Log(MusicUtils.BPM);
-        //}
-
     }
 
-
-    //public void updateTempo(InputAction.CallbackContext context)
-    //{
-    //    Debug.Log(context.action.ReadValue<float>());
-    //    MusicUtils.BPM += (int)context.action.ReadValue<float>();
-    //    Debug.Log(MusicUtils.BPM);
-
-    //}
 
 }

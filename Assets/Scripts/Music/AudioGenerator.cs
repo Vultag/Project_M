@@ -12,11 +12,6 @@ using static UnityEngine.Rendering.DebugUI;
 
 public class AudioGenerator : MonoBehaviour
 {
-    //[SerializeField, Range(0, 1)] private float amplitude = 0.5f;
-    //[SerializeField] private float frequency = 261.62f; // middle C
-
-    //[SerializeField]
-    //private SliderMono WaveShapeSlider;
 
     [HideInInspector]
     public LineRenderer OscillatorLine;
@@ -36,19 +31,14 @@ public class AudioGenerator : MonoBehaviour
     private bool audiojobCompleted;
 
     private NativeArray<float> _audioData;
-    //no need to be a nativearry ?
+
+    //USE THIS TO FIX AUDIOREAD/SYSTEMBASE COMMUNICATION ?
     //public static NativeArray<double> _audioPhase;
 
-    public static JobHandle _Audiojobhandle;// { get; private set; }
+    public static JobHandle _Audiojobhandle;
 
     private int _sampleRate;
     private NativeArray<float> _previousAmplitudes;
-
-
-
-    //public DynamicBuffer<KeyData> KeyBuffer;
-
-
 
 
     private const int NumChannels = 1; // Mono audio
@@ -63,9 +53,6 @@ public class AudioGenerator : MonoBehaviour
     {
         _sampleRate = AudioSettings.outputSampleRate;
         _audioData = new NativeArray<float>(2048,Allocator.Persistent);
-        //_previousAmplitude = new NativeArray<float>(1, Allocator.Persistent);
-        // max 12 keys at a time before it has to reallocate
-        //_audioPhase = new NativeArray<double>(12, Allocator.Persistent);
         audiojobCompleted = false;
     }
 
@@ -82,25 +69,14 @@ public class AudioGenerator : MonoBehaviour
             float xStart = 0;
             float xFinish = 2 * Mathf.PI*2;
 
-            //SynthData synth = entityManager.GetComponentData<SynthData>(WeaponSynthEntity);
-
 
             for (int currentPoint = 0; currentPoint < points; currentPoint++)
             {
-
-
-                //float value = Mathf.Sin((float)_audioPhase[0] * 2 * Mathf.PI) * 1f;
 
                 float progress = (float)currentPoint / (points - 1);
                 float x = Mathf.Lerp(xStart, xFinish, progress);
                 float y = ((MusicUtils.Sin(x)*SinFactor) + (MusicUtils.Saw(x)*SawFactor) + (MusicUtils.Square(x)*SquareFactor)) * amplitude * 6f;
                 OscillatorLine.SetPosition(currentPoint, new Vector3(x, y, 0));
-
-                //float progress = (float)currentPoint / (points - 1);
-                //float x = Mathf.Lerp(xStart, xFinish, progress);
-                //float y = _audioData[currentPoint]*6f;
-                //OscillatorLine.SetPosition(currentPoint, new Vector3(x, y, 0));
-
 
             }
             audiojobCompleted = false;
@@ -119,8 +95,8 @@ public class AudioGenerator : MonoBehaviour
         var RKeyBufferArray = entityManager.GetBuffer<ReleasedKeyBufferData>(WeaponSynthEntity).ToNativeArray(Allocator.TempJob);
 
 
-        NativeArray<float> JobPhases = new NativeArray<float>(SKeyBufferArray.Length + RKeyBufferArray.Length+1, Allocator.TempJob);
-        NativeArray<float> newAmplitudes = new NativeArray<float>(SKeyBufferArray.Length + RKeyBufferArray.Length+1, Allocator.TempJob);
+        NativeArray<float> JobPhases = new NativeArray<float>(SKeyBufferArray.Length + RKeyBufferArray.Length + 1, Allocator.TempJob);
+        NativeArray<float> newAmplitudes = new NativeArray<float>(SKeyBufferArray.Length + RKeyBufferArray.Length + 1, Allocator.TempJob);
 
 
         AudioJob audioJob = new AudioJob(
@@ -142,7 +118,7 @@ public class AudioGenerator : MonoBehaviour
 
         _audioData.CopyTo(data);
 
-        //get the reference again to prevent unvalidating USELESS ?
+        //get the reference again to prevent unvalidating. USELESS ?
         var SKeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(WeaponSynthEntity);
         var RKeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(WeaponSynthEntity);
 
@@ -154,13 +130,13 @@ public class AudioGenerator : MonoBehaviour
         for (int y = SKeyBuffer.Length; y < RKeyBuffer.Length + SKeyBuffer.Length; y++)
         {
             int i = y - SKeyBuffer.Length;
-            RKeyBuffer[i] = new ReleasedKeyBufferData { Delta = RKeyBuffer[i].Delta, Direction = RKeyBuffer[i].Direction, Phase = JobPhases[y],currentAmplitude = newAmplitudes[y] };
+            RKeyBuffer[i] = new ReleasedKeyBufferData { Delta = RKeyBuffer[i].Delta, Direction = RKeyBuffer[i].Direction, Phase = JobPhases[y], currentAmplitude = newAmplitudes[y] };
         }
         JobPhases.Dispose();
         newAmplitudes.Dispose();
 
         audiojobCompleted = true;
-        
+
     }
 
     private void OnDestroy()

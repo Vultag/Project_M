@@ -18,7 +18,6 @@ public class MetronomeMono : MonoBehaviour
 
     private void OnEnable()
     {
-        //dont work -> systembase
         var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
         UIsystem.OnUpdateTempo += ChangeTempo;
     }
@@ -26,7 +25,6 @@ public class MetronomeMono : MonoBehaviour
     public void ChangeTempo(int change)
     {
 
-        //var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
         MusicUtils.BPM += change;
         TEMPOtext.text = MusicUtils.BPM.ToString();
         animator.SetFloat("BPM", MusicUtils.BPM / 60f);

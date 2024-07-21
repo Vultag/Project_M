@@ -21,8 +21,6 @@ public struct RayCastHit
 
 public struct PhysicsUtilities
 {
-    //public CollisionLayer LayerMask;
-    //coll layer ?
     [Flags]
     public enum CollisionLayer
     {
@@ -42,10 +40,6 @@ public struct PhysicsUtilities
         float intersectionX = Mathf.Min(A.UpperBound.x, B.UpperBound.x) - Mathf.Max(A.LowerBound.x, B.LowerBound.x);
         // Calculate intersection in the Y-axis
         float intersectionY = Mathf.Min(A.UpperBound.y, B.UpperBound.y) - Mathf.Max(A.LowerBound.y, B.LowerBound.y);
-
-        // If there's no intersection in either axis, return 0
-        //if (intersectionX <= 0 || intersectionY <= 0)
-        //    return 0;
 
         //return the area of the intersection
         // < 0 -> out ; > 0 -> in
@@ -72,7 +66,7 @@ public struct PhysicsUtilities
 
         return distance - B.radius;
     }
-    //TO VERIFY
+
     public static float Proximity(CircleShapeData A, CircleShapeData B)
     {
 
@@ -92,11 +86,6 @@ public struct PhysicsUtilities
     }
     public static float Intersect(AABB A, Ray B)
     {
-        ///WRONG
-        // return >0 if intersect and -1f if does not intersect
-
-        //float distance;
-
         Vector2 dirfrac = new Vector2(1.0f / B.DirLength.x, 1.0f / B.DirLength.y);
 
         float t1 = (A.LowerBound.x - B.Origin.x) * dirfrac.x;

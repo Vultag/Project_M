@@ -15,12 +15,6 @@ public struct AABB
     public Vector2 UpperBound;
     public Vector2 LowerBound;
 }
-//public struct InvalidatedNode
-//{
-//    public AABB box;
-//    public int bodyIndex;
-//    public int treeIndex;
-//}
 public struct AABBTreeNode
 {
 
@@ -30,57 +24,29 @@ public struct AABBTreeNode
     ///for coll filtering!:
     public PhysicsUtilities.CollisionLayer LayerMask;
 
-    //int parent;
-    //int next;
-
     public int child1;
     public int child2;
     public bool isLeaf;
 
-    //for later?
-    //bool moved;
 }
-//unsafe struct AABBTree
-//{
-//    //public AABBTreeNode* nodes;
-//    public int nodeCount;
-//    public int rootIndex;
-//}
-
 
 public unsafe struct DynamicAABBTree<T>
 {
 
     //OPTI : Internal nodes are always even ; Leaf are odd ? no isleaf needed?
 
-
-    //do list of nodes instead
-    //private AABBTreeNode* nodes;
     public NativeArray<AABBTreeNode> nodes;
-    //private List<AABBTreeNode> nodes;
-    //private NativeReference<AABBTreeNode> nodes;
-    //private int capacity;
     public int nodeCount;
     public int rootIndex;
 
 
     public void InsertLeaf(Entity bodyIndex, PhysicsUtilities.CollisionLayer colLayer, AABB box, NativeQueue<int> comparequeue)
     {
-        //int newleafIndex = nodeCount;
-        //nodeCount++;
-
-        //if (nodeCount == 1)
-        //{
-        //    rootIndex = newleafIndex;
-        //    return;
-        //}
-
-        //int bestSibling = SearchBestForInsert();
 
         int newleafIndex = nodeCount;
         nodeCount++;
         AABBTreeNode newleaf = nodes[newleafIndex] = new() { box = box, bodyIndex = bodyIndex, LayerMask = colLayer, isLeaf = true };
-        //int newleafIndex = AllocateLeafNode(bodyIndex, box);
+
         nodes[newleafIndex] = newleaf;
         if (nodeCount == 1)
         {
@@ -88,44 +54,22 @@ public unsafe struct DynamicAABBTree<T>
         }
         else
         {
-            //Debug.LogError(Mathf.Clamp(nodeCount - 1, 0, 100));
             int sibling = SearchBestForInsert(box, comparequeue);
-            //int sibling = Mathf.Clamp(nodeCount - 2,0,1000);
-
-            //if (sibling == rootIndex)
-            //    Debug.LogWarning("rootindx");
-            //if (sibling == nodeCount-1)
-            //    Debug.LogWarning("node-1");
-            //else if (sibling == nodeCount - 2)
-            //    Debug.LogWarning("node-2");
-
 
             SplitNode(box, nodes[newleafIndex], newleafIndex, sibling);
             RefitHierarchy(nodes[newleafIndex].parentIndex);
         }
 
-        //Debug.Log("insertion");
-        //Debug.Log(nodeCount);
-
-        //int sibling = SearchBestForInsert(box);
-        //SplitNode(box, nodes[newleafIndex], newleafIndex, sibling);
-        //RefitHierarchy(nodes[newleafIndex].parentIndex);
     }
     public void RemoveLeaf(int index)
     {
-        //Debug.Log("count 1 = " + nodeCount);
 
-        /*for safety*/ //OPTI
-        //Debug.Log(nodeCount);
         if (nodeCount <= 1)
         {
-            //Debug.LogError("1-2 to fix...");
-
             nodes[0] = default;
             nodeCount = 0;
             return;
         }
-        //Debug.Break();
 
         int parentindex = nodes[index].parentIndex;
         int sibling;
@@ -134,14 +78,6 @@ public unsafe struct DynamicAABBTree<T>
         AABBTreeNode newsibling;
         AABBTreeNode newgrandparent = nodes[nodes[parentindex].parentIndex];
         AABBTreeNode newlastleaf = nodes[nodeCount - 2];
-
-
-        //Debug.LogError("root = " + rootIndex);
-        //Debug.LogError("idx = " + index);
-        //Debug.LogError("idxparent = " + parentindex);
-        //Debug.LogError("idxlastparent = " + nodes[nodeCount - 2].parentIndex);
-        //Debug.LogError("idxgrandparent = " + nodes[parentindex].parentIndex);
-        //Debug.LogError("idxlastgrandparent = " + nodes[nodeCount - 1].parentIndex);
 
         /*if the last leaf is removed or its sibling*/
         /*early return*/
@@ -157,14 +93,12 @@ public unsafe struct DynamicAABBTree<T>
                 {
                     //Debug.LogError("1");
                     newroot = 0;
-                    //Debug.Log("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss");
                     newlastleaf.parentIndex = 0;
                     nodes[index] = newlastleaf;
                     nodes[nodeCount - 2] = default;
                     nodes[nodeCount - 1] = default;
                     nodeCount -= 2;
                     rootIndex = newroot;
-                    //RefitHierarchy(0);
                     return;
                 }
                 else
@@ -184,7 +118,6 @@ public unsafe struct DynamicAABBTree<T>
                     nodeCount -= 2;
                     rootIndex = newroot;
                     RefitHierarchy(grandparentidx);
-                    //Debug.Log("count 2 = " + nodeCount);
                     return;
                 }
             }
@@ -227,7 +160,6 @@ public unsafe struct DynamicAABBTree<T>
                     RefitHierarchy(grandparentidx);
                 }
       
-                //Debug.Log("count 2 = " + nodeCount);
                 return;
             }
 
@@ -243,11 +175,7 @@ public unsafe struct DynamicAABBTree<T>
         AABBTreeNode newlastparent = nodes[nodeCount - 1];
         AABBTreeNode newlastgrandparent = nodes[nodes[nodeCount - 1].parentIndex];
 
-
-
         /*redirect the last nodes's references where the leaf has been freed*/
-
-
 
         if (newlastparent.child1 == nodeCount - 2)
         {
@@ -258,8 +186,6 @@ public unsafe struct DynamicAABBTree<T>
             lastsibling = newlastparent.child2;
             newlastsibling = nodes[lastsibling];
             newlastsibling.parentIndex = parentindex;
-
-            //nodes[newlastparent.child2] = newlastsibling;
 
         }
         else
@@ -272,8 +198,6 @@ public unsafe struct DynamicAABBTree<T>
             newlastsibling = nodes[lastsibling];
             newlastsibling.parentIndex = parentindex;
 
-
-            //nodes[newlastparent.child1] = newlastsibling;
         }
         if (newlastgrandparent.child1 == nodeCount - 1)
         {
@@ -304,9 +228,6 @@ public unsafe struct DynamicAABBTree<T>
             newgrandparent.child2 = sibling;
         }
 
-        //Debug.LogError("sibling = " + sibling);
-        //Debug.LogError("lastsibling = " + lastsibling);
-
         /*edge case solving...*/
         if (rootIndex != nodeCount - 1)
         {
@@ -324,9 +245,6 @@ public unsafe struct DynamicAABBTree<T>
                     if (nodes[nodeCount - 1].parentIndex == nodes[parentindex].parentIndex)
                     {
                         //Debug.LogError("4");
-                        //Debug.LogError("oooo");
-
-                        //Debug.LogError("oooo");
                         if (nodes[nodes[parentindex].parentIndex].child1 == nodeCount - 1)
                         {
                             newgrandparent.child1 = parentindex;
@@ -348,22 +266,16 @@ public unsafe struct DynamicAABBTree<T>
                         nodes[nodeCount - 2] = default;
                         nodes[nodeCount - 1] = default;
                         nodeCount -= 2;
-                        //rootIndex = newroot;
                         RefitHierarchy(parentindex);
 
-                        //Debug.Log("count 2 = " + nodeCount);
                         return;
                     }
                     else
                     {
-                        //Debug.LogError("ddddddddddddddddd");
-                        //?
-
                         nodes[nodes[nodeCount - 1].parentIndex] = newlastgrandparent;
 
                         if (nodes[parentindex].parentIndex != nodeCount - 1 && nodes[parentindex].parentIndex != lastsibling)
                         {
-                            //Debug.LogError("ici");
                             nodes[lastsibling] = newlastsibling;
                         }
 
@@ -371,8 +283,6 @@ public unsafe struct DynamicAABBTree<T>
                 }
                 else
                 {
-                    //Debug.LogError("dsdsd");
-                    //?
                     if(nodes[nodes[nodeCount - 1].parentIndex].parentIndex == rootIndex)
                     {
                         newlastgrandparent.parentIndex = nodes[nodeCount - 1].parentIndex;
@@ -394,8 +304,6 @@ public unsafe struct DynamicAABBTree<T>
         }
         else
         {
-            //Debug.LogError("here 1");
-            //Debug.LogError("1");
             newroot = parentindex;
             newlastparent.parentIndex = parentindex;
 
@@ -408,9 +316,6 @@ public unsafe struct DynamicAABBTree<T>
 
             if (nodes[parentindex].parentIndex == nodeCount - 1)
             {
-                //Debug.LogError("here " + nodes[nodeCount - 1].child1);
-                //Debug.LogError("next " + nodes[nodeCount - 1].child2);
-                //???? useless ?
                 if (nodes[nodeCount-1].child1 == nodeCount - 2)
                 {
                     newlastparent.child2 = sibling;
@@ -419,16 +324,14 @@ public unsafe struct DynamicAABBTree<T>
                 {
                     newlastparent.child1 = sibling;
                 }
-                //nodes[sibling] = newsibling;
 
             }
             else
             {
                 if (nodes[parentindex].parentIndex == lastsibling)
                 {
-                    //Debug.LogError("2");
                     newgrandparent.parentIndex = parentindex;
-                    //not necessary ?
+
                     if (nodes[nodes[parentindex].parentIndex].child1 == parentindex)
                     {
                         newgrandparent.child1 = sibling;
@@ -448,9 +351,6 @@ public unsafe struct DynamicAABBTree<T>
                     /*not same grandparent case*/
                     if (nodes[parentindex].parentIndex != nodes[nodeCount - 1].parentIndex)
                     {
-                        //Debug.LogError("ee");
-                        //Debug.LogError("ddddddddddddddddd");
-
                         if (sibling != nodeCount -1)
                         {
                             if(sibling != nodes[nodeCount - 1].parentIndex)
@@ -485,7 +385,6 @@ public unsafe struct DynamicAABBTree<T>
         }
         else
         {
-            //Debug.LogError("x");
             if (sibling != nodeCount - 1)
             {
                 newroot = sibling;
@@ -507,7 +406,7 @@ public unsafe struct DynamicAABBTree<T>
         nodes[nodeCount - 2] = default;
         nodes[nodeCount - 1]= default;
         nodeCount -= 2;
-        //??
+
         RefitHierarchy(parentindex);
 
     }
@@ -518,17 +417,7 @@ public unsafe struct DynamicAABBTree<T>
 
     private int SearchBestForInsert(AABB box, NativeQueue<int> comparequeue)
     {
-        //branch and bound
-        //Debug.Log(rootIndex);
-        //int index = rootIndex;
-        //VERIFY
-        //float bestcost = Area(Union(nodes[rootIndex].box, box)) + IntersectionArea(nodes[rootIndex].box, box);
         float bestcost = Area(Union(nodes[rootIndex].box, box));
-        //MANAGED DATA? bing problem?
-        //Stack<int> comparequeue = new Stack<int>();
-
-        // allocating at each insert ? bad ? OPTI ?
-        //NativeQueue<int> comparequeue = new NativeQueue<int>(Allocator.Temp);
 
         comparequeue.Enqueue(rootIndex);
 
@@ -536,12 +425,8 @@ public unsafe struct DynamicAABBTree<T>
 
         while (comparequeue.Count > 0)
         {
-            //Debug.Log(nodes[index].isLeaf);
             int index = comparequeue.Dequeue();
             var node = nodes[index];
-            //PhyResolutionSystem.DrawQuad(node.box.LowerBound, node.box.UpperBound, Color.red);
-            //if (node.isLeaf)
-            //    continue;
 
             var child1 = node.child1;
             var child2 = node.child2;
@@ -558,10 +443,9 @@ public unsafe struct DynamicAABBTree<T>
             if (cost2 < bestcost)
             {
 
-                //unnessesary ? OPTI
                 if (Area(box) + GetInheritedCost(child2, box) < bestcost)
                 {
-                    //Que child if it is worth evaluating
+                    //Queue child if it is worth evaluating
                     if (!nodes[child2].isLeaf)
                         comparequeue.Enqueue(child2);
                     else if (cost2 < cost1)
@@ -570,20 +454,13 @@ public unsafe struct DynamicAABBTree<T>
                         bestcost = cost2;
                     }
                 }
-                //SOMETHING MISSING HERE??
-                //else if (cost2 < cost1)
-                //{
-                //    bestinsert = child2;
-                //    bestcost = cost2;
-                //}
 
             }
             if (cost1 < bestcost)
             {
-                //unnessesary ? OPTI
                 if (Area(box) + GetInheritedCost(child1, box) < bestcost)
                 {
-                    //Que child if it is worth evaluating
+                    //Queue child if it is worth evaluating
                     if (!nodes[child1].isLeaf)
                         comparequeue.Enqueue(child1);
                     else if(cost1<cost2)
@@ -593,12 +470,6 @@ public unsafe struct DynamicAABBTree<T>
                     }
 
                 }
-                //SOMETHING MISSING HERE??
-                //else if (cost1 < cost2)
-                //{
-                //    bestinsert = child1;
-                //    bestcost = cost1;
-                //}
 
             }
 
@@ -680,16 +551,13 @@ public unsafe struct DynamicAABBTree<T>
     }
     public void RefitHierarchy(int startIndex)
     {
-        //PhyResolutionSystem.DrawQuad(nodes[startIndex].box.LowerBound, nodes[startIndex].box.UpperBound, Color.red);
         while (true)
         {
-            //Debug.Log("test");
             int child1 = nodes[startIndex].child1;
             int child2 = nodes[startIndex].child2;
             AABBTreeNode newnode = nodes[startIndex];
             newnode.box = Union(nodes[child1].box, nodes[child2].box);
             nodes[startIndex] = newnode;
-           // PhyResolutionSystem.DrawQuad(newnode.box.LowerBound, newnode.box.UpperBound, Color.red);
             if (startIndex == rootIndex)
                 break;
             startIndex = nodes[startIndex].parentIndex;
@@ -697,17 +565,358 @@ public unsafe struct DynamicAABBTree<T>
         }
     }
 
+    /*Last Node permutation -> critical to preserve the tree coherency and have RemoveLeaf() work as intended-> redirect node-1 to be node-2's parent*/
+    public void LastNodePermutation()
+    {
+        var nodes = TreeInsersionSystem.AABBtree.nodes;
+
+        int nodecount = TreeInsersionSystem.AABBtree.nodeCount;
+
+        int lastNoderemplacementID = nodes[nodecount - 2].parentIndex;
+        AABBTreeNode lastNodeRemplacement = nodes[lastNoderemplacementID];
+        AABBTreeNode formerLastNode = nodes[nodecount - 1];
+        AABBTreeNode lastNodeRemplacementParent = nodes[nodes[lastNoderemplacementID].parentIndex];
+        AABBTreeNode formerLastNodeParent = nodes[nodes[nodecount - 1].parentIndex];
+
+        AABBTreeNode lastNodeRemplacementChild1;
+        AABBTreeNode lastNodeRemplacementChild2;
+        AABBTreeNode formerLastNodeChild1;
+        AABBTreeNode formerLastNodeChild2;
+
+        /* node-2parent is root case */
+        if (lastNoderemplacementID == rootIndex)
+        {
+            /* node-1 / node-2 sibling case */
+            if (formerLastNode.parentIndex == lastNoderemplacementID)
+            {
+                //Debug.Log("1");
+
+                if (nodes[lastNoderemplacementID].child1 == nodecount - 1)
+                {
+                    lastNodeRemplacement.child1 = lastNoderemplacementID;
+
+                    lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+                    lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+                    nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+                }
+                else
+                {
+                    lastNodeRemplacement.child2 = lastNoderemplacementID;
+
+                    lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+                    lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+                    nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+                }
+                formerLastNode.parentIndex = nodecount - 1;
+
+                formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+                formerLastNodeChild2 = nodes[nodes[nodecount - 1].child2];
+
+                formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+                formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+
+                nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+                nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+
+                lastNodeRemplacement.parentIndex = nodecount - 1;
+                nodes[nodecount - 1] = lastNodeRemplacement;
+                nodes[lastNoderemplacementID] = formerLastNode;
+
+            }
+            else
+            {
+                //Debug.Log("2");
+
+                if (formerLastNodeParent.child1 == nodecount - 1)
+                {
+                    formerLastNodeParent.child1 = lastNoderemplacementID;
+                }
+                else
+                {
+                    formerLastNodeParent.child2 = lastNoderemplacementID;
+                }
+                nodes[formerLastNode.parentIndex] = formerLastNodeParent;
+
+
+                lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+                lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+                formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+                formerLastNodeChild2 = nodes[nodes[nodecount - 1].child2];
+
+                lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+                lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+                formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+                formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+
+                nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+                nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+                nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+                nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+
+                lastNodeRemplacement.parentIndex = nodecount - 1;
+                nodes[nodecount - 1] = lastNodeRemplacement;
+                nodes[lastNoderemplacementID] = formerLastNode;
+
+            }
+
+            rootIndex = nodecount - 1;
+
+            return;
+        }
+        /* node-1 is root case */
+        if (nodecount - 1 == rootIndex)
+        {
+            /* node-1 grandparent of node-2 case */
+            if (lastNodeRemplacement.parentIndex == nodecount - 1)
+            {
+                //Debug.Log("3");
+
+                if (nodes[nodecount-1].child1 == lastNoderemplacementID)
+                {
+                    formerLastNode.child1 = nodecount - 1;
+
+                    formerLastNodeChild2 = nodes[nodes[nodecount-1].child2];
+                    formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+                    nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+                }
+                else
+                {
+                    formerLastNode.child2 = nodecount - 1;
+
+                    formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+                    formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+                    nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+                }
+                lastNodeRemplacement.parentIndex = lastNoderemplacementID;
+
+                lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+                lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+
+                lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+                lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+
+                nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+                nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+
+                formerLastNode.parentIndex = lastNoderemplacementID;
+                nodes[nodecount - 1] = lastNodeRemplacement;
+                nodes[lastNoderemplacementID] = formerLastNode;
+
+            }
+            else
+            {
+                //Debug.Log("4");
+
+                if (lastNodeRemplacementParent.child1 == lastNoderemplacementID)
+                {
+                    lastNodeRemplacementParent.child1 = nodecount - 1;
+                }
+                else
+                {
+                    lastNodeRemplacementParent.child2 = nodecount - 1;
+                }
+                nodes[lastNodeRemplacement.parentIndex] = lastNodeRemplacementParent;
+
+
+                lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+                lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+                formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+                formerLastNodeChild2 = nodes[nodes[nodecount - 1].child2];
+
+                lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+                lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+                formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+                formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+
+                nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+                nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+                nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+                nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+
+                formerLastNode.parentIndex = lastNoderemplacementID;
+                nodes[nodecount - 1] = lastNodeRemplacement;
+                nodes[lastNoderemplacementID] = formerLastNode;
+
+            }
+
+            rootIndex = lastNoderemplacementID;
+
+            return;
+        }
+
+
+        /* node-1 grandparend of node-2 case */
+        if (nodes[nodes[nodecount - 2].parentIndex].parentIndex == nodeCount-1)
+        {
+            //Debug.Log("5");
+
+            if (nodes[formerLastNode.parentIndex].child1 == nodecount - 1)
+            {
+                formerLastNodeParent.child1 = lastNoderemplacementID;
+            }
+            else
+            {
+                formerLastNodeParent.child2 = lastNoderemplacementID;
+            }
+            nodes[formerLastNode.parentIndex] = formerLastNodeParent;
+
+            if(nodes[nodecount - 1].child1 == lastNoderemplacementID)
+            {
+                formerLastNode.child1 = nodecount - 1;
+            }
+            else
+            {
+                formerLastNode.child2 = nodecount - 1;
+            }
+            lastNodeRemplacement.parentIndex = lastNoderemplacementID;
+
+            lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+            lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+            formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+            formerLastNodeChild2 = nodes[nodes[nodecount - 1].child2];
+
+            lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+            lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+            if(nodes[nodecount - 1].child1 == lastNoderemplacementID)
+            {
+                formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+                nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+            }
+            else
+            {
+                formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+                nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+            }
+
+            nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+            nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+
+            nodes[nodecount - 1] = lastNodeRemplacement;
+            nodes[lastNoderemplacementID] = formerLastNode;
+
+            return;
+
+        }
+        /* node-1 / node-2 sibling case */
+        if (nodes[nodecount - 2].parentIndex == nodes[nodecount - 1].parentIndex)
+        {
+            //Debug.Log("6");
+
+            if (lastNodeRemplacementParent.child1 == lastNoderemplacementID)
+            {
+                lastNodeRemplacementParent.child1 = nodecount - 1;
+            }
+            else
+            {
+                lastNodeRemplacementParent.child2 = nodecount - 1;
+            }
+            nodes[nodes[lastNoderemplacementID].parentIndex] = lastNodeRemplacementParent;
+
+            if (nodes[lastNoderemplacementID].child1 == nodecount - 1)
+            {
+                lastNodeRemplacement.child1 = lastNoderemplacementID;
+            }
+            else
+            {
+                lastNodeRemplacement.child2 = lastNoderemplacementID;
+            }
+            formerLastNode.parentIndex = nodecount - 1;
+
+            lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+            lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+            formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+            formerLastNodeChild2 = nodes[nodes[nodecount - 1].child2];
+
+            formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+            formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+            if (nodes[lastNoderemplacementID].child1 == nodecount - 1)
+            {
+                lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+                nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+            }
+            else
+            {
+                lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+                nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+            }
+
+            nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+            nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+
+            nodes[nodecount - 1] = lastNodeRemplacement;
+            nodes[lastNoderemplacementID] = formerLastNode;
+
+            return;
+
+
+        }
+
+        /* node-1 / node-2 sibling case */
+        if (lastNodeRemplacement.parentIndex == formerLastNode.parentIndex)
+        {
+            //Debug.Log("7");
+
+            if (nodes[lastNodeRemplacement.parentIndex].child1 == nodecount-1)
+            {
+                lastNodeRemplacementParent.child1 = lastNoderemplacementID;
+                lastNodeRemplacementParent.child2 = nodecount - 1;
+            }
+            else
+            {
+                lastNodeRemplacementParent.child2 = lastNoderemplacementID;
+                lastNodeRemplacementParent.child1 = nodecount - 1;
+            }
+            nodes[lastNodeRemplacement.parentIndex] = lastNodeRemplacementParent;
+        }
+        else
+        {
+            //Debug.Log("8");
+
+            if (nodes[lastNodeRemplacement.parentIndex].child1 == lastNoderemplacementID)
+            {
+                lastNodeRemplacementParent.child1 = nodecount - 1;
+            }
+            else
+            {
+                lastNodeRemplacementParent.child2 = nodecount - 1;
+            }
+            if (nodes[formerLastNode.parentIndex].child1 == nodecount - 1)
+            {
+                formerLastNodeParent.child1 = lastNoderemplacementID;
+            }
+            else
+            {
+                formerLastNodeParent.child2 = lastNoderemplacementID;
+            }
+            nodes[lastNodeRemplacement.parentIndex] = lastNodeRemplacementParent;
+            nodes[formerLastNode.parentIndex] = formerLastNodeParent;
+        }
+
+        lastNodeRemplacementChild1 = nodes[nodes[lastNoderemplacementID].child1];
+        lastNodeRemplacementChild2 = nodes[nodes[lastNoderemplacementID].child2];
+        formerLastNodeChild1 = nodes[nodes[nodecount - 1].child1];
+        formerLastNodeChild2 = nodes[nodes[nodecount - 1].child2];
+
+        lastNodeRemplacementChild1.parentIndex = nodecount - 1;
+        lastNodeRemplacementChild2.parentIndex = nodecount - 1;
+        formerLastNodeChild1.parentIndex = lastNoderemplacementID;
+        formerLastNodeChild2.parentIndex = lastNoderemplacementID;
+
+        nodes[nodes[lastNoderemplacementID].child1] = lastNodeRemplacementChild1;
+        nodes[nodes[lastNoderemplacementID].child2] = lastNodeRemplacementChild2;
+        nodes[nodes[nodecount - 1].child1] = formerLastNodeChild1;
+        nodes[nodes[nodecount - 1].child2] = formerLastNodeChild2;
+
+        nodes[nodecount - 1] = lastNodeRemplacement;
+        nodes[lastNoderemplacementID] = formerLastNode;
+
+
+    }
 
 
     //go down the tree till leaf and test for each intersecting leaf at each step
     public void GatherIntersectingNodes(NativeList<CollisionPair> ColPair, int index)
     {
-
-        //List<CollisionPair> ColPair = new List<CollisionPair>();
-
-
-        //to test
-        //int numberofchecks = 0;
         if (nodeCount == 0)
             return;
 
@@ -718,11 +927,8 @@ public unsafe struct DynamicAABBTree<T>
             GatherIntersectingNodes(ColPair,nodes[index].child1);
             GatherIntersectingNodes(ColPair,nodes[index].child2);
 
-            //numberofchecks += GatherIntersectingNodes(nodes[index].child1);
-            //numberofchecks += GatherIntersectingNodes(nodes[index].child2);
         }
 
-        //return ColPair;
     }
     private bool IsOverlapping(int nodeA,int nodeB)
     {
@@ -732,9 +938,6 @@ public unsafe struct DynamicAABBTree<T>
     //Then add the collision pair
     private void TryRegisterCollisionPair(NativeList<CollisionPair> ColPair, int nodeA, int nodeB)
     {
-        //to test num of colision
-        //int temp = 0;
-
         if (IsOverlapping(nodeA, nodeB))
         {
 
@@ -774,7 +977,6 @@ public unsafe struct DynamicAABBTree<T>
 
             }
         }
-        //return temp;
     }
 
     public AABB Union(AABB A, AABB B)

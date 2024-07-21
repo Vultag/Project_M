@@ -67,39 +67,10 @@ public partial class PlayerSystem : SystemBase
 
         mousePos = input_actions.ActionMap.MousePos.ReadValue<Vector2>();
 
-        //Debug.Log(IsShooting);
-        //if (IsShooting)
-        //{
-        //    //WeaponSystem.PlayPressed = IsShooting;
-        //    //WeaponSystem.PlayPressTime += SystemAPI.Time.DeltaTime;
-        //}
-
-        //Vector2 CanonDirection;
-
-        ///default mouv
-        //foreach (var (player_data, player_trans) in SystemAPI.Query<RefRO<PlayerData>, RefRW<LocalTransform>>())
-        //{
-
-        //    //LocalTransform player_trans = SystemAPI.GetComponent<LocalTransform>(entity);
-        //    //var new_pos = player_trans.Position.x + player_data.ValueRO.mouv_speed * moveDirection;
-        //    player_trans.ValueRW.Position += new float3(player_data.ValueRO.mouv_speed * moveDirection * SystemAPI.Time.DeltaTime, 0);
-
-
-        //}
         ///test physics move
-        ///SET IN A INPUT EVENT 
+        ///SET IN A INPUT EVENT ?
         foreach (var (player_data, player_phy) in SystemAPI.Query<RefRO<PlayerData>, RefRW<PhyBodyData>>())
         {
-
-            //CanonDirection = (player_shape.ValueRO.Position - input_actions.ActionMap.MousePos.ReadValue<Vector2>());
-
-
-            //float tempMaxSpeed = player_data.ValueRO.mouv_speed*1.5f;
-
-            //player_phy.ValueRW.Velocity += (player_data.ValueRO.mouv_speed*0.1f) * moveDirection * SystemAPI.Time.DeltaTime;
-
-            //player_phy.ValueRW.Velocity = player_data.ValueRO.mouv_speed * moveDirection * SystemAPI.Time.DeltaTime;
-
             player_phy.ValueRW.Force = player_data.ValueRO.mouv_speed * moveDirection * SystemAPI.Time.DeltaTime;
 
         }
@@ -113,9 +84,6 @@ public partial class PlayerSystem : SystemBase
             modeSwitchCD = modeSwitchBaseCD;
         }
 
-
-
-
     }
 
 
@@ -126,9 +94,6 @@ public partial class PlayerSystem : SystemBase
         WeaponSystem.PlayPressed = IsShooting;
         WeaponSystem.PlayReleased = !IsShooting;
 
-
-        //WeaponSystem.PlayPressTime += SystemAPI.Time.DeltaTime;
-        //Debug.Log(IsShooting);
 
     }
 

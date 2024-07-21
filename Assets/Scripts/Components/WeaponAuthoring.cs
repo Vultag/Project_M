@@ -13,10 +13,6 @@ public struct WeaponData : IComponentData
     public float tempShootRange;
 
 
-    //Shooting on beat only for now...
-    //public float tempShootSpeed;
-    //public float tempShootCooldown;
-
 }
 
 public enum WeaponType // *
@@ -47,7 +43,6 @@ public class WeaponAuthoring : MonoBehaviour
             {
 
                 tempShootRange = authoring.tempShootRange,
-                //tempShootSpeed = authoring.tempShootSpeed,
 
             });
         }

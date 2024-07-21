@@ -23,8 +23,6 @@ public partial struct MonsterSystem : ISystem
     void OnUpdate(ref SystemState state)
     {
         //MOUVEMENT
-        //OPTI
-        //just at start -> ?
         var player_trans = SystemAPI.GetComponent<LocalTransform>(SystemAPI.GetSingletonEntity<PlayerData>());
 
         foreach (var (monster_data, trans, body) in SystemAPI.Query<RefRO<MonsterData>, RefRO<LocalTransform>, RefRW<PhyBodyData>>())

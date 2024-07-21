@@ -14,14 +14,9 @@ using UnityEditor;
 
 public struct PhyBodyData : IComponentData
 {
-    //moved to shape
-    //public Vector2 Position;
     public Vector2 Velocity;
     public Vector2 Force;
     public float Mass;
-
-    // 0 = circle ; 1 = square;
-    //public int ShapeType;
 
     //ADD STATIC BOOl FOR WALLS
 
@@ -63,10 +58,7 @@ public class PhyBodyAuthoring : MonoBehaviour
 
             AddComponent(entity, new PhyBodyData
             {
-
-                //Position = Vector2.zero,
                 Mass = authoring.Mass,
-
             });
 
             switch (authoring.shapeType) 
@@ -118,9 +110,6 @@ public class PhyBodyAuthoring : MonoBehaviour
             if (phyBody.shapeType == ShapeType.Circle)
             {
                 EditorGUILayout.PropertyField(radius);
-                //Debug.Log("test");
-                //Handles.DrawSolidDisc(target.GameObject().transform.position, Vector3.up, phyBody.radius);
-
             }
             if (phyBody.shapeType == ShapeType.Box)
             {

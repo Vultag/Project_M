@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
-//using UnityEditor.PackageManager;
 using UnityEngine;
 
 [System.Serializable]
@@ -28,7 +27,6 @@ public struct ADSREnvelope
 //internal buffer capacity
 public struct SustainedKeyBufferData: IBufferElementData
 {
-    ///here: frequency; Delta
     public Vector2 Direction;
     public float Delta;
     public float Phase;
@@ -38,7 +36,6 @@ public struct SustainedKeyBufferData: IBufferElementData
 //internal buffer capacity
 public struct ReleasedKeyBufferData : IBufferElementData
 {
-    ///here: frequency; Delta
     public Vector2 Direction;
     public float Delta;
     public float Phase;
@@ -60,16 +57,9 @@ public struct SynthData : IComponentData
 
 }
 
-//[InternalBufferCapacity(2048)]
-//public struct AudioDataBufferElement : IBufferElementData
-//{
-//    public float value;
-//}
-
 public class SynthAuthoring : MonoBehaviour
 {
 
-    //public GameObject AudioOutputprefab;
     public float amplitude;
     public float frequency;
 

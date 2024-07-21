@@ -11,25 +11,3 @@ public struct CircleShapeData : IComponentData
     public PhysicsUtilities.CollisionLayer collisionLayer;
 
 }
-// A SUPPR
-//public class CircleShapeAuthoring : MonoBehaviour
-//{
-
-//    public float radius;
-
-//    class CircleShapeBaker : Baker<CircleShapeAuthoring>
-//    {
-//        public override void Bake(CircleShapeAuthoring authoring)
-//        {
-
-//            Entity entity = GetEntity(TransformUsageFlags.None);
-
-//            AddComponent(entity, new CircleShapeData
-//            {
-
-//                radius = authoring.radius,
-
-//            });
-//        }
-//    }
-//}

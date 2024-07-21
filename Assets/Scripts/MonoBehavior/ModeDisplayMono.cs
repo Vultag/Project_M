@@ -23,7 +23,6 @@ public class ModeDisplayMono : MonoBehaviour
 
     private void OnEnable()
     {
-        //dont work -> systembase
         var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
         var Playersystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<PlayerSystem>();
         fillSpeed = Playersystem.modeSwitchBaseCD;
@@ -35,7 +34,7 @@ public class ModeDisplayMono : MonoBehaviour
 
         Modetext.text = newMode;
         Tonictext.text = newTonic;
-        fill = 0; // makes sure mono and Isystem are in sync
+        fill = 0;
 
     }
 
