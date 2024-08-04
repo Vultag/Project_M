@@ -7,11 +7,14 @@ using Unity.Jobs;
 using Unity.Burst;
 using Unity.Mathematics;
 using MusicNamespace;
-using Unity.Entities.UniversalDelegates;
+using System.Linq;
 using static UnityEngine.Rendering.DebugUI;
+using System;
+using UnityEditor;
 
 public class AudioGenerator : MonoBehaviour
 {
+    //const int DSPbufferSize = 512;
 
     [HideInInspector]
     public LineRenderer OscillatorLine;
@@ -32,13 +35,13 @@ public class AudioGenerator : MonoBehaviour
 
     private NativeArray<float> _audioData;
 
-    //USE THIS TO FIX AUDIOREAD/SYSTEMBASE COMMUNICATION ?
-    //public static NativeArray<double> _audioPhase;
-
     public static JobHandle _Audiojobhandle;
 
     private int _sampleRate;
-    private NativeArray<float> _previousAmplitudes;
+    private NativeArray<KeyData> activeKeys;
+    private NativeArray<int> activeKeyNumber;
+
+    public static AudioRingBuffer<KeysBuffer> audioRingBuffer;
 
 
     private const int NumChannels = 1; // Mono audio
@@ -46,14 +49,21 @@ public class AudioGenerator : MonoBehaviour
     private void Start()
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        //Debug.Log(AudioSettings.outputSampleRate);
 
     }
 
     private void Awake()
     {
         _sampleRate = AudioSettings.outputSampleRate;
-        _audioData = new NativeArray<float>(2048,Allocator.Persistent);
+        _audioData = new NativeArray<float>(512, Allocator.Persistent);
         audiojobCompleted = false;
+        int ringBufferCapacity = 4;
+        audioRingBuffer = new AudioRingBuffer<KeysBuffer>(ringBufferCapacity);
+        audioRingBuffer.InitializeBuffer(ringBufferCapacity);
+
+        activeKeys = new NativeArray<KeyData>(12, Allocator.Persistent);
+        activeKeyNumber = new NativeArray<int>(1, Allocator.Persistent);
     }
 
 
@@ -91,51 +101,108 @@ public class AudioGenerator : MonoBehaviour
     private void OnAudioFilterRead(float[] data, int channels)
     {
 
-        var SKeyBufferArray = entityManager.GetBuffer<SustainedKeyBufferData>(WeaponSynthEntity).ToNativeArray(Allocator.TempJob);
-        var RKeyBufferArray = entityManager.GetBuffer<ReleasedKeyBufferData>(WeaponSynthEntity).ToNativeArray(Allocator.TempJob);
+        KeysBuffer keysBuffer;
+
+        if (audioRingBuffer.IsEmpty)
+        {
+            /// Buffer is empty. Recycle the latest available data.
+            keysBuffer = audioRingBuffer.RecycleLastElement();
+        }
+        else
+        {
+            keysBuffer = audioRingBuffer.Read();
+        }
+
+        var synthData = entityManager.GetComponentData<SynthData>(WeaponSynthEntity);
 
 
-        NativeArray<float> JobPhases = new NativeArray<float>(SKeyBufferArray.Length + RKeyBufferArray.Length + 1, Allocator.TempJob);
-        NativeArray<float> newAmplitudes = new NativeArray<float>(SKeyBufferArray.Length + RKeyBufferArray.Length + 1, Allocator.TempJob);
+        for (int i = 0; i < activeKeyNumber[0]; i++)
+        {
 
+            if (keysBuffer.keyFrenquecies.Contains(activeKeys[i].frequency))
+            {
+                ///Key already being released, check if repressed
+                if (activeKeys[i].amplitudeAtRelease != 0)
+                {
+                    activeKeys[i] = new KeyData { frequency = activeKeys[i].frequency, delta = 0f, phase = activeKeys[i].phase, amplitudeAtRelease = 0 };
+                }
+            }
+            else
+            {
+
+                if (activeKeys[i].amplitudeAtRelease != 0)
+                    continue;
+
+                float releaseAmplitude;
+                if (activeKeys[i].delta < synthData.ADSR.Attack)
+                    releaseAmplitude = (activeKeys[i].delta / synthData.ADSR.Attack) * synthData.amplitude;
+                else if (activeKeys[i].delta < synthData.ADSR.Attack + synthData.ADSR.Decay)
+                    releaseAmplitude = synthData.amplitude - (((activeKeys[i].delta - synthData.ADSR.Attack) / synthData.ADSR.Decay) * (1 - synthData.ADSR.Sustain) * synthData.amplitude);
+                else
+                    releaseAmplitude = synthData.ADSR.Sustain * synthData.amplitude;
+
+                activeKeys[i] = new KeyData { frequency = activeKeys[i].frequency, delta = synthData.ADSR.Attack+ synthData.ADSR.Decay, phase = activeKeys[i].phase, amplitudeAtRelease = releaseAmplitude +0.00001f /*make sure the key is considered released*/ };
+            }
+        }
+        int overwriteKeysNum = 0;
+        for (int i = 0; i < keysBuffer.KeyNumber; i++)
+        {
+            if (!activeKeys.Any(activeKeys=> activeKeys.frequency == keysBuffer.keyFrenquecies[i]))
+            {
+                if (activeKeyNumber[0] < 12)
+                {
+                    activeKeys[activeKeyNumber[0]] = new KeyData { frequency = keysBuffer.keyFrenquecies[i]};
+                    activeKeyNumber[0]++; 
+                }
+                /// the number of keys played simultaneously has reached its limit : start overwriting the oldest ones.
+                else
+                {
+                    Debug.Log("overwrite");
+                    activeKeys[overwriteKeysNum] = new KeyData { frequency = keysBuffer.keyFrenquecies[i]};
+                    overwriteKeysNum++;
+                }
+            }
+        }
+
+        if (activeKeyNumber[0] < 1)
+            return;
+
+        ///activeKeys elemets cropped, rdy to be processed
+        NativeArray<float> _JobFrequencies = new NativeArray<float>(activeKeyNumber[0], Allocator.TempJob);
+        NativeArray<float> _JobPhases = new NativeArray<float>(activeKeyNumber[0], Allocator.TempJob);
+        NativeArray<float> _JobDeltas = new NativeArray<float>(activeKeyNumber[0], Allocator.TempJob);
+        for (int i = 0; i < activeKeyNumber[0]; i++)
+        {
+            _JobFrequencies[i] = activeKeys[i].frequency;
+            _JobPhases[i] = activeKeys[i].phase;
+            _JobDeltas[i] = activeKeys[i].delta;
+        }
 
         AudioJob audioJob = new AudioJob(
             _sampleRate,
             entityManager.GetComponentData<SynthData>(WeaponSynthEntity),
-            SKeyBufferArray,
-            RKeyBufferArray,
-            JobPhases,
-            //_audioPhase,
+            activeKeys,
+            _JobFrequencies,
+            _JobPhases,
+            _JobDeltas,
             _audioData,
-            newAmplitudes
+            activeKeyNumber
             );
 
 
         _Audiojobhandle = audioJob.Schedule(_Audiojobhandle);
 
-
         _Audiojobhandle.Complete();
 
         _audioData.CopyTo(data);
 
-        //get the reference again to prevent unvalidating. USELESS ?
-        var SKeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(WeaponSynthEntity);
-        var RKeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(WeaponSynthEntity);
+        var sortedKeys = activeKeys.ToArray().OrderByDescending(Data => Data.frequency).ToArray();
 
-        /// Write back the phases to the buffers elements for next iteration
-        for (int i = 0; i < SKeyBuffer.Length; i++)
+        /// Copy the sorted data back to the activeKeys
+        for (int i = 0; i < activeKeys.Length; i++)
         {
-            SKeyBuffer[i] = new SustainedKeyBufferData { Delta = SKeyBuffer[i].Delta, Direction = SKeyBuffer[i].Direction, Phase = JobPhases[i], currentAmplitude = newAmplitudes[i] };
+            activeKeys[i] = sortedKeys[i];
         }
-        for (int y = SKeyBuffer.Length; y < RKeyBuffer.Length + SKeyBuffer.Length; y++)
-        {
-            int i = y - SKeyBuffer.Length;
-            RKeyBuffer[i] = new ReleasedKeyBufferData { Delta = RKeyBuffer[i].Delta, Direction = RKeyBuffer[i].Direction, Phase = JobPhases[y], currentAmplitude = newAmplitudes[y] };
-        }
-        JobPhases.Dispose();
-        newAmplitudes.Dispose();
-
-        audiojobCompleted = true;
 
     }
 
@@ -160,182 +227,197 @@ public struct AudioJob : IJob
     private float _sampleRate;
     private SynthData _synthdata;
 
+    private NativeArray<KeyData> _KeyData;
+
+
+    [ReadOnly]
     [DeallocateOnJobCompletion]
-    private NativeArray<SustainedKeyBufferData> _SustainedKeyBuffer;
-
+    private NativeArray<float> _JobFrequencies;
     [DeallocateOnJobCompletion]
-    private NativeArray<ReleasedKeyBufferData> _ReleasedKeyBuffer;
+    private NativeArray<float> _JobPhases;
+    [DeallocateOnJobCompletion]
+    private NativeArray<float> _JobDeltas;
 
-    //DynamicBuffer<SustainedKeyBufferData> _SustainedKeyBuffer;
-
-    //DynamicBuffer<ReleasedKeyBufferData> _ReleasedKeyBuffer;
-
-    //private double _phase;
-    //?[DeallocateOnJobCompletion]
-    private NativeArray<float> JobPhases;
-    //?[DeallocateOnJobCompletion]
+    //[WriteOnly]
     private NativeArray<float> _audioData;
     [WriteOnly]
-    private NativeArray<float> _newAmplitudes;
+    private NativeArray<int> _activeKeynum;
 
     public AudioJob(
        float sampleRate,
        SynthData synthdata,
-         NativeArray<SustainedKeyBufferData> SustainedKeyBuffer,
-         NativeArray<ReleasedKeyBufferData> ReleasedKeyBuffer,
-        //DynamicBuffer<SustainedKeyBufferData> SustainedKeyBuffer,
-        //DynamicBuffer<ReleasedKeyBufferData> ReleasedKeyBuffer,
-        //float phase,
-        NativeArray<float> audioPhase,
+       NativeArray<KeyData> KeyData,
+
+
+        NativeArray<float> JobFrequencies,
+        NativeArray<float> JobPhases,
+        NativeArray<float> JobDeltas,
         NativeArray<float> audioData,
-        NativeArray<float> newAmplitudes
+        NativeArray<int> activeKeynum
        )
     {
         _synthdata = synthdata;
-        _SustainedKeyBuffer = SustainedKeyBuffer;
-        _ReleasedKeyBuffer = ReleasedKeyBuffer;
+        _KeyData = KeyData;
         _sampleRate = sampleRate;
-        JobPhases = audioPhase;
-        //_audioPhase = audioPhase;
+        _JobFrequencies = JobFrequencies;
+        _JobPhases = JobPhases;
+        _JobDeltas = JobDeltas;
         _audioData = audioData;
-        _newAmplitudes = newAmplitudes;
+        _activeKeynum = activeKeynum;
     }
 
     public void Execute()
     {
+        float deltaIncrement = 1 / _sampleRate;
 
-        int tempChannels = 2;
+        /// OPTI : SIMD ?
+        /// I increment the audioData, so I need to reset it at the start of each DSPbuffer
+        for (int i = 0; i < _audioData.Length; i++)
+        {
+            _audioData[i] = 0;
+        }
+
+        int ChannelsNum = 2;
 
         ADSREnvelope ADSR = _synthdata.ADSR;
 
-        //phases for each key playing
-        NativeArray<float> phaseIncrement = new NativeArray<float>(_SustainedKeyBuffer.Length+_ReleasedKeyBuffer.Length+1,Allocator.Temp);
+        NativeArray<ADSRlayouts> KeysADSRlayouts = new NativeArray<ADSRlayouts>(_JobFrequencies.Length,Allocator.Temp);
 
-        NativeArray<float> Samplitude = new NativeArray<float>(_SustainedKeyBuffer.Length, Allocator.Temp);
-        NativeArray<float> Ramplitude = new NativeArray<float>(_ReleasedKeyBuffer.Length, Allocator.Temp);
-
-        NativeArray<float> frequencies = new NativeArray<float>(_SustainedKeyBuffer.Length + _ReleasedKeyBuffer.Length + 1, Allocator.Temp);
-
-
-        /// Smooth  out the amplitude changes in between the ADSR informations updates
-        ///amplitudeSmoothingFactor size -> number of sample over which smoothing occurs (needs to be multiple of 4/8/32?)
-        int ASFsize = 128*6;
-  
-        //Debug.Log(effectiveAmplitude);
-
-        for (int i = 0; i < _SustainedKeyBuffer.Length; i++)
+        for (int i = 0; i < KeysADSRlayouts.Length; i++)
         {
-            frequencies[i] = MusicUtils.noteToFrequency(MusicUtils.radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(_SustainedKeyBuffer[i].Direction))), WeaponSystem.mode);
-            phaseIncrement[i] = frequencies[i] / _sampleRate;
 
-            if(_SustainedKeyBuffer[i].Delta < ADSR.Attack)
+            int samplePool = 512;
+            int attackSamples = 0;
+            int decaySamples = 0;
+            int sustainSamples = 0;
+            int releaseSamples = 0;
+
+            if (_KeyData[i].amplitudeAtRelease == 0)
             {
-                if (ADSR.Attack == 0)
-                    Samplitude[i] = _synthdata.amplitude * 1f;
-                else
-                    Samplitude[i] = _synthdata.amplitude * Mathf.Clamp((_SustainedKeyBuffer[i].Delta / ADSR.Attack),0,1f);
+                attackSamples = _KeyData[i].delta < ADSR.Attack ? Mathf.Min(Mathf.CeilToInt(Mathf.Abs(_KeyData[i].delta - ADSR.Attack) * (_sampleRate)), samplePool) : 0;
+                samplePool -= attackSamples;
+                decaySamples = samplePool > 0 && _KeyData[i].delta < (ADSR.Attack+ADSR.Decay) ? Mathf.Min(Mathf.CeilToInt(Mathf.Abs(Mathf.Max(_KeyData[i].delta,ADSR.Attack)- (ADSR.Attack + ADSR.Decay)) * (_sampleRate)), samplePool) : 0;
+                samplePool -= decaySamples;
+                sustainSamples = samplePool;
             }
             else
             {
-                if (ADSR.Decay == 0)
-                    Samplitude[i] = _synthdata.amplitude * ADSR.Sustain;
-                else
-                    Samplitude[i] = _synthdata.amplitude * (1 - (1- ADSR.Sustain)* Mathf.Clamp(((_SustainedKeyBuffer[i].Delta - ADSR.Attack) / ADSR.Decay), 0, 1f));
+                releaseSamples = Mathf.Min(Mathf.CeilToInt(Mathf.Abs(_KeyData[i].delta - (ADSR.Attack + ADSR.Decay + ADSR.Release)) * (_sampleRate)), samplePool);
             }
 
-            JobPhases[i] = _SustainedKeyBuffer[i].Phase;
-            _newAmplitudes[i] = Samplitude[i];
-        }
-        for (int y = _SustainedKeyBuffer.Length; y < _ReleasedKeyBuffer.Length + _SustainedKeyBuffer.Length; y++)
-        {
-            int i = y - _SustainedKeyBuffer.Length;
-            frequencies[y] = MusicUtils.noteToFrequency(MusicUtils.radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(_ReleasedKeyBuffer[i].Direction))), WeaponSystem.mode);
-            phaseIncrement[y] = frequencies[y] / _sampleRate;
+            KeysADSRlayouts[i] = new ADSRlayouts {
+                AttackSamples = attackSamples,
+                DecaySamples = decaySamples+ attackSamples,
+                SustainSamples = sustainSamples+ decaySamples+ attackSamples,
+                ReleaseSamples = releaseSamples
 
-            if (ADSR.Release == 0)
-                Ramplitude[i] = 0;
+            };
+
+        }
+
+        ///phases for each key playing
+        NativeArray<float> phaseIncrement = new NativeArray<float>(_JobFrequencies.Length+ 1,Allocator.Temp);
+
+        float value;
+
+        for (int i = 0; i < _JobFrequencies.Length; i++)
+        {
+            
+            phaseIncrement[i] = _KeyData[i].frequency / _sampleRate;
+            int sampleStage = 0;
+
+            ///ATTACK
+            for (; sampleStage < KeysADSRlayouts[i].AttackSamples; sampleStage += ChannelsNum)
+            {
+                float phase = _JobPhases[i];
+
+                float effectiveAmplitude =  (_JobDeltas[i] / ADSR.Attack)*_synthdata.amplitude;
+                _JobDeltas[i] += deltaIncrement;
+
+                value = ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * effectiveAmplitude;
+                _JobPhases[i] = (_JobPhases[i] + phaseIncrement[i]) % 1;
+
+                /// populate all channels with the values
+                for (int channel = 0; channel < ChannelsNum; channel++)
+                {
+                    _audioData[sampleStage + channel] += value;
+                }
+
+            }
+            ///DECAY
+            for (; sampleStage < KeysADSRlayouts[i].DecaySamples; sampleStage += ChannelsNum)
+            {
+                float phase = _JobPhases[i];
+
+                float effectiveAmplitude = _synthdata.amplitude - ((((_JobDeltas[i] - ADSR.Attack) / ADSR.Decay)*(1-ADSR.Sustain))* _synthdata.amplitude);
+                
+                _JobDeltas[i] += deltaIncrement;
+
+                value = ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * effectiveAmplitude;
+                _JobPhases[i] = (_JobPhases[i] + phaseIncrement[i]) % 1;
+
+                /// populate all channels with the values
+                for (int channel = 0; channel < ChannelsNum; channel++)
+                {
+                    _audioData[sampleStage + channel] += value;
+                }
+
+            }
+            ///SUSTAIN
+            for (; sampleStage < KeysADSRlayouts[i].SustainSamples; sampleStage += ChannelsNum)
+            {
+                float phase = _JobPhases[i];
+
+                float effectiveAmplitude = ADSR.Sustain * _synthdata.amplitude;
+
+                _JobDeltas[i] = ADSR.Attack+ADSR.Decay;
+
+                value = ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * effectiveAmplitude;
+                _JobPhases[i] = (_JobPhases[i] + phaseIncrement[i]) % 1;
+
+                /// populate all channels with the values
+                for (int channel = 0; channel < ChannelsNum; channel++)
+                {
+                    _audioData[sampleStage + channel] += value;
+                }
+
+            }
+            ///RELEASE
+            for (; sampleStage < KeysADSRlayouts[i].ReleaseSamples; sampleStage += ChannelsNum)
+            {
+
+                float phase = _JobPhases[i];
+
+                float effectiveAmplitude = (1 - ((_JobDeltas[i] - (ADSR.Attack + ADSR.Decay)) / ADSR.Release)) * _KeyData[i].amplitudeAtRelease; 
+                _JobDeltas[i] += deltaIncrement;
+
+                value = ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * effectiveAmplitude;
+                _JobPhases[i] = (_JobPhases[i] + phaseIncrement[i]) % 1;
+
+                /// populate all channels with the values
+                for (int channel = 0; channel < ChannelsNum; channel++)
+                {
+                    _audioData[sampleStage + channel] += value;
+                }
+
+            }
+        }
+
+        int newkeysNum=0;
+        for (int i = 0; i < _JobFrequencies.Length; i++)
+        {
+            if (_JobDeltas[i] < ADSR.Attack + ADSR.Decay + ADSR.Release)
+            {
+                _KeyData[i] = new KeyData { frequency = _KeyData[i].frequency, phase = _JobPhases[i], delta = _JobDeltas[i], amplitudeAtRelease = _KeyData[i].amplitudeAtRelease };
+                newkeysNum++;
+            }
             else
-                Ramplitude[i] = _synthdata.amplitude * (1-Mathf.Clamp(_ReleasedKeyBuffer[i].Delta / ADSR.Release, 0, 1f));
-
-            JobPhases[y] = _ReleasedKeyBuffer[i].Phase;
-            _newAmplitudes[y] = Ramplitude[i];
-        }
-
-
-
-        for (int sample = 0; sample < ASFsize; sample += tempChannels)
-        {
-
-            float ASF = (float)sample / (float)ASFsize;// Mathf.Clamp(sample / ASFsize,0,1f); ??
-            float value = 0;
-
-            //Debug.LogError(sample);
-            //Debug.Log(ASFsize);
-            //Debug.LogWarning(sample / ASFsize);
-
-            for (int i = 0; i < _SustainedKeyBuffer.Length; i++)
             {
-                float phase = JobPhases[i];
-
-                float amplitude = (Samplitude[i] * ASF) + (_SustainedKeyBuffer[i].currentAmplitude * (1 - ASF)); 
-                //Debug.LogError(Samplitude[i]);
-                //Debug.Log(_SustainedKeyBuffer[i].currentAmplitude);
-                //Debug.LogWarning(amplitude);
-
-                value += ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * amplitude;
-                JobPhases[i] = (JobPhases[i] + phaseIncrement[i]) % 1;
-            }
-            for (int y = 0; y < _ReleasedKeyBuffer.Length; y++)
-            {
-                int i = y + _SustainedKeyBuffer.Length;
-                float phase = JobPhases[i];
-  
-                float amplitude = (Ramplitude[y] *ASF) + (_ReleasedKeyBuffer[y].currentAmplitude * (1-ASF));
-                value += ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * amplitude;
-                JobPhases[i] = (JobPhases[i] + phaseIncrement[i]) % 1;
-            }
-
-
-            // populate all channels with the values
-            for (int channel = 0; channel < tempChannels; channel++)
-            {
-                _audioData[sample + channel] = value;
+                //Debug.Log("clear");
+                _KeyData[i] = new KeyData { };
             }
         }
-
-        for (int sample = ASFsize; sample < _audioData.Length; sample += tempChannels)
-        {
-
-            float value = 0;
-            //i = 0;
-            for (int i = 0; i < _SustainedKeyBuffer.Length; i++)
-            {
-                float phase = JobPhases[i];
-        
-                float amplitude = Samplitude[i];
-                value += ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * amplitude;
-                JobPhases[i] = (JobPhases[i] + phaseIncrement[i]) % 1;
-            }
-            for (int y = 0; y < _ReleasedKeyBuffer.Length; y++)
-            {
-                int i = y + _SustainedKeyBuffer.Length;
-                float phase = JobPhases[i];
-
-                float amplitude = Ramplitude[y];
-                value += ((MusicUtils.Sin(phase) * _synthdata.SinFactor) + (MusicUtils.Saw(phase) * _synthdata.SawFactor) + (MusicUtils.Square(phase) * _synthdata.SquareFactor)) * amplitude;
-                JobPhases[i] = (JobPhases[i] + phaseIncrement[i]) % 1;
-            }
-
-
-            // populate all channels with the values
-            for (int channel = 0; channel < tempChannels; channel++)
-            {
-
-                //audiobuffer.Insert(sample, value);
-                _audioData[sample + channel] = value;
-
-            }
-        }
+        _activeKeynum[0] = newkeysNum;
 
     }
 

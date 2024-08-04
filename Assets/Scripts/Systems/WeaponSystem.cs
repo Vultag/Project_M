@@ -7,6 +7,7 @@ using UnityEngine;
 using MusicNamespace;
 using Unity.Mathematics;
 using Unity.Entities.UniversalDelegates;
+using UnityEditor.Rendering;
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateAfter(typeof(PhyResolutionSystem))]
@@ -86,6 +87,8 @@ public partial class WeaponSystem : SystemBase
         for (int i = 0; i < SkeyBuffer.Length; i++)
         {
             SkeyBuffer[i] = new SustainedKeyBufferData { Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, Direction = SkeyBuffer[i].Direction, Phase = SkeyBuffer[i].Phase, currentAmplitude = SkeyBuffer[i].currentAmplitude };
+            //if (SkeyBuffer[i].Delta > ActiveSynth.ADSR.Attack+1.5f)
+            //    Debug.Break();
         }
 
         /// Move to Synth system all together ?
@@ -183,9 +186,12 @@ public partial class WeaponSystem : SystemBase
             /*remplace with generic shape*/
             ComponentLookup<CircleShapeData> ShapeComponentLookup = GetComponentLookup<CircleShapeData>(isReadOnly: true);
 
-            /// Damage processing
+            KeysBuffer keysBuffer = new KeysBuffer { keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), KeyNumber = (short)(SkeyBuffer.Length+  RkeyBuffer.Length)};
+
+            /// Damage processing + audioBufferData filling
             for (int i = 0; i < SkeyBuffer.Length; i++)
             {
+                keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(SkeyBuffer[i].Direction);
 
                 RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y),DirLength=SkeyBuffer[i].Direction }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
 
@@ -222,10 +228,12 @@ public partial class WeaponSystem : SystemBase
             }
             for (int i = 0; i < RkeyBuffer.Length; i++)
             {
-           
-
+                // relased key damage here
             }
 
+            /// Write to the audioRingBuffer to be played on the audio thread
+            if(!AudioGenerator.audioRingBuffer.IsFull)
+                AudioGenerator.audioRingBuffer.Write(keysBuffer);
 
         }
 

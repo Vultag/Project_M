@@ -22,6 +22,14 @@ public struct ADSREnvelope
         Release = release;
     }
 }
+/* ADSR sample surface for optimized audio processing */
+public struct ADSRlayouts
+{
+    public int AttackSamples;
+    public int DecaySamples;    
+    public int SustainSamples;
+    public int ReleaseSamples;
+}
 
 
 //internal buffer capacity
@@ -81,7 +89,7 @@ public class SynthAuthoring : MonoBehaviour
             {
                 amplitude = authoring.amplitude,
                 ADSR = authoring.ADSR,
-                SinFactor = 1/3f,
+                SinFactor = 1 / 3f,
                 SawFactor = 1 / 3f,
                 SquareFactor = 1/3f,
 

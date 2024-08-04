@@ -75,7 +75,7 @@ public partial class PlayerSystem : SystemBase
 
         }
 
-        modeSwitchCD -= SystemAPI.Time.DeltaTime;
+        ///modeSwitchCD -= SystemAPI.Time.DeltaTime;
 
         if (modeSwitchCD < 0)
         {

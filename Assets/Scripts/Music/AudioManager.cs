@@ -31,9 +31,6 @@ public class AudioManager : MonoBehaviour
         int SynthNum = _query.CalculateEntityCount();
         var SynthentityArray = _query.ToEntityArray(Allocator.Temp);
 
-        //Debug.Log(SynthNum);
-        //Debug.Log(AudioSources.Count);
-
         for ( int i = SynthNum; i != AudioSources.Count;)
         {
             if (SynthNum > AudioSources.Count)

@@ -190,6 +190,10 @@ namespace MusicNamespace
             return keyFrequencies[note + tempoctave]; //+ ocatave
 
         }
+        public static float DirectionToFrequency(Vector2 dir)
+        {
+            return noteToFrequency(radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(dir))),WeaponSystem.mode);
+        }
 
         public static float Sin(float phase)
         {
