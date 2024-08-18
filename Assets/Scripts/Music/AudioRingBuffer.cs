@@ -16,9 +16,31 @@ public struct KeyData
 public struct KeysBuffer
 {
     public NativeArray<float> keyFrenquecies;
-    public short KeyNumber;
+    //public short KeyNumber;
+    public NativeArray<short> KeyNumber;
 
 }
+public struct PlaybackKey
+{
+    public float frequency;
+    public float time;
+    public float lenght;
+
+}
+public struct PlaybackAudioBundle
+{
+    public NativeArray<PlaybackKey> PlaybackKeys;
+    //public int PlaybackKeyStartIndex;
+    public float PlaybackDuration;
+    public bool IsLooping;
+    //public float PlaybackTime;
+}
+public struct PlaybackAudioBundleContext
+{
+    public int PlaybackKeyStartIndex;
+    public float PlaybackTime;
+}
+
 
 public class AudioRingBuffer<T>
 {
@@ -75,7 +97,7 @@ public class AudioRingBuffer<T>
         {
             for (int i = 0; i < size; i++)
             {
-                buffer[i] = (new KeysBuffer { keyFrenquecies = new NativeArray<float>(12, Allocator.Persistent) });
+                buffer[i] = (new KeysBuffer { keyFrenquecies = new NativeArray<float>(12, Allocator.Persistent), KeyNumber = new NativeArray<short>(1, Allocator.Persistent) });
             }
         }
     }
@@ -92,7 +114,7 @@ public class AudioRingBuffer<T>
         //lock (lockObject)
         {
             buffer[head].keyFrenquecies.CopyFrom(item.keyFrenquecies);
-            buffer[head].KeyNumber = item.KeyNumber;
+            buffer[head].KeyNumber.CopyFrom(item.KeyNumber);
             head = (head + 1) % bufferSize;
         }
     }

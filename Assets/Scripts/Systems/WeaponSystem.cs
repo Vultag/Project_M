@@ -186,7 +186,8 @@ public partial class WeaponSystem : SystemBase
             /*remplace with generic shape*/
             ComponentLookup<CircleShapeData> ShapeComponentLookup = GetComponentLookup<CircleShapeData>(isReadOnly: true);
 
-            KeysBuffer keysBuffer = new KeysBuffer { keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), KeyNumber = (short)(SkeyBuffer.Length+  RkeyBuffer.Length)};
+            KeysBuffer keysBuffer = new KeysBuffer { keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), KeyNumber = new NativeArray<short>(1, Allocator.Temp) };
+            keysBuffer.KeyNumber[0] = (short)(SkeyBuffer.Length);
 
             /// Damage processing + audioBufferData filling
             for (int i = 0; i < SkeyBuffer.Length; i++)
@@ -230,6 +231,9 @@ public partial class WeaponSystem : SystemBase
             {
                 // relased key damage here
             }
+
+            //if (keysBuffer.keyFrenquecies[0] == 0 && keysBuffer.KeyNumber[0]!=0)
+            //    Debug.Log("tetetetet");
 
             /// Write to the audioRingBuffer to be played on the audio thread
             if(!AudioGenerator.audioRingBuffer.IsFull)
