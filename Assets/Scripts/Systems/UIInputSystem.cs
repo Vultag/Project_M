@@ -13,6 +13,8 @@ public partial class UIInputSystem : SystemBase
 
     UIControls input_actions;
 
+    public static bool MouseOverUI;
+
     protected override void OnCreate()
     {
         input_actions = new UIControls();

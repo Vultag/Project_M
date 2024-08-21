@@ -14,6 +14,11 @@ using UnityEditor.Rendering;
 public partial class WeaponSystem : SystemBase
 {
 
+    public static NativeArray<Entity> WeaponEntities;
+
+    /// Useless ? active synth index always 0 ?
+    //public static short activeSynthEntityindex;
+
     public float BeatCooldown;
     private float BeatProximity;
     private float BeatProximityThreshold;
@@ -36,6 +41,11 @@ public partial class WeaponSystem : SystemBase
 
     protected override void OnCreate()
     {
+        WeaponEntities = new NativeArray<Entity>(1,Allocator.Persistent);
+
+        ///GET ACTIVE SYNTH ENTUITY
+        //activeSynthEntity = SystemAPI.GetComponent<PlayerData>(SystemAPI.GetSingletonEntity<PlayerData>()).ActiveCanon;
+
 
         BeatCooldown = MusicUtils.BPM;
         BeatProximityThreshold = 0.08f;
@@ -65,11 +75,11 @@ public partial class WeaponSystem : SystemBase
         BeatProximity = 0.5f - Mathf.Abs(0.5f - (BeatCooldown / MusicUtils.BPM));
 
 
-        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
-        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(SystemAPI.GetSingletonEntity<SynthData>());
+        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[0]);
+        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[0]);
 
         //TO MODIFY
-        var ActiveSynth = SystemAPI.GetSingleton<SynthData>();
+        var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[0]);
 
         ///BAD OPTI ?
         for (int i = 0; i < RkeyBuffer.Length; i++)
@@ -94,16 +104,17 @@ public partial class WeaponSystem : SystemBase
         /// Move to Synth system all together ?
         foreach (var (Wtrans, trans, synth) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>, RefRO<SynthData>>())
         {
-
-            if (!IsShooting)
+            ///OPTI :
+            if (!IsShooting && !UIInputSystem.MouseOverUI)
             {
+
                 mousepos = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
                 Vector2 dir = ((new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)) - (mousepos)).normalized;
 
                 trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
             }
 
-            if (PlayPressed)
+            if (PlayPressed && !UIInputSystem.MouseOverUI)
             {
                 /// FOR SHOOTING TIED TO BEAT
                 //if (BeatProximity < BeatProximityThreshold)
@@ -234,10 +245,16 @@ public partial class WeaponSystem : SystemBase
 
             //if (keysBuffer.keyFrenquecies[0] == 0 && keysBuffer.KeyNumber[0]!=0)
             //    Debug.Log("tetetetet");
+            //if(SkeyBuffer.Length !=0)
+            //    Debug.LogError(SkeyBuffer[0].Direction);
+            //Debug.LogError(keysBuffer.keyFrenquecies[0]);
 
             /// Write to the audioRingBuffer to be played on the audio thread
-            if(!AudioGenerator.audioRingBuffer.IsFull)
+            if (!AudioGenerator.audioRingBuffer.IsFull)
                 AudioGenerator.audioRingBuffer.Write(keysBuffer);
+
+            //Debug.LogError(AudioGenerator.audioRingBuffer.Read().KeyNumber[0]);
+            
 
         }
 

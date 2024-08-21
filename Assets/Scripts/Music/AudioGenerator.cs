@@ -16,17 +16,18 @@ public class AudioGenerator : MonoBehaviour
     [HideInInspector]
     public LineRenderer OscillatorLine;
 
-    [HideInInspector]
-    public Entity WeaponSynthEntity;
-    private NativeArray<KeyData> activeKeys;
-    /* number of keys currently playing for [0]active synth, [1+]playbacks */
-    private NativeArray<int> activeKeyNumber;
+    //[HideInInspector]
+    //public Entity WeaponSynthEntity;
 
-    private NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
+    public NativeArray<SynthData> SynthsData;
+    public NativeArray<KeyData> activeKeys;
+    /* number of keys currently playing for [0]active synth, [1+]playbacks */
+    public NativeArray<int> activeKeyNumber;
+
+    public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
     private NativeArray<PlaybackAudioBundleContext> PlaybackAudioBundlesContext;
 
 
-    private NativeArray<SynthData> SynthsData;
     
 
     private EntityManager entityManager;
@@ -52,12 +53,14 @@ public class AudioGenerator : MonoBehaviour
     private void Start()
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
         //Debug.Log(AudioSettings.outputSampleRate);
         /// TEST
-        for (int i = 0; i < SynthsData.Length; i++)
-        {
-            SynthsData[i] = entityManager.GetComponentData<SynthData>(WeaponSynthEntity);
-        }
+        //SynthsData[0] = entityManager.GetComponentData<SynthData>(WeaponSynthEntity);
+        //for (int i = 0; i < SynthsData.Length; i++)
+        //{
+        //    SynthsData[i] = entityManager.GetComponentData<SynthData>(WeaponSynthEntity);
+        //}
 
     }
 
@@ -70,28 +73,28 @@ public class AudioGenerator : MonoBehaviour
         audioRingBuffer = new AudioRingBuffer<KeysBuffer>(ringBufferCapacity);
         audioRingBuffer.InitializeBuffer(ringBufferCapacity);
 
-        activeKeys = new NativeArray<KeyData>(24, Allocator.Persistent);
-        activeKeyNumber = new NativeArray<int>(2, Allocator.Persistent);
+        //activeKeys = new NativeArray<KeyData>(12, Allocator.Persistent);
+        //activeKeyNumber = new NativeArray<int>(1, Allocator.Persistent);
 
-        /// TEST AUDIO BUNDLE
-        SynthsData = new NativeArray<SynthData>(2, Allocator.Persistent);
+        ///// TEST AUDIO BUNDLE
+        //SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
 
-        PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
-        PlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(1, Allocator.Persistent);
-        for (int i = 0; i < PlaybackAudioBundles.Length; i++)
-        {
-            PlaybackAudioBundle audiobundle = PlaybackAudioBundles[i];
+        //PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        //PlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(1, Allocator.Persistent);
+        //for (int i = 0; i < PlaybackAudioBundles.Length; i++)
+        //{
+        //    PlaybackAudioBundle audiobundle = PlaybackAudioBundles[i];
 
-            audiobundle.PlaybackKeys = new NativeArray<PlaybackKey>(6, Allocator.Persistent);
-            for (int y = 0; y < 6; y++)
-            {
-                audiobundle.PlaybackKeys[y] = new PlaybackKey { frequency = MusicUtils.getNearestKey(80) * (y + 1), time = y * 1f, lenght = 0.5f };
-            }
-            audiobundle.IsLooping = true;
-            audiobundle.PlaybackDuration = 7f;
-            PlaybackAudioBundles[i] = audiobundle;
+        //    audiobundle.PlaybackKeys = new NativeArray<PlaybackKey>(6, Allocator.Persistent);
+        //    for (int y = 0; y < 6; y++)
+        //    {
+        //        audiobundle.PlaybackKeys[y] = new PlaybackKey { frequency = MusicUtils.getNearestKey(80) * (y + 1), time = y * 1f, lenght = 0.5f };
+        //    }
+        //    audiobundle.IsLooping = true;
+        //    audiobundle.PlaybackDuration = 7f;
+        //    PlaybackAudioBundles[i] = audiobundle;
 
-        }
+        //}
 
 
     }
@@ -174,6 +177,8 @@ public class AudioGenerator : MonoBehaviour
         {
             PlayerkeysBuffer = audioRingBuffer.Read();
         }
+
+            //Debug.LogError(PlayerkeysBuffer.keyFrenquecies[0]);
 
         /// gather all the new playback notes in a native array
         TotalKeysBuffer.keyFrenquecies = new NativeArray<float>(PlayerkeysBuffer.KeyNumber[0] + totalNumberOfPlaybackKeys, Allocator.TempJob);
@@ -331,7 +336,6 @@ public class AudioGenerator : MonoBehaviour
             TotalActiveKeyNumber += activeKeyNumber[z];
         }
 
-
         if (TotalActiveKeyNumber < 1)
             return;
 
@@ -344,6 +348,7 @@ public class AudioGenerator : MonoBehaviour
         int ActiveKeysStartIdx = 0;
         for (int i = 0; i < SynthsData.Length; i++)
         {
+            //Debug.LogError(activeKeyNumber[i]);
             for (int y = 0; y < activeKeyNumber[i]; y++)
             {
                 _JobFrequencies[ActiveKeysStartIdx+y] = activeKeys[(i * 12)+y].frequency;

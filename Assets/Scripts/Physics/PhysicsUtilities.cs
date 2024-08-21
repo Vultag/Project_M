@@ -84,6 +84,12 @@ public struct PhysicsUtilities
         // < 0 -> out ; > 0 -> in
         return proximitySquared;
     }
+
+    public static bool PointInsideShape(Vector2 point, AABB shape)
+    {
+        return (shape.LowerBound.x <= point.x && point.x <= shape.UpperBound.x) && (shape.LowerBound.y <= point.y && point.y <= shape.UpperBound.y);
+    }
+
     public static float Intersect(AABB A, Ray B)
     {
         Vector2 dirfrac = new Vector2(1.0f / B.DirLength.x, 1.0f / B.DirLength.y);

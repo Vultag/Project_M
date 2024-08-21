@@ -7,12 +7,14 @@ public struct PlayerData : IComponentData
 {
     public float mouv_speed;
     public Entity ActiveCanon;
+    public Entity WeaponPrefab;
 }
 public class PlayerDataAuthoring : MonoBehaviour
 {
 
     public float mouv_speed;
     public GameObject ActiveCanon;
+    public GameObject WeaponPrefab;
 
     class DelayedDestroyDataBaker : Baker<PlayerDataAuthoring>
     {
@@ -25,7 +27,8 @@ public class PlayerDataAuthoring : MonoBehaviour
             {
 
                 mouv_speed = authoring.mouv_speed,
-                ActiveCanon = GetEntity(authoring.ActiveCanon, TransformUsageFlags.None)
+                ActiveCanon = GetEntity(authoring.ActiveCanon, TransformUsageFlags.None),
+                WeaponPrefab = GetEntity(authoring.WeaponPrefab, TransformUsageFlags.None),
 
             });
         }

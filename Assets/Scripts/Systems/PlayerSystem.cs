@@ -64,7 +64,6 @@ public partial class PlayerSystem : SystemBase
         var moveDirection = input_actions.ActionMap.Mouvements.ReadValue<Vector2>();
 
 
-
         mousePos = input_actions.ActionMap.MousePos.ReadValue<Vector2>();
 
         ///test physics move

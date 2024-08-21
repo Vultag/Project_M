@@ -9,6 +9,10 @@ using UnityEngine.UI;
 
 public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDragHandler
 {
+
+    [SerializeField]
+    AudioGenerator audioGenerator;
+
     [SerializeField]
     SpriteRenderer parameterA;
     [SerializeField]
@@ -26,8 +30,8 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
 
     private float shapeRadius;
 
-    [HideInInspector]
-    public AudioGenerator CurrentSynth;
+    //[HideInInspector]
+    //public AudioGenerator CurrentSynth;
 
     private void Start()
     {
@@ -83,9 +87,9 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         B = B * lenght + ((1f/3f) * (1-lenght));
         float C = 1 - (A + B);
 
-        float temp = Mathf.Abs(0.5f / (Mathf.Cos(((PhysicsUtilities.DirectionToRadians(distance.normalized, -Mathf.PI / 3) + (Mathf.PI / 3)) % (Mathf.PI * 2 / 3)))));
+        //float temp = Mathf.Abs(0.5f / (Mathf.Cos(((PhysicsUtilities.DirectionToRadians(distance.normalized, -Mathf.PI / 3) + (Mathf.PI / 3)) % (Mathf.PI * 2 / 3)))));
 
-        float pole = Mathf.Max(A,B,C);
+        //float pole = Mathf.Max(A,B,C);
 
         float posCutoffFactor = maxdir;
       
@@ -109,18 +113,25 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         parameterC.color = new Color(1 - C, C, 0);
 
 
-
-        SynthData newsynth = entityManager.GetComponentData<SynthData>(CurrentSynth.WeaponSynthEntity);
+        /// activeWeaponSynth in audio manager ?
+        SynthData newsynth = entityManager.GetComponentData<SynthData>(WeaponSystem.WeaponEntities[0]);
 
         newsynth.SinFactor = A;
         newsynth.SquareFactor = B;
         newsynth.SawFactor = C;
 
-        entityManager.SetComponentData<SynthData>(CurrentSynth.WeaponSynthEntity, newsynth);
-
-
+        //entityManager.SetComponentData<SynthData>(WeaponSystem.WeaponEntities[WeaponSystem.activeSynthEntityindex], newsynth);
+        //Debug.Log(WeaponSystem.activeSynthEntityindex);
+        audioGenerator.SynthsData[0] = newsynth;
     }
 
+    public void UpdateSlider(float A,float B, float C)
+    {
+        transform.position = transform.parent.position + new Vector3((shapeRadius * A - shapeRadius * B), shapeRadius*((C-(1f/3f))*1.5f),0);
 
+        parameterA.color = new Color(1 - A, A, 0);
+        parameterB.color = new Color(1 - B, B, 0);
+        parameterC.color = new Color(1 - C, C, 0);
+    }
 
 }
