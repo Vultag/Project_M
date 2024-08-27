@@ -120,9 +120,11 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         newsynth.SquareFactor = B;
         newsynth.SawFactor = C;
 
+        AudioManager.audioGenerator.audioLayoutStorage.WriteModifySynth(newsynth);
+
         //entityManager.SetComponentData<SynthData>(WeaponSystem.WeaponEntities[WeaponSystem.activeSynthEntityindex], newsynth);
         //Debug.Log(WeaponSystem.activeSynthEntityindex);
-        audioGenerator.SynthsData[0] = newsynth;
+        //audioGenerator.SynthsData[0] = newsynth;
     }
 
     public void UpdateSlider(float A,float B, float C)

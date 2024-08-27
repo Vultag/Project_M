@@ -1,6 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using NUnit.Framework;
 using NUnit.Framework.Internal;
+using TMPro;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
@@ -9,6 +12,9 @@ using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
+using Image = UnityEngine.UI.Image;
+using Slider = UnityEngine.UI.Slider;
 
 /*
  Break on window dimention change --> TO FIX
@@ -40,6 +46,9 @@ public class UIManager : MonoBehaviour
     int NumOfSynths = 1;
     int activeSynthIdx = 0;
     RectTransform SynthUIadd_rect;
+    /// index, IsRecording
+    List<(short,bool)> activeSliders;
+
 
     private void Awake()
     {
@@ -53,14 +62,15 @@ public class UIManager : MonoBehaviour
         entityManager = world.EntityManager;
         //Player_query = entityManager.CreateEntityQuery(typeof(PlayerData));
 
-
+        activeSliders = new List<(short, bool)>();
 
         playerControls.Enable();
         canvas = this.gameObject.transform.parent.GetComponent<Canvas>();
 
         ConstructUIsurface();
-        NumOfSynths = SynthToolBar.GetComponentsInChildren<Image>().Length-1;
+        //NumOfSynths = SynthToolBar.GetComponentsInChildren<Button>().Length-1;
         SynthUIadd_rect = SynthToolBar.transform.GetChild(SynthToolBar.transform.childCount-1).GetComponent<RectTransform>();
+
     }
 
 
@@ -77,61 +87,239 @@ public class UIManager : MonoBehaviour
                 break;
             }
         }
+        /// OPTI
+        for (int i = 0; i < activeSliders.Count; i++)
+        {
+            Slider slider = SynthToolBar.transform.GetChild(activeSliders[i].Item1).gameObject.GetComponentInChildren<Slider>();
+            slider.value += Time.deltaTime;
+            if(slider.value + Time.deltaTime> slider.maxValue)
+            {
+                /// Recording
+                if(activeSliders[i].Item2)
+                {
+                    slider.value = 0;
+                    activeSliders.RemoveAt(i);
+                    /// activate Play and Rec button GB
+                    SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
+                    SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
+                    /// Deactivate Stop button GB
+                    SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+                }
+                /// Playing
+                else
+                {
+                    slider.value = (slider.value + Time.deltaTime - slider.maxValue);
+                }
+            }
+        }
+        /// UPDATE SLIDERS
+
     }
 
     public void _SelectSynthUI(int index)
     {
+        if (index == activeSynthIdx)
+            return;
 
-        SynthToolBar.transform.GetChild(activeSynthIdx).GetComponent<Image>().color = Color.white;
-        SynthToolBar.transform.GetChild(index).GetComponent<Image>().color = Color.black;
+        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+
+        if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
+            _StopPlayback(activeSynthIdx);
+
+        /// activate Rec button GB for new synth and deactivate for the old one
+        SynthToolBar.transform.GetChild(index).GetChild(2).GetChild(0).gameObject.SetActive(true);
+        SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
+
+        SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(0).GetComponent<Image>().color = Color.white;
+        SynthToolBar.transform.GetChild(index).GetChild(0).GetComponent<Image>().color = Color.black;
         activeSynthIdx = index;
 
-        audioManager.SelectSynth(index,NumOfSynths);
+        audioManager.SelectSynth(index);
 
         UpdateSynthUI();
     }
     public void _AddSynthUI()
     {
-        SynthToolBar.transform.GetChild(NumOfSynths).gameObject.SetActive(true);
+        var synthUI = SynthToolBar.transform.GetChild(NumOfSynths).gameObject;
+        synthUI.SetActive(true);
+        synthUI.GetComponentInChildren<TextMeshProUGUI>().text = "Synth " + (NumOfSynths+1);
+
         NumOfSynths++;
         SynthUIadd_rect.position = SynthToolBar.transform.GetChild(NumOfSynths).GetComponent<RectTransform>().position;
 
         audioManager.AddSynth(NumOfSynths);
-
-
-        //Entity player_entity = Player_query.GetSingletonEntity();
-        //Entity new_weapon = entityManager.Instantiate(entityManager.GetComponentData<PlayerData>(player_entity).WeaponPrefab);
-        //// Add the Parent component to the child entity to set the singleton as its parent
-        //entityManager.AddComponentData(new_weapon, new Parent { Value = player_entity });
-        //// Add the LocalToWorld component to the child entity to ensure its position is calculated correctly
-        //entityManager.AddComponentData(new_weapon, new LocalToWorld { Value = float4x4.identity });
-
-
-        //NativeArray<SynthData> newSynthsData = new NativeArray<SynthData>(NumOfSynths, Allocator.Persistent);
-        //NativeArray<KeyData> newActiveKeys = new NativeArray<KeyData>(NumOfSynths*12, Allocator.Persistent);
-        //NativeArray<int> newActiveKeyNumber = new NativeArray<int>(NumOfSynths, Allocator.Persistent);
-        //newSynthsData.CopyFrom(AudioGenerator.SynthsData);
-        //newActiveKeys.CopyFrom(AudioGenerator.activeKeys);
-        //newActiveKeyNumber.CopyFrom(AudioGenerator.activeKeyNumber);
-        //newSynthsData[NumOfSynths - 1] = entityManager.GetComponentData<SynthData>(new_weapon);
-        //AudioGenerator.SynthsData.Dispose();
-        //AudioGenerator.activeKeys.Dispose();
-        //AudioGenerator.activeKeyNumber.Dispose();
-        //AudioGenerator.SynthsData = newSynthsData;
-        //AudioGenerator.activeKeys = newActiveKeys;
-        //AudioGenerator.activeKeyNumber = newActiveKeyNumber;
-
 
         if (NumOfSynths == MaxSynthNum) { SynthUIadd_rect.gameObject.SetActive(false); }
     }
 
     void UpdateSynthUI()
     {
-        var synthData = audioManager.AudioGenerator.SynthsData[0];
+        var synthData = AudioManager.audioGenerator.SynthsData[activeSynthIdx];
 
         simplexSlider.UpdateSlider(synthData.SinFactor, synthData.SquareFactor,synthData.SawFactor);
 
     }
+
+    public void _RecordPlayback()
+    {
+
+
+        var slider = SynthToolBar.transform.GetChild(activeSynthIdx).gameObject.GetComponentInChildren<Slider>();
+        //var newColor = new Color { a = 1, r = (207 / 256), g = (207 / 256), b = (207 / 256) };
+        slider.value = 0;
+        /// PUT RECORDING LENGHT FIX
+        slider.maxValue = 2f;
+        ///change slider background color
+        slider.gameObject.transform.GetChild(0).GetComponent<Image>().color = Color.white;
+        ///change slider color
+        slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.red;
+        activeSliders.Add(((short)activeSynthIdx,true));
+
+
+        var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
+
+        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+
+        /// If the the Current playback of the synth is playing, stop it
+        for (int i = 1; i < AudioManager.audioGenerator.activeSynthsIdx.Length; i++)
+        {
+            if (AudioManager.audioGenerator.activeSynthsIdx[i] == activeSynthIdx)
+            {
+                _StopPlayback(activeSynthIdx);
+            }
+        }
+
+        /// Deactivate Rec button GB
+        SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
+        /// Deactivate Play button GB
+        SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
+        /// Activate Stop button GB
+        SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
+
+
+        if (!entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
+        {
+            var playbackRecordingData = new PlaybackRecordingData{
+                duration = 2,
+                synthIndex = activeSynthIdx,
+                time = 0
+            };
+            ecb.AddComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
+            ecb.AddBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
+            PlaybackRecordSystem.ClickPressed = false;
+            PlaybackRecordSystem.ClickReleased = false;
+        }
+    }
+    public void _ActivatePlayback(int synthIdx)
+    {
+
+        /// Prevent play on empty playback
+        if (AudioManager.audioGenerator.PlaybackAudioBundles[synthIdx].PlaybackDuration == 0)
+            return;
+
+        /// Prevent from having a synth with more than 1 playback
+        for (int i = 1; i < AudioManager.audioGenerator.activeSynthsIdx.Length; i++)
+        {
+            if (AudioManager.audioGenerator.activeSynthsIdx[i] == synthIdx)
+            {
+                return;
+            }
+        }
+
+
+        /// Deactivate Play button GB
+        SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
+        /// Activate Stop button GB
+        SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
+
+        var slider = SynthToolBar.transform.GetChild(synthIdx).gameObject.GetComponentInChildren<Slider>();
+        slider.value = 0;
+        /// PUT RECORDING LENGHT FIX
+        slider.maxValue = 2f;
+        ///change slider color
+        slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.green;
+        activeSliders.Add(((short)synthIdx, false));
+
+        AudioManager.audioGenerator.audioLayoutStorage.WriteActivation(synthIdx, true);
+
+
+    }
+    public void _StopPlayback(int synthIdx)
+    {
+        ///prevent activation if no playback playing
+
+        /// Activate Play button GB
+        SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
+        /// Deactivate Stop button GB
+        SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+
+        var slider = SynthToolBar.transform.GetChild(synthIdx).gameObject.GetComponentInChildren<Slider>();
+        slider.value = 0;
+
+        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+        /// The playback is curently recording 
+        if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
+        {
+            //Debug.Log("stop on record");
+
+            /// PUT RECORDING LENGHT FIX
+            slider.maxValue = 2f;
+            ///change slider color
+            slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.green;
+            for (int i = 0; i < activeSliders.Count; i++)
+            {
+                if (activeSliders[i].Item1 == synthIdx)
+                {
+                    activeSliders.RemoveAt(i);
+                    break;
+                }
+            }
+
+
+            var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
+
+            PlaybackRecordingData runningPlaybackData = new PlaybackRecordingData();
+            runningPlaybackData = entityManager.GetComponentData<PlaybackRecordingData>(weapon_entity);
+            var keyBuffer = entityManager.GetBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
+
+            var playbackKeys = new NativeArray<PlaybackKey>(keyBuffer.Length, Allocator.Persistent);
+            playbackKeys.CopyFrom(keyBuffer.AsNativeArray().Reinterpret<PlaybackKey>());
+
+            AudioManager.audioGenerator.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
+            {
+                IsLooping = true,
+                //IsPlaying = false,
+                PlaybackDuration = runningPlaybackData.time,
+                PlaybackKeys = playbackKeys
+            },synthIdx);
+
+
+            ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(weapon_entity);
+            ecb.RemoveComponent<PlaybackRecordingData>(weapon_entity);
+        }
+        /// The playback is running
+        else
+        {
+            //Debug.Log("stop on playback");
+
+            for (int i = 0; i < activeSliders.Count; i++)
+            {
+                if (activeSliders[i].Item1 == synthIdx)
+                {
+                    activeSliders.RemoveAt(i);
+                    break;
+                }
+            }
+
+            /// Activate Rec button GB
+            SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
+
+            AudioManager.audioGenerator.audioLayoutStorage.WriteActivation(synthIdx, false);
+
+        }
+     
+    }
+
 
 
 

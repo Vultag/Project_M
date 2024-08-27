@@ -11,7 +11,11 @@ using UnityEngine;
 
 public class AudioGenerator : MonoBehaviour
 {
-    //const int DSPbufferSize = 512;
+    /// const int DSPbufferSize = 512;
+
+    public AudioLayoutStorage audioLayoutStorage;
+    //public bool AudioLayoutUpdateRequired = false;
+
 
     [HideInInspector]
     public LineRenderer OscillatorLine;
@@ -19,25 +23,19 @@ public class AudioGenerator : MonoBehaviour
     //[HideInInspector]
     //public Entity WeaponSynthEntity;
 
+    /// 2 Differents SynthData storage : on weapon entities & here -> OPTI ?
     public NativeArray<SynthData> SynthsData;
+
     public NativeArray<KeyData> activeKeys;
-    /* number of keys currently playing for [0]active synth, [1+]playbacks */
     public NativeArray<int> activeKeyNumber;
+    public NativeArray<int> activeSynthsIdx;
 
     public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
-    private NativeArray<PlaybackAudioBundleContext> PlaybackAudioBundlesContext;
+    public NativeArray<PlaybackAudioBundleContext> PlaybackAudioBundlesContext;
 
 
-    
 
     private EntityManager entityManager;
-     
-    //private float amplitude;
-    //private float frequency;
-    //private float SinFactor;
-    //private float SawFactor;
-    //private float SquareFactor;
-    //private bool audiojobCompleted;
 
     private NativeArray<float> _audioData;
     public static JobHandle _Audiojobhandle;
@@ -48,11 +46,12 @@ public class AudioGenerator : MonoBehaviour
 
     private const int NumChannels = 1; // Mono audio
 
-    const float DeltaTime = 512f / 48000f;
+    const float DeltaTime = 258f / 48000f;
 
     private void Start()
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+
 
         //Debug.Log(AudioSettings.outputSampleRate);
         /// TEST
@@ -70,6 +69,7 @@ public class AudioGenerator : MonoBehaviour
         _audioData = new NativeArray<float>(512, Allocator.Persistent);
         //audiojobCompleted = false; 
         int ringBufferCapacity = 4;
+        audioLayoutStorage = new AudioLayoutStorage();
         audioRingBuffer = new AudioRingBuffer<KeysBuffer>(ringBufferCapacity);
         audioRingBuffer.InitializeBuffer(ringBufferCapacity);
 
@@ -134,33 +134,178 @@ public class AudioGenerator : MonoBehaviour
     private void OnAudioFilterRead(float[] data, int channels)
     {
 
+        /// Jobify ?
+        if (audioLayoutStorage.UpdateRequirement)
+        {
+            if(audioLayoutStorage.AddSynthUpdateRequirement)
+            {
+                var newSynthsData = new NativeArray<SynthData>(SynthsData.Length+1, Allocator.Persistent);
+                var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
+
+                for (int i = 0; i < SynthsData.Length; i++)
+                {
+                    newSynthsData[i] = SynthsData[i];
+                    newPlaybackBundle[i] = PlaybackAudioBundles[i];
+                }
+                //SynthsData.CopyTo(newSynthsData);
+                newSynthsData[SynthsData.Length] = audioLayoutStorage.ReadAddSynth();
+                SynthsData.Dispose();
+                PlaybackAudioBundles.Dispose();
+                SynthsData = newSynthsData;
+                PlaybackAudioBundles = newPlaybackBundle;
+
+            }
+            if(audioLayoutStorage.SelectSynthUpdateRequirement)
+            {
+                var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length, Allocator.Persistent);
+                activeSynthsIdx.CopyTo(newActiveSynthsIdx);
+                newActiveSynthsIdx[0] = audioLayoutStorage.ReadSelectSynth();
+                activeSynthsIdx.Dispose();
+                activeSynthsIdx = newActiveSynthsIdx;
+            }
+            if(audioLayoutStorage.ModifySynthUpdateRequirement)
+            {
+                SynthsData[activeSynthsIdx[0]] = audioLayoutStorage.ReadModifySynth();
+            }
+            if (audioLayoutStorage.PlaybackUpdateRequirement)
+            {
+
+                var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+                PlaybackAudioBundles.CopyTo(newPlaybackBundle);
+                newPlaybackBundle[audioLayoutStorage.synthPlaybackIdx] = audioLayoutStorage.ReadPlayback();
+                PlaybackAudioBundles.Dispose();
+                PlaybackAudioBundles = newPlaybackBundle;
+
+                //PlaybackAudioBundlesContext = newPlaybackBundleContext;
+            }
+            if(audioLayoutStorage.ActivationUpdateRequirement)
+            {
+                var activation = audioLayoutStorage.ReadActivation();
+
+                /// expand the arrays for Playbackkeys to audio
+                if (activation.Item2 == true)
+                {
+                    //Debug.Log("play");
+
+                    var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length + 1) *12, Allocator.Persistent);
+                    var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length+1, Allocator.Persistent);
+                    var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length+1, Allocator.Persistent);
+                    var newActivePlaybackContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundlesContext.Length+1, Allocator.Persistent);
+                    for (int i = 0; i < activeKeyNumber.Length; i++)
+                    {
+                        for (int y = 0; y < 12; y++)
+                        {
+                            newActiveKeys[(i * 12) + y] = activeKeys[(i * 12) + y];
+                        }
+                        newActiveKeyNumber[i] = activeKeyNumber[i];
+                        newActiveSynthsIdx[i] = activeSynthsIdx[i];
+                    }
+                    for (int i = 0; i < PlaybackAudioBundlesContext.Length; i++)
+                    {
+                        newActivePlaybackContext[i] = PlaybackAudioBundlesContext[i];
+                    }
+
+                    newActiveSynthsIdx[newActiveSynthsIdx.Length-1] = activation.Item1;
+                    activeKeys.Dispose();
+                    activeKeyNumber.Dispose();
+                    activeSynthsIdx.Dispose();
+                    PlaybackAudioBundlesContext.Dispose();
+                    activeKeys = newActiveKeys;
+                    activeKeyNumber = newActiveKeyNumber;
+                    activeSynthsIdx = newActiveSynthsIdx;
+                    PlaybackAudioBundlesContext = newActivePlaybackContext;
+
+                }
+                /// Collapse the arrays for Playbackkeys to audio
+                else
+                {
+                    var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length-1) * 12, Allocator.Persistent);
+                    var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length-1, Allocator.Persistent);
+                    var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length-1, Allocator.Persistent);
+                    var newActivePlaybackContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundlesContext.Length-1, Allocator.Persistent);
+
+                    //Debug.Log("collapse");
+
+                    /// 1 synth is the active one and permanent
+                    newActiveKeyNumber[0] = activeKeyNumber[0];
+                    newActiveSynthsIdx[0] = activeSynthsIdx[0];
+                    for (int i = 0; i < 12; i++)
+                    {
+                        newActiveKeys[i]= activeKeys[i];
+                    }
+
+                    int indexProgress = 1;
+                    for (; indexProgress < newActiveKeyNumber.Length; indexProgress++)
+                    {
+                        if (audioLayoutStorage.synthActivationIdx == activeSynthsIdx[indexProgress])
+                            break;
+                        newActiveKeyNumber[indexProgress] = activeKeyNumber[indexProgress];
+                        newActiveSynthsIdx[indexProgress] = activeSynthsIdx[indexProgress];
+                        newActivePlaybackContext[indexProgress-1] = PlaybackAudioBundlesContext[indexProgress-1];
+                        for (int y = 0; y < 12; y++)
+                        {
+                            newActiveKeys[(indexProgress * 12)+y] = activeKeys[(indexProgress * 12) + y];
+                        }
+                    }
+                    for (; indexProgress < newActiveKeyNumber.Length; indexProgress++)
+                    {
+                        newActiveKeyNumber[indexProgress] = activeKeyNumber[indexProgress+1];
+                        newActiveSynthsIdx[indexProgress] = activeSynthsIdx[indexProgress+1];
+                        newActivePlaybackContext[indexProgress-1] = PlaybackAudioBundlesContext[indexProgress-1 + 1];
+                        for (int y = 0; y < 12; y++)
+                        {
+                            newActiveKeys[(indexProgress * 12) + y] = activeKeys[((indexProgress+1) * 12) + y];
+                        }
+                    }
+
+
+                    activeKeys.Dispose();
+                    activeKeyNumber.Dispose();
+                    activeSynthsIdx.Dispose();
+                    PlaybackAudioBundlesContext.Dispose();
+                    activeKeys = newActiveKeys;
+                    activeKeyNumber = newActiveKeyNumber;
+                    activeSynthsIdx = newActiveSynthsIdx;
+                    PlaybackAudioBundlesContext = newActivePlaybackContext;
+                }
+            }
+
+
+            audioLayoutStorage.UpdateRequirement = false;
+        }
+
+
+
+
         NativeList<short> ActiveplaybackKeysNumberList = new NativeList<short>(Allocator.Temp);
         NativeList<float> ActiveplaybackKeysFzList = new NativeList<float>(Allocator.Temp);
 
         ///get the number of total keys. create a Narray of that size. Fill values
         int totalNumberOfPlaybackKeys = 0;
-        for (int i = 0; i < PlaybackAudioBundles.Length; i++)
+        for (int i = 0; i < PlaybackAudioBundlesContext.Length; i++)
         {
-
+            int playbackAudioBundlesIdx = activeSynthsIdx[i+1];
             int playbackIndex = 0;
 
-            playbackIndex += (i > 0) ? PlaybackAudioBundles[i - 1].PlaybackKeys.Length : 0;
+            //playbackIndex += (i > 0) ? PlaybackAudioBundles[activeSynthsIdx[i]].PlaybackKeys.Length : 0;
             playbackIndex += PlaybackAudioBundlesContext[i].PlaybackKeyStartIndex;
 
-            while (playbackIndex < PlaybackAudioBundles[i].PlaybackKeys.Length
-                && PlaybackAudioBundles[i].PlaybackKeys[playbackIndex].time < PlaybackAudioBundlesContext[i].PlaybackTime
-                && PlaybackAudioBundles[i].PlaybackKeys[playbackIndex].time + PlaybackAudioBundles[i].PlaybackKeys[playbackIndex].lenght > PlaybackAudioBundlesContext[i].PlaybackTime)
+            while (playbackIndex < PlaybackAudioBundles[playbackAudioBundlesIdx].PlaybackKeys.Length
+                && PlaybackAudioBundles[playbackAudioBundlesIdx].PlaybackKeys[playbackIndex].time < PlaybackAudioBundlesContext[i].PlaybackTime
+                && PlaybackAudioBundles[playbackAudioBundlesIdx].PlaybackKeys[playbackIndex].time + PlaybackAudioBundles[playbackAudioBundlesIdx].PlaybackKeys[playbackIndex].lenght > PlaybackAudioBundlesContext[i].PlaybackTime)
             {
-                ActiveplaybackKeysFzList.Add(PlaybackAudioBundles[i].PlaybackKeys[playbackIndex].frequency);
+                ActiveplaybackKeysFzList.Add(PlaybackAudioBundles[playbackAudioBundlesIdx].PlaybackKeys[playbackIndex].frequency);
                 playbackIndex++;
             }
 
-            playbackIndex -= (i > 0) ? PlaybackAudioBundles[i - 1].PlaybackKeys.Length : 0;
+            //playbackIndex -= (i > 0) ? PlaybackAudioBundles[activeSynthsIdx[i]].PlaybackKeys.Length : 0;
             playbackIndex -= PlaybackAudioBundlesContext[i].PlaybackKeyStartIndex;
 
             ActiveplaybackKeysNumberList.Add((short)playbackIndex);
             totalNumberOfPlaybackKeys += playbackIndex;
 
+            //not needed anymore ?
+            //if(PlaybackAudioBundles[playbackAudioBundlesIdx].IsPlaying)
             PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = PlaybackAudioBundlesContext[i].PlaybackKeyStartIndex, PlaybackTime = PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime };
         }
 
@@ -178,11 +323,11 @@ public class AudioGenerator : MonoBehaviour
             PlayerkeysBuffer = audioRingBuffer.Read();
         }
 
-            //Debug.LogError(PlayerkeysBuffer.keyFrenquecies[0]);
+        //Debug.LogError(PlayerkeysBuffer.keyFrenquecies[0]);
 
         /// gather all the new playback notes in a native array
         TotalKeysBuffer.keyFrenquecies = new NativeArray<float>(PlayerkeysBuffer.KeyNumber[0] + totalNumberOfPlaybackKeys, Allocator.TempJob);
-        TotalKeysBuffer.KeyNumber = new NativeArray<short>(1 + PlaybackAudioBundles.Length, Allocator.TempJob);
+        TotalKeysBuffer.KeyNumber = new NativeArray<short>(activeSynthsIdx.Length, Allocator.TempJob);
 
         ///fill the native array with the data
         TotalKeysBuffer.KeyNumber[0] = PlayerkeysBuffer.KeyNumber[0];
@@ -202,7 +347,7 @@ public class AudioGenerator : MonoBehaviour
 
         int TotalActiveKeyNumber = 0;
 
-        /// Check for player keys that oath to be released and new keys for playerKeys to be copyied to ActiveKeys
+        /// Check for player keys that oath to be released and new keys for playerKeys to be copyied to ActiveKeys. OPTI ?
         {
 
             NativeSlice<float> keysBufferSlice = new NativeSlice<float>(TotalKeysBuffer.keyFrenquecies, 0, TotalKeysBuffer.KeyNumber[0]);
@@ -227,15 +372,17 @@ public class AudioGenerator : MonoBehaviour
                     if (activeKeys[y].amplitudeAtRelease != 0)
                         continue;
 
-                    float releaseAmplitude;
-                    if (activeKeys[y].delta < SynthsData[0].ADSR.Attack)
-                        releaseAmplitude = (activeKeys[y].delta / SynthsData[0].ADSR.Attack) * SynthsData[0].amplitude;
-                    else if (activeKeys[y].delta < SynthsData[0].ADSR.Attack + SynthsData[0].ADSR.Decay)
-                        releaseAmplitude = SynthsData[0].amplitude - (((activeKeys[y].delta - SynthsData[0].ADSR.Attack) / SynthsData[0].ADSR.Decay) * (1 - SynthsData[0].ADSR.Sustain) * SynthsData[0].amplitude);
-                    else
-                        releaseAmplitude = SynthsData[0].ADSR.Sustain * SynthsData[0].amplitude;
+                    int synthidx = activeSynthsIdx[0];
 
-                    activeKeys[y] = new KeyData { frequency = activeKeys[y].frequency, delta = SynthsData[0].ADSR.Attack + SynthsData[0].ADSR.Decay, phase = activeKeys[y].phase, amplitudeAtRelease = releaseAmplitude + 0.0001f /*make sure the key is considered released*/ };
+                    float releaseAmplitude;
+                    if (activeKeys[y].delta < SynthsData[synthidx].ADSR.Attack)
+                        releaseAmplitude = (activeKeys[y].delta / SynthsData[synthidx].ADSR.Attack) * SynthsData[synthidx].amplitude;
+                    else if (activeKeys[y].delta < SynthsData[synthidx].ADSR.Attack + SynthsData[synthidx].ADSR.Decay)
+                        releaseAmplitude = SynthsData[synthidx].amplitude - (((activeKeys[y].delta - SynthsData[synthidx].ADSR.Attack) / SynthsData[synthidx].ADSR.Decay) * (1 - SynthsData[synthidx].ADSR.Sustain) * SynthsData[synthidx].amplitude);
+                    else
+                        releaseAmplitude = SynthsData[synthidx].ADSR.Sustain * SynthsData[synthidx].amplitude;
+
+                    activeKeys[y] = new KeyData { frequency = activeKeys[y].frequency, delta = SynthsData[synthidx].ADSR.Attack + SynthsData[synthidx].ADSR.Decay, phase = activeKeys[y].phase, amplitudeAtRelease = releaseAmplitude + 0.0001f /*make sure the key is considered released*/ };
 
                 }
             }
@@ -264,7 +411,7 @@ public class AudioGenerator : MonoBehaviour
 
 
         /// Check for player keys that oath to be released and new keys for each PlaybackAudioBundles to be copyied to ActiveKeys
-        for (int i = 0; i < PlaybackAudioBundles.Length; i++)
+        for (int i = 0; i < PlaybackAudioBundlesContext.Length; i++)
         {
             int z = (i + 1);
             NativeSlice<float> keysBufferSlice = new NativeSlice<float>(TotalKeysBuffer.keyFrenquecies, TotalKeysBuffer.KeyNumber[i], TotalKeysBuffer.KeyNumber[z]);
@@ -293,23 +440,25 @@ public class AudioGenerator : MonoBehaviour
                     if (ActiveKeysSlice[y].amplitudeAtRelease != 0)
                         continue;
 
-                    float releaseAmplitude;
-                    if (ActiveKeysSlice[y].delta < SynthsData[z].ADSR.Attack)
-                        releaseAmplitude = (ActiveKeysSlice[y].delta / SynthsData[z].ADSR.Attack) * SynthsData[z].amplitude;
-                    else if (ActiveKeysSlice[y].delta < SynthsData[z].ADSR.Attack + SynthsData[z].ADSR.Decay)
-                        releaseAmplitude = SynthsData[z].amplitude - (((ActiveKeysSlice[y].delta - SynthsData[z].ADSR.Attack) / SynthsData[z].ADSR.Decay) * (1 - SynthsData[z].ADSR.Sustain) * SynthsData[z].amplitude);
-                    else
-                        releaseAmplitude = SynthsData[z].ADSR.Sustain * SynthsData[z].amplitude;
+                    int synthidx = activeSynthsIdx[z];
 
-                    ActiveKeysSlice[y] = new KeyData { frequency = ActiveKeysSlice[y].frequency, delta = SynthsData[z].ADSR.Attack + SynthsData[z].ADSR.Decay, phase = ActiveKeysSlice[y].phase, amplitudeAtRelease = releaseAmplitude + 0.00001f /*make sure the key is considered released*/ };
+                    float releaseAmplitude;
+                    if (ActiveKeysSlice[y].delta < SynthsData[synthidx].ADSR.Attack)
+                        releaseAmplitude = (ActiveKeysSlice[y].delta / SynthsData[synthidx].ADSR.Attack) * SynthsData[synthidx].amplitude;
+                    else if (ActiveKeysSlice[y].delta < SynthsData[synthidx].ADSR.Attack + SynthsData[synthidx].ADSR.Decay)
+                        releaseAmplitude = SynthsData[synthidx].amplitude - (((ActiveKeysSlice[y].delta - SynthsData[synthidx].ADSR.Attack) / SynthsData[synthidx].ADSR.Decay) * (1 - SynthsData[synthidx].ADSR.Sustain) * SynthsData[synthidx].amplitude);
+                    else
+                        releaseAmplitude = SynthsData[synthidx].ADSR.Sustain * SynthsData[synthidx].amplitude;
+
+                    ActiveKeysSlice[y] = new KeyData { frequency = ActiveKeysSlice[y].frequency, delta = SynthsData[synthidx].ADSR.Attack + SynthsData[synthidx].ADSR.Decay, phase = ActiveKeysSlice[y].phase, amplitudeAtRelease = releaseAmplitude + 0.00001f /*make sure the key is considered released*/ };
 
                     PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = PlaybackAudioBundlesContext[i].PlaybackKeyStartIndex +1, PlaybackTime = PlaybackAudioBundlesContext[i].PlaybackTime};
                 }
             }
             /// the playback will finish within this DSPBufferSize -> loop or ?...
-            if (PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime > PlaybackAudioBundles[i].PlaybackDuration)
+            if (PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime > PlaybackAudioBundles[activeSynthsIdx[i+1]].PlaybackDuration)
             {
-                PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime - PlaybackAudioBundles[i].PlaybackDuration };
+                PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime - PlaybackAudioBundles[activeSynthsIdx[i+1]].PlaybackDuration };
             }
             /// Check if there are new note played and add it to the activeKeys array
             int overwriteKeysNum = 0;
@@ -339,15 +488,20 @@ public class AudioGenerator : MonoBehaviour
         if (TotalActiveKeyNumber < 1)
             return;
 
+        //Debug.Log(TotalActiveKeyNumber);
 
         ///activeKeys elemets cropped, rdy to be processed
         NativeArray<float> _JobFrequencies = new NativeArray<float>(TotalActiveKeyNumber, Allocator.TempJob);
         NativeArray<float> _JobPhases = new NativeArray<float>(TotalActiveKeyNumber, Allocator.TempJob);
         NativeArray<float> _JobDeltas = new NativeArray<float>(TotalActiveKeyNumber, Allocator.TempJob);
+        NativeArray<SynthData> _JobSynths = new NativeArray<SynthData>(activeSynthsIdx.Length, Allocator.TempJob);
+
 
         int ActiveKeysStartIdx = 0;
-        for (int i = 0; i < SynthsData.Length; i++)
+        for (int i = 0; i < activeSynthsIdx.Length; i++)
         {
+            _JobSynths[i] = SynthsData[activeSynthsIdx[i]];
+
             //Debug.LogError(activeKeyNumber[i]);
             for (int y = 0; y < activeKeyNumber[i]; y++)
             {
@@ -360,7 +514,8 @@ public class AudioGenerator : MonoBehaviour
 
         AudioJob audioJob = new AudioJob(
             _sampleRate,
-            SynthsData,
+
+            _JobSynths,
             activeKeys,
             _JobFrequencies,
             _JobPhases,
@@ -384,10 +539,22 @@ public class AudioGenerator : MonoBehaviour
         _audioData.Dispose();
     }
 
-    void UpdateOscillatorDisplay()
-    {
+    //public void SetPlayBack(PlaybackAudioBundle playback, int index)
+    //{
 
-    }
+    //    var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+    //    var newPlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundles.Length, Allocator.Persistent);
+
+    //    PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
+    //    newPlaybackAudioBundles[index] = playback;
+    //    PlaybackAudioBundlesContext.CopyTo(newPlaybackAudioBundlesContext);
+
+    //    PlaybackAudioBundles.Dispose();
+    //    PlaybackAudioBundlesContext.Dispose();
+
+    //    PlaybackAudioBundles = newPlaybackAudioBundles;
+    //    PlaybackAudioBundlesContext = newPlaybackAudioBundlesContext;
+    //}
 
 
 }
@@ -400,7 +567,8 @@ public struct AudioJob : IJob
     private float _sampleRate;
 
     [ReadOnly]
-    private NativeArray<SynthData> _synthsdata;
+    [DeallocateOnJobCompletion]
+    private NativeArray<SynthData> _JobSynths;
 
     private NativeArray<KeyData> _KeyData;
 
@@ -431,7 +599,7 @@ public struct AudioJob : IJob
         NativeArray<int> activeKeynum
        )
     {
-        _synthsdata = synthsdata;
+        _JobSynths = synthsdata;
         _KeyData = KeyData;
         _sampleRate = sampleRate;
         _JobFrequencies = JobFrequencies;
@@ -458,9 +626,9 @@ public struct AudioJob : IJob
         NativeArray<ADSRlayouts> KeysADSRlayouts = new NativeArray<ADSRlayouts>(_JobFrequencies.Length, Allocator.Temp);
 
         int activeKeyStartidx = 0;
-        for (int i = 0; i < _synthsdata.Length; i++)
+        for (int i = 0; i < _activeKeynum.Length; i++)
         {
-            ADSREnvelope ADSR = _synthsdata[i].ADSR;
+            ADSREnvelope ADSR = _JobSynths[i].ADSR;
 
             for (int y = 0; y < _activeKeynum[i]; y++)
             {
@@ -502,9 +670,9 @@ public struct AudioJob : IJob
 
         float value;
         activeKeyStartidx = 0;
-        for (int i = 0; i < _synthsdata.Length; i++)
+        for (int i = 0; i < _activeKeynum.Length; i++)
         {
-            ADSREnvelope ADSR = _synthsdata[i].ADSR;
+            ADSREnvelope ADSR = _JobSynths[i].ADSR;
 
             for (int y = activeKeyStartidx; y < activeKeyStartidx + _activeKeynum[i]; y++)
             {
@@ -517,10 +685,10 @@ public struct AudioJob : IJob
                 {
                     float phase = _JobPhases[y];
 
-                    float effectiveAmplitude = (_JobDeltas[y] / ADSR.Attack) * _synthsdata[i].amplitude;
+                    float effectiveAmplitude = (_JobDeltas[y] / ADSR.Attack) * _JobSynths[i].amplitude;
                     _JobDeltas[y] += deltaIncrement;
 
-                    value = ((MusicUtils.Sin(phase) * _synthsdata[i].SinFactor) + (MusicUtils.Saw(phase) * _synthsdata[i].SawFactor) + (MusicUtils.Square(phase) * _synthsdata[i].SquareFactor)) * effectiveAmplitude;
+                    value = ((MusicUtils.Sin(phase) * _JobSynths[i].SinFactor) + (MusicUtils.Saw(phase) * _JobSynths[i].SawFactor) + (MusicUtils.Square(phase) * _JobSynths[i].SquareFactor)) * effectiveAmplitude;
                     _JobPhases[y] = (_JobPhases[y] + phaseIncrement[y]) % 1;
 
                     /// populate all channels with the values
@@ -535,11 +703,11 @@ public struct AudioJob : IJob
                 {
                     float phase = _JobPhases[y];
 
-                    float effectiveAmplitude = _synthsdata[i].amplitude - ((((_JobDeltas[y] - ADSR.Attack) / ADSR.Decay) * (1 - ADSR.Sustain)) * _synthsdata[i].amplitude);
+                    float effectiveAmplitude = _JobSynths[i].amplitude - ((((_JobDeltas[y] - ADSR.Attack) / ADSR.Decay) * (1 - ADSR.Sustain)) * _JobSynths[i].amplitude);
 
                     _JobDeltas[y] += deltaIncrement;
 
-                    value = ((MusicUtils.Sin(phase) * _synthsdata[i].SinFactor) + (MusicUtils.Saw(phase) * _synthsdata[i].SawFactor) + (MusicUtils.Square(phase) * _synthsdata[i].SquareFactor)) * effectiveAmplitude;
+                    value = ((MusicUtils.Sin(phase) * _JobSynths[i].SinFactor) + (MusicUtils.Saw(phase) * _JobSynths[i].SawFactor) + (MusicUtils.Square(phase) * _JobSynths[i].SquareFactor)) * effectiveAmplitude;
                     _JobPhases[y] = (_JobPhases[y] + phaseIncrement[y]) % 1;
 
                     /// populate all channels with the values
@@ -554,11 +722,11 @@ public struct AudioJob : IJob
                 {
                     float phase = _JobPhases[y];
 
-                    float effectiveAmplitude = ADSR.Sustain * _synthsdata[i].amplitude;
+                    float effectiveAmplitude = ADSR.Sustain * _JobSynths[i].amplitude;
 
                     _JobDeltas[y] = ADSR.Attack + ADSR.Decay;
 
-                    value = ((MusicUtils.Sin(phase) * _synthsdata[i].SinFactor) + (MusicUtils.Saw(phase) * _synthsdata[i].SawFactor) + (MusicUtils.Square(phase) * _synthsdata[i].SquareFactor)) * effectiveAmplitude;
+                    value = ((MusicUtils.Sin(phase) * _JobSynths[i].SinFactor) + (MusicUtils.Saw(phase) * _JobSynths[i].SawFactor) + (MusicUtils.Square(phase) * _JobSynths[i].SquareFactor)) * effectiveAmplitude;
                     _JobPhases[y] = (_JobPhases[y] + phaseIncrement[y]) % 1;
 
                     /// populate all channels with the values
@@ -577,7 +745,7 @@ public struct AudioJob : IJob
                     float effectiveAmplitude = (1 - ((_JobDeltas[y] - (ADSR.Attack + ADSR.Decay)) / ADSR.Release)) * _KeyData[(i*12)+(y - activeKeyStartidx)].amplitudeAtRelease;
                     _JobDeltas[y] += deltaIncrement;
 
-                    value = ((MusicUtils.Sin(phase) * _synthsdata[i].SinFactor) + (MusicUtils.Saw(phase) * _synthsdata[i].SawFactor) + (MusicUtils.Square(phase) * _synthsdata[i].SquareFactor)) * effectiveAmplitude;
+                    value = ((MusicUtils.Sin(phase) * _JobSynths[i].SinFactor) + (MusicUtils.Saw(phase) * _JobSynths[i].SawFactor) + (MusicUtils.Square(phase) * _JobSynths[i].SquareFactor)) * effectiveAmplitude;
                     _JobPhases[y] = (_JobPhases[y] + phaseIncrement[y]) % 1;
 
                     /// populate all channels with the values
@@ -593,10 +761,10 @@ public struct AudioJob : IJob
 
         ///Nullify keys that finished playing from the activeKeys array and collapse it to keep it continuous
         activeKeyStartidx = 0;
-        for (int i = 0; i < _synthsdata.Length; i++)
+        for (int i = 0; i < _JobSynths.Length; i++)
         {
             int newkeysNum = 0;
-            ADSREnvelope ADSR = _synthsdata[i].ADSR;
+            ADSREnvelope ADSR = _JobSynths[i].ADSR;
             int remainingActiveKeys = _activeKeynum[i];
 
             for (int y = 0; y < _activeKeynum[i]; y++)

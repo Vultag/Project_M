@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 [System.Serializable]
 public struct ADSREnvelope
@@ -54,7 +55,23 @@ public struct ReleasedKeyBufferData : IBufferElementData
 unsafe
 public struct SynthData : IComponentData
 {
-
+    // Default values initializer
+    public static SynthData CreateDefault()
+    {
+        return new SynthData {
+            amplitude = 0.2f,
+            SinFactor = 1f / 3f,
+            SawFactor = 1f / 3f,
+            SquareFactor = 1f / 3f,
+            ADSR = new ADSREnvelope
+            {
+                Attack = 0.1f,
+                Decay = 2,
+                Sustain = 0.5f,
+                Release = 1
+            }
+        };
+    }
     public float amplitude;
 
     public float SinFactor;

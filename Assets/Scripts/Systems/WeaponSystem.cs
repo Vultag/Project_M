@@ -36,6 +36,9 @@ public partial class WeaponSystem : SystemBase
     public Vector2 mousepos;
     private bool IsShooting;
 
+    //private bool IsRecording;
+    //private NativeList<PlaybackKey> PlayKeys;
+
     private NativeArray<float> Rythms;
 
 
@@ -185,6 +188,8 @@ public partial class WeaponSystem : SystemBase
                         else
                             newDeltaFactor = (1 - synth.ValueRO.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay), 0, 1f);//1 - Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay * synth.ValueRO.ADSR.Sustain), 0, 1f);
                     }
+
+                    ///if playbackrecord-> 
 
                     RkeyBuffer.Add(new ReleasedKeyBufferData { Direction = SkeyBuffer[PlayedKeyIndex].Direction, Delta = newDeltaFactor * synth.ValueRO.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
                     SkeyBuffer.RemoveAt(PlayedKeyIndex);

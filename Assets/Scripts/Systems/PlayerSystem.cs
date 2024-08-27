@@ -88,10 +88,12 @@ public partial class PlayerSystem : SystemBase
 
     private void OnPlayerShoot(CallbackContext context)
     {
-
+        ///OPTI -> Activate 1 PlayPressed for all here and switch it at the end of the frame ?
         bool IsShooting = input_actions.ActionMap.Shoot.IsPressed();
         WeaponSystem.PlayPressed = IsShooting;
         WeaponSystem.PlayReleased = !IsShooting;
+        PlaybackRecordSystem.ClickPressed = IsShooting;
+        PlaybackRecordSystem.ClickReleased = !IsShooting;
 
 
     }

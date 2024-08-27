@@ -29,11 +29,13 @@ public struct PlaybackKey
 }
 public struct PlaybackAudioBundle
 {
+    //make sure to dispose
     public NativeArray<PlaybackKey> PlaybackKeys;
     //public int PlaybackKeyStartIndex;
     public float PlaybackDuration;
     public bool IsLooping;
-    //public float PlaybackTime;
+    // not needed ?
+    //public bool IsPlaying;
 }
 public struct PlaybackAudioBundleContext
 {
