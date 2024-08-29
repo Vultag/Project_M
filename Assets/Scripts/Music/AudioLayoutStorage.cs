@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
+using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 
 
@@ -12,15 +13,25 @@ using UnityEngine;
 /// 
 /// </summary>
 
+// Create a static class to hold the shared AudioLayoutStorage struct
+public static class AudioLayoutStorageHolder
+{
+    public static AudioLayoutStorage audioLayoutStorage;
+}
+
 public struct AudioLayoutStorage
 {
 
     /// store synths / playbacks ?
 
     // PRIVATize SOME STUFF !
+    ///change synthdata component to index value here?
+    public NativeArray<SynthData> SynthsData;
+    public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
+    public static int activeSynthIdx;
 
-    public SynthData NewSynthsData;
-    public PlaybackAudioBundle NewPlaybackAudioBundles;
+    public SynthData NewSynthData;
+    public PlaybackAudioBundle NewPlaybackAudioBundle;
     public int synthPlaybackIdx;
     public int synthActivationIdx;
 
@@ -35,10 +46,23 @@ public struct AudioLayoutStorage
     public bool ActivationUpdateRequirement;
     private bool ActivationState;
 
-    public void WriteAddSynth(SynthData newSynthsData)
+    public void WriteAddSynth(SynthData newSynthData)
     {
-        NewSynthsData = newSynthsData;
-        //WritePlayback(new PlaybackAudioBundle(), PlaybackIdxtoRemplace);
+        NewSynthData = newSynthData;
+        var newSynthsData = new NativeArray<SynthData>(SynthsData.Length + 1, Allocator.Persistent);
+        var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length + 1, Allocator.Persistent);
+        for (int i = 0; i < SynthsData.Length; i++)
+        {
+            newSynthsData[i] = SynthsData[i];
+            newPlaybackAudioBundles[i] = PlaybackAudioBundles[i];
+            //PlaybackAudioBundles[i].PlaybackKeys.Dispose();
+        }
+        newSynthsData[newSynthsData.Length-1] = NewSynthData;
+        SynthsData.Dispose();
+        PlaybackAudioBundles.Dispose();
+        SynthsData = newSynthsData;
+        PlaybackAudioBundles = newPlaybackAudioBundles;
+
         UpdateRequirement = true;
         AddSynthUpdateRequirement = true;
     }
@@ -48,15 +72,31 @@ public struct AudioLayoutStorage
         UpdateRequirement = true;
         SelectSynthUpdateRequirement = true;
     }
-    public void WriteModifySynth(SynthData newSynthsData)
+    public void WriteModifySynth(SynthData newSynthData)
     {
-        NewSynthsData = newSynthsData;
+        var newSynthsData = new NativeArray<SynthData>(SynthsData.Length, Allocator.Persistent);
+        SynthsData.CopyTo(newSynthsData);
+        newSynthsData[activeSynthIdx] = NewSynthData;
+        SynthsData.Dispose();
+        SynthsData = newSynthsData;
+
+        NewSynthData = newSynthData;
         UpdateRequirement = true;
         ModifySynthUpdateRequirement = true;
     }
-    public void WritePlayback(PlaybackAudioBundle newPlaybackAudioBundles, int synthIdx)
+    public void WritePlayback(PlaybackAudioBundle newPlaybackAudioBundle, int synthIdx)
     {
-        NewPlaybackAudioBundles = newPlaybackAudioBundles;
+        NewPlaybackAudioBundle = newPlaybackAudioBundle;
+        var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+        PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
+        newPlaybackAudioBundles[synthIdx] = newPlaybackAudioBundle;
+        //for (int i = 0; i < PlaybackAudioBundles.Length; i++)
+        //{
+        //    PlaybackAudioBundles[i].PlaybackKeys.Dispose();
+        //}
+        PlaybackAudioBundles.Dispose();
+        PlaybackAudioBundles = newPlaybackAudioBundles;
+
         synthPlaybackIdx = synthIdx;
         UpdateRequirement = true;
         PlaybackUpdateRequirement = true;
@@ -78,7 +118,7 @@ public struct AudioLayoutStorage
     public SynthData ReadAddSynth()
     {
         AddSynthUpdateRequirement = false;
-        return NewSynthsData;
+        return NewSynthData;
     }
     public int ReadSelectSynth()
     {
@@ -88,12 +128,12 @@ public struct AudioLayoutStorage
     public SynthData ReadModifySynth()
     {
         ModifySynthUpdateRequirement = false;
-        return NewSynthsData;
+        return NewSynthData;
     }
     public PlaybackAudioBundle ReadPlayback()
     {
         PlaybackUpdateRequirement = false;
-        return NewPlaybackAudioBundles;
+        return NewPlaybackAudioBundle;
     }
     public (int, bool) ReadActivation()
     {

@@ -121,6 +121,8 @@ public class UIManager : MonoBehaviour
         if (index == activeSynthIdx)
             return;
 
+        AudioLayoutStorage.activeSynthIdx = index;
+
         Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
 
         if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
@@ -168,7 +170,7 @@ public class UIManager : MonoBehaviour
         //var newColor = new Color { a = 1, r = (207 / 256), g = (207 / 256), b = (207 / 256) };
         slider.value = 0;
         /// PUT RECORDING LENGHT FIX
-        slider.maxValue = 2f;
+        slider.maxValue = audioManager.TEMPplaybackDuration;
         ///change slider background color
         slider.gameObject.transform.GetChild(0).GetComponent<Image>().color = Color.white;
         ///change slider color
@@ -200,15 +202,28 @@ public class UIManager : MonoBehaviour
         if (!entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
         {
             var playbackRecordingData = new PlaybackRecordingData{
-                duration = 2,
+                duration = audioManager.TEMPplaybackDuration,
                 synthIndex = activeSynthIdx,
                 time = 0
             };
+
             ecb.AddComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
             ecb.AddBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
             PlaybackRecordSystem.ClickPressed = false;
             PlaybackRecordSystem.ClickReleased = false;
         }
+        //else
+        //{
+        //    var playbackRecordingData = new PlaybackRecordingData
+        //    {
+        //        duration = audioManager.TEMPplaybackDuration,
+        //        synthIndex = activeSynthIdx,
+        //        time = 0
+        //    };
+        //    ecb.SetComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
+        //    PlaybackRecordSystem.ClickPressed = false;
+        //    PlaybackRecordSystem.ClickReleased = false;
+        //}
     }
     public void _ActivatePlayback(int synthIdx)
     {
@@ -235,12 +250,20 @@ public class UIManager : MonoBehaviour
         var slider = SynthToolBar.transform.GetChild(synthIdx).gameObject.GetComponentInChildren<Slider>();
         slider.value = 0;
         /// PUT RECORDING LENGHT FIX
-        slider.maxValue = 2f;
+        //slider.maxValue = audioManager.TEMPplaybackDuration;
         ///change slider color
         slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.green;
         activeSliders.Add(((short)synthIdx, false));
 
-        AudioManager.audioGenerator.audioLayoutStorage.WriteActivation(synthIdx, true);
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, true);
+
+        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+
+        var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
+
+        PlaybackData playbackData = new PlaybackData { PlaybackIndex = synthIdx};
+
+        ecb.AddComponent<PlaybackData>(weapon_entity, playbackData);
 
 
     }
@@ -257,13 +280,16 @@ public class UIManager : MonoBehaviour
         slider.value = 0;
 
         Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+        var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
         /// The playback is curently recording 
         if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
         {
             //Debug.Log("stop on record");
 
-            /// PUT RECORDING LENGHT FIX
-            slider.maxValue = 2f;
+            PlaybackRecordingData runningPlaybackData = new PlaybackRecordingData();
+            runningPlaybackData = entityManager.GetComponentData<PlaybackRecordingData>(weapon_entity);
+
+            slider.maxValue = runningPlaybackData.time;
             ///change slider color
             slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.green;
             for (int i = 0; i < activeSliders.Count; i++)
@@ -276,16 +302,13 @@ public class UIManager : MonoBehaviour
             }
 
 
-            var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
-            PlaybackRecordingData runningPlaybackData = new PlaybackRecordingData();
-            runningPlaybackData = entityManager.GetComponentData<PlaybackRecordingData>(weapon_entity);
             var keyBuffer = entityManager.GetBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
 
             var playbackKeys = new NativeArray<PlaybackKey>(keyBuffer.Length, Allocator.Persistent);
             playbackKeys.CopyFrom(keyBuffer.AsNativeArray().Reinterpret<PlaybackKey>());
 
-            AudioManager.audioGenerator.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
+            AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
             {
                 IsLooping = true,
                 //IsPlaying = false,
@@ -314,7 +337,9 @@ public class UIManager : MonoBehaviour
             /// Activate Rec button GB
             SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
 
-            AudioManager.audioGenerator.audioLayoutStorage.WriteActivation(synthIdx, false);
+            AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, false);
+
+            ecb.RemoveComponent<PlaybackData>(weapon_entity);
 
         }
      

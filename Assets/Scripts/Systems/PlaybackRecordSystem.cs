@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MusicNamespace;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Entities.UniversalDelegates;
 using Unity.Transforms;
 using UnityEngine;
 
@@ -56,7 +57,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 {
                     accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer{ playbackRecordingKey = new PlaybackKey
                     {
-                        frequency = accumulator[accumulator.Length - 1].playbackRecordingKey.frequency,
+                        dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
                         time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
                         lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time
                     }};
@@ -71,7 +72,7 @@ public partial class PlaybackRecordSystem : SystemBase
                     //float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));
                     //int note = MusicUtils.radiansToNote(randian);
 
-                    accumulator.Add(new PlaybackRecordingKeysBuffer { playbackRecordingKey = new PlaybackKey { frequency = MusicUtils.DirectionToFrequency(direction), time = recordData.ValueRO.time } });
+                    accumulator.Add(new PlaybackRecordingKeysBuffer { playbackRecordingKey = new PlaybackKey { dir = direction, time = recordData.ValueRO.time } });
                     keyActive = true;
                     ClickPressed = false;
                 }
@@ -82,7 +83,7 @@ public partial class PlaybackRecordSystem : SystemBase
                     {
                         playbackRecordingKey = new PlaybackKey
                         {
-                            frequency = accumulator[accumulator.Length - 1].playbackRecordingKey.frequency,
+                            dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
                             time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
                             lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time
                         }
@@ -103,7 +104,7 @@ public partial class PlaybackRecordSystem : SystemBase
                     {
                         playbackRecordingKey = new PlaybackKey
                         {
-                            frequency = accumulator[accumulator.Length - 1].playbackRecordingKey.frequency,
+                            dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
                             time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
                             lenght = recordData.ValueRO.duration - accumulator[accumulator.Length - 1].playbackRecordingKey.time
                         }
@@ -115,7 +116,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
                 var playbackKeys = new NativeArray<PlaybackKey>(accumulator.Length,Allocator.Persistent);
                 playbackKeys.CopyFrom(accumulator.AsNativeArray().Reinterpret<PlaybackKey>());
-                AudioManager.audioGenerator.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
+                AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
                 {
                     IsLooping = true,
                     //IsPlaying = false,

@@ -22,7 +22,8 @@ public struct KeysBuffer
 }
 public struct PlaybackKey
 {
-    public float frequency;
+    //public float frequency;
+    public Vector2 dir;
     public float time;
     public float lenght;
 

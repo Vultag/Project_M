@@ -78,6 +78,7 @@ public partial class PlayerSystem : SystemBase
 
         if (modeSwitchCD < 0)
         {
+            Debug.Log("mode change");
             WeaponSystem.mode = (MusicUtils.MusicalMode)Mathf.Abs((int)WeaponSystem.mode - UnityEngine.Random.Range(1,5));
             OnUpdateMode(WeaponSystem.mode.ToString(), "C4");
             modeSwitchCD = modeSwitchBaseCD;

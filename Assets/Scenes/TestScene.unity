@@ -394,6 +394,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ab48ab94b8f13044c813f2d3073ded0a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  TEMPplaybackDuration: 0
   OscillatorLine: {fileID: 683660718}
   waveformSlider: {fileID: 1434762584}
 --- !u!4 &140865813

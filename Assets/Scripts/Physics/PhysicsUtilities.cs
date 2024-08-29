@@ -186,5 +186,11 @@ public struct PhysicsUtilities
         return (Mathf.Sign(radians) * Mathf.PI) - (radians);
     }
 
+    // Converts an angle in radians to a direction vector in 2D space
+    public static Vector2 RadianToDirection2D(float radians)
+    {
+        return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+    }
+
 
 }

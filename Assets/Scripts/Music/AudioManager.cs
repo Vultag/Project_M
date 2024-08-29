@@ -22,6 +22,8 @@ public class AudioManager : MonoBehaviour
     private short activeWeaponIDX;
 
     public static AudioGenerator audioGenerator;
+    //private AudioLayoutStorage audioLayoutStorage;
+    public float TEMPplaybackDuration;
 
     //[SerializeField]
     //private GameObject AudioGeneratorPrefab;
@@ -36,6 +38,7 @@ public class AudioManager : MonoBehaviour
     //EntityQuery _query;
     void Start()
     {
+        TEMPplaybackDuration = 4f;
 
         audioGenerator = Object.FindAnyObjectByType<AudioGenerator>();
 
@@ -52,6 +55,8 @@ public class AudioManager : MonoBehaviour
         audioGenerator.activeSynthsIdx = new NativeArray<int>(1, Allocator.Persistent);
         audioGenerator.SynthsData[0] = entityManager.GetComponentData<SynthData>(start_weapon);
         audioGenerator.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
         //audioGenerator.PlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(1, Allocator.Persistent);
         WeaponSystem.WeaponEntities[0] = start_weapon;
 
@@ -112,7 +117,7 @@ public class AudioManager : MonoBehaviour
         ecb.AddComponent<ActiveSynthTag>(WeaponSystem.WeaponEntities[activeWeaponIDX]);
 
 
-        audioGenerator.audioLayoutStorage.WriteSelectSynth(index);
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteSelectSynth(index);
 
 
 
@@ -139,7 +144,7 @@ public class AudioManager : MonoBehaviour
         // Add the LocalToWorld component to the child entity to ensure its position is calculated correctly
         ecb.AddComponent(new_weapon, new LocalToWorld { Value = float4x4.identity });
 
-        audioGenerator.audioLayoutStorage.WriteAddSynth(SynthData.CreateDefault());
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteAddSynth(SynthData.CreateDefault());
 
 
     }
