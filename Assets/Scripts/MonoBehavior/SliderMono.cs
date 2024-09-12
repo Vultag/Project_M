@@ -39,7 +39,6 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         Ascale = parameterA.transform.localScale.x;
         Bscale = parameterB.transform.localScale.x;
         Cscale = parameterC.transform.localScale.x;
-
     }
 
     private void Awake()

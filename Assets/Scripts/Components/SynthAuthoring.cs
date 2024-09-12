@@ -36,7 +36,8 @@ public struct ADSRlayouts
 //internal buffer capacity
 public struct SustainedKeyBufferData: IBufferElementData
 {
-    public Vector2 Direction;
+    public Vector2 DirLenght;
+    public Vector2 EffectiveDirLenght;
     public float Delta;
     public float Phase;
     public float currentAmplitude;
@@ -45,7 +46,8 @@ public struct SustainedKeyBufferData: IBufferElementData
 //internal buffer capacity
 public struct ReleasedKeyBufferData : IBufferElementData
 {
-    public Vector2 Direction;
+    public Vector2 DirLenght;
+    public Vector2 EffectiveDirLenght;
     public float Delta;
     public float Phase;
     public float currentAmplitude;

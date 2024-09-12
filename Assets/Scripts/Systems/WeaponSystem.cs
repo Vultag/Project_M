@@ -41,14 +41,17 @@ public partial class WeaponSystem : SystemBase
 
     private NativeArray<float> Rythms;
 
+    //private MaterialPropertyBlock _propertyBlock;
 
     protected override void OnCreate()
     {
+
+        //_propertyBlock = new MaterialPropertyBlock();
+
+
+
+
         WeaponEntities = new NativeArray<Entity>(1,Allocator.Persistent);
-
-        ///GET ACTIVE SYNTH ENTUITY
-        //activeSynthEntity = SystemAPI.GetComponent<PlayerData>(SystemAPI.GetSingletonEntity<PlayerData>()).ActiveCanon;
-
 
         BeatCooldown = MusicUtils.BPM;
         BeatProximityThreshold = 0.08f;
@@ -87,22 +90,23 @@ public partial class WeaponSystem : SystemBase
         ///BAD OPTI ?
         for (int i = 0; i < RkeyBuffer.Length; i++)
         {
-            float newDelta = RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
-            if (newDelta > ActiveSynth.ADSR.Release)
+            //float newDelta = RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
+            if (RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime > ActiveSynth.ADSR.Release)
             {
                 RkeyBuffer.RemoveAt(i);
             }
             else
             {
-                RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, Direction = RkeyBuffer[i].Direction, Phase = RkeyBuffer[i].Phase, currentAmplitude = RkeyBuffer[i].currentAmplitude};
+                //RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, Direction = RkeyBuffer[i].Direction, Phase = RkeyBuffer[i].Phase, currentAmplitude = 1-(newDelta / ActiveSynth.ADSR.Release) };
             }
         }
-        for (int i = 0; i < SkeyBuffer.Length; i++)
-        {
-            SkeyBuffer[i] = new SustainedKeyBufferData { Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, Direction = SkeyBuffer[i].Direction, Phase = SkeyBuffer[i].Phase, currentAmplitude = SkeyBuffer[i].currentAmplitude };
-            //if (SkeyBuffer[i].Delta > ActiveSynth.ADSR.Attack+1.5f)
-            //    Debug.Break();
-        }
+        //for (int i = 0; i < SkeyBuffer.Length; i++)
+        //{
+        //    float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
+        //    SkeyBuffer[i] = new SustainedKeyBufferData { Delta = newDelta, Direction = SkeyBuffer[i].Direction, Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta<ActiveSynth.ADSR.Attack?newDelta/ ActiveSynth.ADSR.Attack:1f };
+        //    //if (SkeyBuffer[i].Delta > ActiveSynth.ADSR.Attack+1.5f)
+        //    //    Debug.Break();
+        //}
 
         /// Move to Synth system all together ?
         foreach (var (Wtrans, trans, synth) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>, RefRO<SynthData>>())
@@ -132,7 +136,7 @@ public partial class WeaponSystem : SystemBase
 
                     for (i = 0; i < RkeyBuffer.Length; i++)
                     {
-                        int bufferNote = MusicUtils.radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].Direction)));
+                        int bufferNote = MusicUtils.radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght)));
                         if (bufferNote == note)
                         {
                             noteExist = 2;
@@ -143,7 +147,7 @@ public partial class WeaponSystem : SystemBase
                     {
                         //add to play buffer
                         PlayedKeyIndex = SkeyBuffer.Length;
-                        SkeyBuffer.Add(new SustainedKeyBufferData { Direction = direction, Delta = 0, Phase = 0 });
+                        SkeyBuffer.Add(new SustainedKeyBufferData { DirLenght = direction, EffectiveDirLenght = direction, Delta = 0, Phase = 0 });
                     }
                     else
                     {
@@ -157,7 +161,7 @@ public partial class WeaponSystem : SystemBase
                         {
                             //add to play buffer
                             PlayedKeyIndex = SkeyBuffer.Length;
-                            SkeyBuffer.Add(new SustainedKeyBufferData { Direction = direction, Delta = 0 , Phase = RkeyBuffer[i].Phase, currentAmplitude = RkeyBuffer[i].currentAmplitude });
+                            SkeyBuffer.Add(new SustainedKeyBufferData { DirLenght = direction,EffectiveDirLenght = direction, Delta = 0 , Phase = RkeyBuffer[i].Phase, currentAmplitude = RkeyBuffer[i].currentAmplitude });
                             /// Set its delta to fade up to the new one ? (similar to synthorial)
                             RkeyBuffer.RemoveAt(i);
                         }
@@ -191,7 +195,7 @@ public partial class WeaponSystem : SystemBase
 
                     ///if playbackrecord-> 
 
-                    RkeyBuffer.Add(new ReleasedKeyBufferData { Direction = SkeyBuffer[PlayedKeyIndex].Direction, Delta = newDeltaFactor * synth.ValueRO.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
+                    RkeyBuffer.Add(new ReleasedKeyBufferData { DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght, Delta = newDeltaFactor * synth.ValueRO.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
                     SkeyBuffer.RemoveAt(PlayedKeyIndex);
                 }
                 IsShooting = false;
@@ -205,24 +209,26 @@ public partial class WeaponSystem : SystemBase
             KeysBuffer keysBuffer = new KeysBuffer { keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), KeyNumber = new NativeArray<short>(1, Allocator.Temp) };
             keysBuffer.KeyNumber[0] = (short)(SkeyBuffer.Length);
 
-            /// Damage processing + audioBufferData filling
+            /// Damage processing + Delta/amplitude incrementing + audioBufferData filling
             for (int i = 0; i < SkeyBuffer.Length; i++)
             {
-                keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(SkeyBuffer[i].Direction);
+                keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(SkeyBuffer[i].DirLenght);
 
-                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y),DirLength=SkeyBuffer[i].Direction }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y),DirLength=SkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+
+                float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
 
                 if (Hit.entity != Entity.Null)
                 {
                     //Debug.Log(Hit.distance);
-                    ///Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].Direction, Color.green, SystemAPI.Time.DeltaTime);
-
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, SystemAPI.GetComponent<CircleShapeData>(Hit.entity).Position, Color.red, SystemAPI.Time.DeltaTime);
-                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].Direction.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
+                   // hit line
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
+                    
+                    SkeyBuffer[i] = new SustainedKeyBufferData { Delta = newDelta, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance/ SkeyBuffer[i].DirLenght.magnitude), Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : 1f };
 
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
-                    newMonsterData.Health -= 100f* SystemAPI.Time.DeltaTime;
+                    newMonsterData.Health -= 3f* SystemAPI.Time.DeltaTime;
 
                     if (newMonsterData.Health > 0)
                     {
@@ -238,14 +244,63 @@ public partial class WeaponSystem : SystemBase
                 }
                 else
                 {
-                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].Direction, Color.green, SystemAPI.Time.DeltaTime);
+
+                    SkeyBuffer[i] = new SustainedKeyBufferData { Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : 1f };
+
+
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].DirLenght, Color.white, SystemAPI.Time.DeltaTime);
 
                 }
 
             }
             for (int i = 0; i < RkeyBuffer.Length; i++)
             {
-                // relased key damage here
+
+                float newDelta = RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
+                if (newDelta > ActiveSynth.ADSR.Release)
+                {
+                    RkeyBuffer.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), DirLength = RkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+
+                if (Hit.entity != Entity.Null)
+                {
+                    //Debug.Log(Hit.distance);
+                    // hit line
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (RkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
+
+                    RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, EffectiveDirLenght = RkeyBuffer[i].DirLenght * (Hit.distance / RkeyBuffer[i].DirLenght.magnitude), Phase = RkeyBuffer[i].Phase, currentAmplitude = 1 - (newDelta / ActiveSynth.ADSR.Release) };
+
+                    MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
+                    newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
+
+                    if (newMonsterData.Health > 0)
+                    {
+                        //Debug.Log(newMonsterData.Health);
+                        SystemAPI.SetComponent<MonsterData>(Hit.entity, newMonsterData);
+                    }
+                    else
+                    {
+                        //Debug.Log("ded");
+                        PhysicsCalls.DestroyPhysicsEntity(ECB, Hit.entity);
+                    }
+
+                }
+                else
+                {
+
+                    RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, EffectiveDirLenght = RkeyBuffer[i].DirLenght, Phase = RkeyBuffer[i].Phase, currentAmplitude = 1 - (newDelta / ActiveSynth.ADSR.Release) };
+
+
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + RkeyBuffer[i].DirLenght, new Color(1,1,1,), SystemAPI.Time.DeltaTime);
+
+                }
+
+
+
             }
 
             //if (keysBuffer.keyFrenquecies[0] == 0 && keysBuffer.KeyNumber[0]!=0)

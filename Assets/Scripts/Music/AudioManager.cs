@@ -54,6 +54,7 @@ public class AudioManager : MonoBehaviour
         audioGenerator.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         audioGenerator.activeSynthsIdx = new NativeArray<int>(1, Allocator.Persistent);
         audioGenerator.SynthsData[0] = entityManager.GetComponentData<SynthData>(start_weapon);
+        //audioGenerator.SynthsData[0] = SynthData.CreateDefault();
         audioGenerator.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
