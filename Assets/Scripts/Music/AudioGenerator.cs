@@ -52,6 +52,7 @@ public class AudioGenerator : MonoBehaviour
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired = new NativeQueue<int>(Allocator.Persistent);
 
         //Debug.Log(AudioSettings.outputSampleRate);
         /// TEST
@@ -134,6 +135,21 @@ public class AudioGenerator : MonoBehaviour
     unsafe
     private void OnAudioFilterRead(float[] data, int channels)
     {
+
+        while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Count > 0)
+        {
+
+            int i = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Dequeue();
+            // backward way to find the index of the playbackcontext to reset from the playback index
+            int y = 1;
+            for (; y < activeSynthsIdx.Length; y++)
+            {
+                if (activeSynthsIdx[y] == i)
+                    break;
+            }
+            PlaybackAudioBundlesContext[y-1] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = 0 };
+            activeKeyNumber[y] = 0;
+        }
 
         /// Jobify ?
         if (AudioLayoutStorageHolder.audioLayoutStorage.UpdateRequirement)
@@ -280,9 +296,7 @@ public class AudioGenerator : MonoBehaviour
             AudioLayoutStorageHolder.audioLayoutStorage.UpdateRequirement = false;
         }
 
-
-
-
+     
         NativeList<short> ActiveplaybackKeysNumberList = new NativeList<short>(Allocator.Temp);
         NativeList<float> ActiveplaybackKeysFzList = new NativeList<float>(Allocator.Temp);
 
@@ -417,10 +431,12 @@ public class AudioGenerator : MonoBehaviour
 
 
         /// Check for player keys that oath to be released and new keys for each PlaybackAudioBundles to be copyied to ActiveKeys
+        int plabackSliceStartIndex = 0;
         for (int i = 0; i < PlaybackAudioBundlesContext.Length; i++)
         {
             int z = (i + 1);
-            NativeSlice<float> keysBufferSlice = new NativeSlice<float>(TotalKeysBuffer.keyFrenquecies, TotalKeysBuffer.KeyNumber[i], TotalKeysBuffer.KeyNumber[z]);
+            plabackSliceStartIndex += TotalKeysBuffer.KeyNumber[i];
+            NativeSlice<float> keysBufferSlice = new NativeSlice<float>(TotalKeysBuffer.keyFrenquecies, plabackSliceStartIndex, TotalKeysBuffer.KeyNumber[z]);
             /* FIX IF KEY CAPACITY IS NOT 12 */
             NativeSlice<KeyData> ActiveKeysSlice = new NativeSlice<KeyData>(activeKeys, z * 12, activeKeyNumber[z]);
 
@@ -461,11 +477,7 @@ public class AudioGenerator : MonoBehaviour
                     PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = PlaybackAudioBundlesContext[i].PlaybackKeyStartIndex +1, PlaybackTime = PlaybackAudioBundlesContext[i].PlaybackTime};
                 }
             }
-            /// the playback will finish within this DSPBufferSize -> loop or ?...
-            if (PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime > PlaybackAudioBundles[activeSynthsIdx[i+1]].PlaybackDuration)
-            {
-                PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = PlaybackAudioBundlesContext[i].PlaybackTime + DeltaTime - PlaybackAudioBundles[activeSynthsIdx[i+1]].PlaybackDuration };
-            }
+       
             /// Check if there are new note played and add it to the activeKeys array
             int overwriteKeysNum = 0;
             for (int y = 0; y < TotalKeysBuffer.KeyNumber[z]; y++)
@@ -502,6 +514,7 @@ public class AudioGenerator : MonoBehaviour
         NativeArray<float> _JobDeltas = new NativeArray<float>(TotalActiveKeyNumber, Allocator.TempJob);
         NativeArray<SynthData> _JobSynths = new NativeArray<SynthData>(activeSynthsIdx.Length, Allocator.TempJob);
 
+        //Debug.Log(activeSynthsIdx.Length);
 
         int ActiveKeysStartIdx = 0;
         for (int i = 0; i < activeSynthsIdx.Length; i++)
@@ -545,22 +558,6 @@ public class AudioGenerator : MonoBehaviour
         _audioData.Dispose();
     }
 
-    //public void SetPlayBack(PlaybackAudioBundle playback, int index)
-    //{
-
-    //    var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
-    //    var newPlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundles.Length, Allocator.Persistent);
-
-    //    PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
-    //    newPlaybackAudioBundles[index] = playback;
-    //    PlaybackAudioBundlesContext.CopyTo(newPlaybackAudioBundlesContext);
-
-    //    PlaybackAudioBundles.Dispose();
-    //    PlaybackAudioBundlesContext.Dispose();
-
-    //    PlaybackAudioBundles = newPlaybackAudioBundles;
-    //    PlaybackAudioBundlesContext = newPlaybackAudioBundlesContext;
-    //}
 
 
 }
@@ -785,6 +782,7 @@ public struct AudioJob : IJob
                 }
                 else
                 {
+                    //int z = (i * 12) + y; ??
                     int z = fullKeyIdx;
                     for (; z < fullKeyIdx + (_activeKeynum[i]- y); z++)
                     {

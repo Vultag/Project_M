@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static UnityEngine.EventSystems.EventTrigger;
 using Image = UnityEngine.UI.Image;
 using Slider = UnityEngine.UI.Slider;
 
@@ -209,8 +210,14 @@ public class UIManager : MonoBehaviour
 
             ecb.AddComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
             ecb.AddBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
+          
             PlaybackRecordSystem.ClickPressed = false;
             PlaybackRecordSystem.ClickReleased = false;
+        }
+        if (entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
+        {
+            entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(weapon_entity).Clear();
+            entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(weapon_entity).Clear();
         }
         //else
         //{
@@ -257,7 +264,7 @@ public class UIManager : MonoBehaviour
 
         AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, true);
 
-        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+        Entity weapon_entity = WeaponSystem.WeaponEntities[synthIdx];
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
@@ -265,6 +272,11 @@ public class UIManager : MonoBehaviour
 
         ecb.AddComponent<PlaybackData>(weapon_entity, playbackData);
 
+        if (!entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
+        {
+            ecb.AddBuffer<PlaybackSustainedKeyBufferData>(weapon_entity);
+            ecb.AddBuffer<PlaybackReleasedKeyBufferData>(weapon_entity);
+        }
 
     }
     public void _StopPlayback(int synthIdx)
@@ -279,8 +291,16 @@ public class UIManager : MonoBehaviour
         var slider = SynthToolBar.transform.GetChild(synthIdx).gameObject.GetComponentInChildren<Slider>();
         slider.value = 0;
 
-        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+        Entity weapon_entity = WeaponSystem.WeaponEntities[synthIdx];
+
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
+
+        if (entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
+        {
+            ecb.RemoveComponent<PlaybackSustainedKeyBufferData>(weapon_entity);
+            ecb.RemoveComponent<PlaybackReleasedKeyBufferData>(weapon_entity);
+        }
+
         /// The playback is curently recording 
         if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
         {
@@ -319,6 +339,7 @@ public class UIManager : MonoBehaviour
 
             ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(weapon_entity);
             ecb.RemoveComponent<PlaybackRecordingData>(weapon_entity);
+       
         }
         /// The playback is running
         else

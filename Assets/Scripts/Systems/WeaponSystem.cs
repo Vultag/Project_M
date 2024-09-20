@@ -46,11 +46,6 @@ public partial class WeaponSystem : SystemBase
     protected override void OnCreate()
     {
 
-        //_propertyBlock = new MaterialPropertyBlock();
-
-
-
-
         WeaponEntities = new NativeArray<Entity>(1,Allocator.Persistent);
 
         BeatCooldown = MusicUtils.BPM;
@@ -81,11 +76,14 @@ public partial class WeaponSystem : SystemBase
         BeatProximity = 0.5f - Mathf.Abs(0.5f - (BeatCooldown / MusicUtils.BPM));
 
 
-        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[0]);
-        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[0]);
+
+        //Entity weapon_entity = AudioManager.ActiveWeapon_query.GetSingletonEntity();
+
+        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
+        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         //TO MODIFY
-        var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[0]);
+        var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         ///BAD OPTI ?
         for (int i = 0; i < RkeyBuffer.Length; i++)
@@ -190,10 +188,8 @@ public partial class WeaponSystem : SystemBase
                         if (synth.ValueRO.ADSR.Decay == 0)
                             newDeltaFactor = synth.ValueRO.ADSR.Sustain;
                         else
-                            newDeltaFactor = (1 - synth.ValueRO.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay), 0, 1f);//1 - Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay * synth.ValueRO.ADSR.Sustain), 0, 1f);
+                            newDeltaFactor = (1 - synth.ValueRO.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay), 0, 1f);
                     }
-
-                    ///if playbackrecord-> 
 
                     RkeyBuffer.Add(new ReleasedKeyBufferData { DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght, Delta = newDeltaFactor * synth.ValueRO.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
                     SkeyBuffer.RemoveAt(PlayedKeyIndex);
@@ -221,8 +217,8 @@ public partial class WeaponSystem : SystemBase
                 if (Hit.entity != Entity.Null)
                 {
                     //Debug.Log(Hit.distance);
-                   // hit line
-                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
+                    // hit line
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
                     
                     SkeyBuffer[i] = new SustainedKeyBufferData { Delta = newDelta, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance/ SkeyBuffer[i].DirLenght.magnitude), Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : 1f };
 
@@ -248,7 +244,7 @@ public partial class WeaponSystem : SystemBase
                     SkeyBuffer[i] = new SustainedKeyBufferData { Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : 1f };
 
 
-                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].DirLenght, Color.white, SystemAPI.Time.DeltaTime);
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].DirLenght, Color.white, SystemAPI.Time.DeltaTime);
 
                 }
 
@@ -314,7 +310,7 @@ public partial class WeaponSystem : SystemBase
                 AudioGenerator.audioRingBuffer.Write(keysBuffer);
 
             //Debug.LogError(AudioGenerator.audioRingBuffer.Read().KeyNumber[0]);
-            
+
 
         }
 

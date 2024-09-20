@@ -63,6 +63,7 @@ public partial class PlaybackRecordSystem : SystemBase
                     }};
                     keyActive = false;
                 }
+
             }
             else
             {
@@ -76,20 +77,23 @@ public partial class PlaybackRecordSystem : SystemBase
                     keyActive = true;
                     ClickPressed = false;
                 }
+
                 if (ClickReleased)
                 {
-
-                    accumulator[accumulator.Length-1] = new PlaybackRecordingKeysBuffer
+                    if(keyActive)
                     {
-                        playbackRecordingKey = new PlaybackKey
+                        accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
                         {
-                            dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
-                            time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
-                            lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time
-                        }
-                    };
-                    keyActive = false;
-                    ClickReleased = false;
+                            playbackRecordingKey = new PlaybackKey
+                            {
+                                dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
+                                time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                                lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time
+                            }
+                        };
+                        keyActive = false;
+                        ClickReleased = false;
+                    }
                 }
             }
 
@@ -126,6 +130,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 //Debug.Log(AudioManager.audioGenerator.audioLayoutStorage.NewPlaybackAudioBundles.PlaybackKeys.Length);
                 ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(entity);
                 ecb.RemoveComponent<PlaybackRecordingData>(entity);
+         
             }
 
         }

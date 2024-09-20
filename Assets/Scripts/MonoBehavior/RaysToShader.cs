@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
 using MusicNamespace;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -31,9 +32,8 @@ public class RaysToShader : MonoBehaviour
     private ComputeBuffer SignalBuffer;
     private SignalData[] Signals;
     private int SignalCount;
-    //private ComputeBuffer PlaybackSignalBuffer;
-    //private SignalData[] PlaybackSignals;
-    //private int PlaybackSignalCount;
+
+    EntityQuery ActivePlaybackBufferEntityQuery;
 
 
     public EntityQuery ActiveWeapon_query;
@@ -60,10 +60,13 @@ public class RaysToShader : MonoBehaviour
         var world = World.DefaultGameObjectInjectionWorld;
         entityManager = world.EntityManager;
 
-       
+        ActivePlaybackBufferEntityQuery = entityManager.CreateEntityQuery(typeof(PlaybackSustainedKeyBufferData));
+
     }
     private void LateUpdate()
     {
+
+       
         //redondant ?
         Entity player_entity = audioManager.Player_query.GetSingletonEntity();
         Entity activeWeapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
@@ -72,12 +75,15 @@ public class RaysToShader : MonoBehaviour
         DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
         DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
 
+        //Debug.Log(ActivePlaybackBufferEntityQuery.CalculateEntityCount());
+
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
 
         // Update the signal count 
         SignalCount = SkeyBuffer.Length+RkeyBuffer.Length;
         int i = 0;
-        // Populate the signals array with random values for demonstration
+        // Populate the signals array with active weapon signals
+        // OPTI : 4 statementes -> 1
         for (; i < SkeyBuffer.Length; i++)
         {
             Signals[i].SinSawSquareFactor = new float3(audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SinFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SawFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SquareFactor);
@@ -85,13 +91,46 @@ public class RaysToShader : MonoBehaviour
             Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);
             Signals[i].amplitude = SkeyBuffer[i].currentAmplitude;
         }
-        for (int y = i; y < RkeyBuffer.Length+i; y++)
+        int y = i;
+        for (; y < RkeyBuffer.Length+i; y++)
         {
             Signals[y].SinSawSquareFactor = new float3(audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SinFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SawFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SquareFactor);
             Signals[y].direction = (float2)RkeyBuffer[y - i].EffectiveDirLenght;
             Signals[y].frequency = MusicUtils.DirectionToFrequency(RkeyBuffer[y-i].EffectiveDirLenght);
             Signals[y].amplitude = RkeyBuffer[y-i].currentAmplitude;
         }
+        // Populate the signals array with playback weapon signals
+        NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackBufferEntityQuery.ToEntityArray(Allocator.Temp);
+        int c = y;
+        for (int z = 0; z < PlaybackBufferEntities.Length; z++)
+        {
+            DynamicBuffer<PlaybackSustainedKeyBufferData> PlaybackSkeyBuffer = entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(PlaybackBufferEntities[z]);
+            DynamicBuffer<PlaybackReleasedKeyBufferData> PlaybackRkeyBuffer = entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(PlaybackBufferEntities[z]);
+            //Debug.Log(PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length);
+            SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
+            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex];
+            int a = 0;
+            for (; a < PlaybackSkeyBuffer.Length; a++)
+            {
+                Signals[c+a].SinSawSquareFactor = new float3(PlaybackData.SinFactor, PlaybackData.SawFactor, PlaybackData.SquareFactor);
+                Signals[c + a].direction = (float2)PlaybackSkeyBuffer[a].EffectiveDirLenght;
+                Signals[c + a].frequency = MusicUtils.DirectionToFrequency(PlaybackSkeyBuffer[a].EffectiveDirLenght);
+                Signals[c + a].amplitude = PlaybackSkeyBuffer[a].currentAmplitude;
+            }
+            int b = a;
+            for (; b < PlaybackRkeyBuffer.Length+a; b++)
+            {
+                Signals[c + b].SinSawSquareFactor = new float3(PlaybackData.SinFactor, PlaybackData.SawFactor, PlaybackData.SquareFactor);
+                Signals[c + b].direction = (float2)PlaybackRkeyBuffer[b-a].EffectiveDirLenght;
+                Signals[c + b].frequency = MusicUtils.DirectionToFrequency(PlaybackRkeyBuffer[b - a].EffectiveDirLenght);
+                Signals[c + b].amplitude = PlaybackRkeyBuffer[b - a].currentAmplitude;
+            }
+            c += b;
+        }
+        
+       
+
+
 
         // Update the compute buffer with the new signal data
         SignalBuffer.SetData(Signals, 0, 0, SignalCount);

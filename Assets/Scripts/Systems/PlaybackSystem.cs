@@ -25,15 +25,23 @@ public partial struct PlaybackSystem : ISystem
         ComponentLookup<CircleShapeData> ShapeComponentLookup = SystemAPI.GetComponentLookup<CircleShapeData>(isReadOnly: true);
 
         NativeQueue<Vector2> KeyDirQueue = new NativeQueue<Vector2>(Allocator.Temp);
+        //NativeQueue<SustainedKeyBufferData> KeysToShaderQueue = new NativeQueue<SustainedKeyBufferData>(Allocator.Temp);
 
-        foreach (var (playback_data, synth_data, Wtrans) in SystemAPI.Query<RefRW<PlaybackData>, RefRO<SynthData>, RefRO<LocalToWorld>>())
+        foreach (var (playback_data, synth_data, Wtrans, entity) in SystemAPI.Query<RefRW<PlaybackData>, RefRO<SynthData>, RefRO<LocalToWorld>>().WithEntityAccess())
         {
 
-            /// Damage processing 
-            
-            //AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex]
+            DynamicBuffer<PlaybackSustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<PlaybackSustainedKeyBufferData>(entity);
+            DynamicBuffer<PlaybackReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<PlaybackReleasedKeyBufferData>(entity);
 
-
+            for (int i = 0; i < RkeyBuffer.Length; i++)
+            {
+                //Debug.Log(RkeyBuffer[i].Delta);
+                if (RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime > synth_data.ValueRO.ADSR.Release)
+                {
+                    //Debug.Log("taeaea");
+                    RkeyBuffer.RemoveAt(i);
+                }
+            }
 
             int playbackKeyIndex = playback_data.ValueRW.PlaybackKeyIndex;
 
@@ -44,29 +52,54 @@ public partial struct PlaybackSystem : ISystem
             {
                 if(AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].time + AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].lenght < playback_data.ValueRO.PlaybackTime)
                 {
-                    //if(playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length)
+                    //Debug.Log("dddd");
+                    playbackKeyIndex++;
+                    playback_data.ValueRW.PlaybackKeyIndex = playbackKeyIndex;
+
+                    // OPTI ?
+                    float newDeltaFactor;
+                    if (SkeyBuffer[SkeyBuffer.Length - 1].Delta < synth_data.ValueRO.ADSR.Attack)
                     {
-                        playbackKeyIndex++;
-                        playback_data.ValueRW.PlaybackKeyIndex = playbackKeyIndex;
-                       
+                        if (synth_data.ValueRO.ADSR.Attack == 0)
+                            newDeltaFactor = 0f;
+                        else
+                            newDeltaFactor = 1 - Mathf.Clamp((SkeyBuffer[SkeyBuffer.Length - 1].Delta / synth_data.ValueRO.ADSR.Attack), 0, 1f);
                     }
-                    //else
-                    //    break;
+                    else
+                    {
+                        if (synth_data.ValueRO.ADSR.Decay == 0)
+                            newDeltaFactor = synth_data.ValueRO.ADSR.Sustain;
+                        else
+                            newDeltaFactor = (1 - synth_data.ValueRO.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[SkeyBuffer.Length - 1].Delta - synth_data.ValueRO.ADSR.Attack) / synth_data.ValueRO.ADSR.Decay), 0, 1f);
+                    }
+                    RkeyBuffer.Add(new PlaybackReleasedKeyBufferData
+                    { 
+                        DirLenght = SkeyBuffer[SkeyBuffer.Length-1].DirLenght, 
+                        EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght, 
+                        Delta = newDeltaFactor,
+                        Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase });
+                    SkeyBuffer.RemoveAt(SkeyBuffer.Length-1);
+
                 }
                 else
                 {
-                    KeyDirQueue.Enqueue(AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].dir);
+                  
+                    //KeyDirQueue.Enqueue(AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].dir);
                     playbackKeyIndex++;
+                    //playback_data.ValueRW.PlaybackKeyIndex = playbackKeyIndex;
                 }
                 if (playbackKeyIndex >= AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length)
                     break;
-                //if (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length)
-                //{
-                //    break;
-                //}
+      
 
             }
 
+            for (int i = playback_data.ValueRO.KeysPlayed; i < playbackKeyIndex; i++)
+            {
+                Vector2 dirLenght = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[i].dir;
+                SkeyBuffer.Add(new PlaybackSustainedKeyBufferData { DirLenght = dirLenght, EffectiveDirLenght = dirLenght, Delta = 0, Phase = 0 });
+                playback_data.ValueRW.KeysPlayed++;
+            }
 
 
             //playbackKeyIndex -= playback_data.ValueRO.PlaybackKeyIndex;
@@ -76,8 +109,14 @@ public partial struct PlaybackSystem : ISystem
             {
                 if(AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].IsLooping)
                 {
-                    playback_data.ValueRW.PlaybackTime = (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration;
+                    // playback_data.ValueRO.PlaybackIndex probly  incorrect !!
+                    AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.PlaybackIndex);
+                    playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration;
                     playback_data.ValueRW.PlaybackKeyIndex = 0;
+                    playback_data.ValueRW.KeysPlayed = 0;
+                    SkeyBuffer.Clear();
+                    RkeyBuffer.Clear();
+
                 }
                 else
                 {
@@ -87,26 +126,28 @@ public partial struct PlaybackSystem : ISystem
             else
                 playback_data.ValueRW.PlaybackTime += SystemAPI.Time.DeltaTime;
 
-            while(KeyDirQueue.Count>0)
-            {
-                //if(AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].time)
-                //{
 
-                //}
-                Vector2 keyDir = KeyDirQueue.Dequeue();
-                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), DirLength = keyDir }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+
+
+            /// Damage processing + Delta/amplitude incrementing
+            for (int i = 0; i < SkeyBuffer.Length; i++)
+            {
+
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), DirLength = SkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+
+                float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
 
                 if (Hit.entity != Entity.Null)
                 {
                     //Debug.Log(Hit.distance);
-                    ///Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].Direction, Color.green, SystemAPI.Time.DeltaTime);
+                    // hit line
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
 
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, SystemAPI.GetComponent<CircleShapeData>(Hit.entity).Position, Color.red, SystemAPI.Time.DeltaTime);
-                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (keyDir.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
+                    SkeyBuffer[i] = new PlaybackSustainedKeyBufferData { Delta = newDelta, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance / SkeyBuffer[i].DirLenght.magnitude), Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < synth_data.ValueRO.ADSR.Attack ? newDelta / synth_data.ValueRO.ADSR.Attack : 1f };
 
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
-                    newMonsterData.Health -= 100f * SystemAPI.Time.DeltaTime;
+                    newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
 
                     if (newMonsterData.Health > 0)
                     {
@@ -122,12 +163,63 @@ public partial struct PlaybackSystem : ISystem
                 }
                 else
                 {
-                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + keyDir, Color.green, SystemAPI.Time.DeltaTime);
+                    //Debug.Log(1);
+                    SkeyBuffer[i] = new PlaybackSustainedKeyBufferData { Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < synth_data.ValueRO.ADSR.Attack ? newDelta / synth_data.ValueRO.ADSR.Attack : 1f };
+
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].DirLenght, Color.white, SystemAPI.Time.DeltaTime);
+
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].DirLenght, Color.white, SystemAPI.Time.DeltaTime);
 
                 }
 
             }
+            for (int i = 0; i < RkeyBuffer.Length; i++)
+            {
+
+                float newDelta = RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
+                if (newDelta > synth_data.ValueRO.ADSR.Release)
+                {
+                    RkeyBuffer.RemoveAt(i);
+                    i--;
+                    continue;
+                }
+
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), DirLength = RkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+
+                if (Hit.entity != Entity.Null)
+                {
+                    //Debug.Log(Hit.distance);
+                    // hit line
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (RkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
+
+                    RkeyBuffer[i] = new PlaybackReleasedKeyBufferData { Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, EffectiveDirLenght = RkeyBuffer[i].DirLenght * (Hit.distance / RkeyBuffer[i].DirLenght.magnitude), Phase = RkeyBuffer[i].Phase, currentAmplitude = 1 - (newDelta / synth_data.ValueRO.ADSR.Release) };
+
+                    MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
+                    newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
+
+                    if (newMonsterData.Health > 0)
+                    {
+                        //Debug.Log(newMonsterData.Health);
+                        SystemAPI.SetComponent<MonsterData>(Hit.entity, newMonsterData);
+                    }
+                    else
+                    {
+                        //Debug.Log("ded");
+                        PhysicsCalls.DestroyPhysicsEntity(ecb, Hit.entity);
+                    }
+
+                }
+                else
+                {
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + RkeyBuffer[i].DirLenght, Color.red, SystemAPI.Time.DeltaTime);
+
+                    RkeyBuffer[i] = new PlaybackReleasedKeyBufferData { Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, EffectiveDirLenght = RkeyBuffer[i].DirLenght, Phase = RkeyBuffer[i].Phase, currentAmplitude = 1 - (newDelta / synth_data.ValueRO.ADSR.Release) };
+
+                }
+            }
+
         }
+
 
         /// way to remove if playback is not on loop
 

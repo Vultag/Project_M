@@ -46,6 +46,8 @@ public struct AudioLayoutStorage
     public bool ActivationUpdateRequirement;
     private bool ActivationState;
 
+    public NativeQueue<int> PlaybackContextResetRequired;
+
     public void WriteAddSynth(SynthData newSynthData)
     {
         NewSynthData = newSynthData;

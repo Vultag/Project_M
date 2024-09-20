@@ -150,7 +150,8 @@ Shader "Unlit/WeaponRaysShader"
 
 
                     //color += fixed4(1.,0,0,max(0.,sinWave));
-                    color += fixed4(max(0.,sinWave),max(0.,sawWave),max(0.,squareWave),max(0.,(squareWave*sd.SinSawSquareFactor.z)+(sawWave*sd.SinSawSquareFactor.y)+(sinWave*sd.SinSawSquareFactor.x)));
+                    //color += fixed4(max(0.,sinWave),max(0.,sawWave),max(0.,squareWave),max(0.,(squareWave*sd.SinSawSquareFactor.z)+(sawWave*sd.SinSawSquareFactor.y)+(sinWave*sd.SinSawSquareFactor.x)));
+                    color += fixed4(1.,1.,1.,max(0.,(squareWave*sd.SinSawSquareFactor.z)+(sawWave*sd.SinSawSquareFactor.y)+(sinWave*sd.SinSawSquareFactor.x)));
                     //color = fixed4(1.,1.,1.,1.);
                 }
 

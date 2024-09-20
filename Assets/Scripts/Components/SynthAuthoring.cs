@@ -53,6 +53,24 @@ public struct ReleasedKeyBufferData : IBufferElementData
     public float currentAmplitude;
 
 }
+public struct PlaybackSustainedKeyBufferData : IBufferElementData
+{
+    public Vector2 DirLenght;
+    public Vector2 EffectiveDirLenght;
+    public float Delta;
+    public float Phase;
+    public float currentAmplitude;
+
+}
+public struct PlaybackReleasedKeyBufferData : IBufferElementData
+{
+    public Vector2 DirLenght;
+    public Vector2 EffectiveDirLenght;
+    public float Delta;
+    public float Phase;
+    public float currentAmplitude;
+
+}
 
 unsafe
 public struct SynthData : IComponentData
