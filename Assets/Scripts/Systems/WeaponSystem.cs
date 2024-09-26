@@ -113,7 +113,7 @@ public partial class WeaponSystem : SystemBase
             if (!IsShooting && !UIInputSystem.MouseOverUI)
             {
 
-                mousepos = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
+                mousepos = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
                 Vector2 dir = ((new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)) - (mousepos)).normalized;
 
                 trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);

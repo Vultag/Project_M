@@ -77,7 +77,7 @@ public class RaysToShader : MonoBehaviour
 
         //Debug.Log(ActivePlaybackBufferEntityQuery.CalculateEntityCount());
 
-        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
+        Vector3 mousePosition = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
 
         // Update the signal count 
         SignalCount = SkeyBuffer.Length+RkeyBuffer.Length;
@@ -86,7 +86,7 @@ public class RaysToShader : MonoBehaviour
         // OPTI : 4 statementes -> 1
         for (; i < SkeyBuffer.Length; i++)
         {
-            Signals[i].SinSawSquareFactor = new float3(audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SinFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SawFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SquareFactor);
+            Signals[i].SinSawSquareFactor = audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc1SinSawSquareFactor + audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc2SinSawSquareFactor;
             Signals[i].direction = (float2)SkeyBuffer[i].EffectiveDirLenght;
             Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);
             Signals[i].amplitude = SkeyBuffer[i].currentAmplitude;
@@ -94,7 +94,7 @@ public class RaysToShader : MonoBehaviour
         int y = i;
         for (; y < RkeyBuffer.Length+i; y++)
         {
-            Signals[y].SinSawSquareFactor = new float3(audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SinFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SawFactor, audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].SquareFactor);
+            Signals[y].SinSawSquareFactor = audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc1SinSawSquareFactor + audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc2SinSawSquareFactor;
             Signals[y].direction = (float2)RkeyBuffer[y - i].EffectiveDirLenght;
             Signals[y].frequency = MusicUtils.DirectionToFrequency(RkeyBuffer[y-i].EffectiveDirLenght);
             Signals[y].amplitude = RkeyBuffer[y-i].currentAmplitude;
@@ -112,7 +112,7 @@ public class RaysToShader : MonoBehaviour
             int a = 0;
             for (; a < PlaybackSkeyBuffer.Length; a++)
             {
-                Signals[c+a].SinSawSquareFactor = new float3(PlaybackData.SinFactor, PlaybackData.SawFactor, PlaybackData.SquareFactor);
+                Signals[c+a].SinSawSquareFactor = PlaybackData.Osc1SinSawSquareFactor + PlaybackData.Osc2SinSawSquareFactor;
                 Signals[c + a].direction = (float2)PlaybackSkeyBuffer[a].EffectiveDirLenght;
                 Signals[c + a].frequency = MusicUtils.DirectionToFrequency(PlaybackSkeyBuffer[a].EffectiveDirLenght);
                 Signals[c + a].amplitude = PlaybackSkeyBuffer[a].currentAmplitude;
@@ -120,7 +120,7 @@ public class RaysToShader : MonoBehaviour
             int b = a;
             for (; b < PlaybackRkeyBuffer.Length+a; b++)
             {
-                Signals[c + b].SinSawSquareFactor = new float3(PlaybackData.SinFactor, PlaybackData.SawFactor, PlaybackData.SquareFactor);
+                Signals[c + b].SinSawSquareFactor = PlaybackData.Osc1SinSawSquareFactor + PlaybackData.Osc2SinSawSquareFactor;
                 Signals[c + b].direction = (float2)PlaybackRkeyBuffer[b-a].EffectiveDirLenght;
                 Signals[c + b].frequency = MusicUtils.DirectionToFrequency(PlaybackRkeyBuffer[b - a].EffectiveDirLenght);
                 Signals[c + b].amplitude = PlaybackRkeyBuffer[b - a].currentAmplitude;

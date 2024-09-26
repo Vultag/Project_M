@@ -115,9 +115,9 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         /// activeWeaponSynth in audio manager ?
         SynthData newsynth = entityManager.GetComponentData<SynthData>(WeaponSystem.WeaponEntities[0]);
 
-        newsynth.SinFactor = A;
-        newsynth.SquareFactor = B;
-        newsynth.SawFactor = C;
+        //newsynth.SinFactor = A;
+        //newsynth.SquareFactor = B;
+        //newsynth.SawFactor = C;
 
         AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
 

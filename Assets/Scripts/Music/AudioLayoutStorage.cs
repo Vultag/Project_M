@@ -78,7 +78,7 @@ public struct AudioLayoutStorage
     {
         var newSynthsData = new NativeArray<SynthData>(SynthsData.Length, Allocator.Persistent);
         SynthsData.CopyTo(newSynthsData);
-        newSynthsData[activeSynthIdx] = NewSynthData;
+        newSynthsData[activeSynthIdx] = newSynthData;
         SynthsData.Dispose();
         SynthsData = newSynthsData;
 

@@ -7,7 +7,8 @@ using UnityEngine;
 public struct KeyData
 {
     public float frequency;
-    public float phase;
+    public float OCS1phase;
+    public float OCS2phase;
     public float delta;
     /* at 0, key is pressed. != 0, the key is released */
     public float amplitudeAtRelease;

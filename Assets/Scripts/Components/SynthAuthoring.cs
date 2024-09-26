@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -80,9 +81,8 @@ public struct SynthData : IComponentData
     {
         return new SynthData {
             amplitude = 0.2f,
-            SinFactor = 1f / 3f,
-            SawFactor = 1f / 3f,
-            SquareFactor = 1f / 3f,
+            Osc1SinSawSquareFactor = new float3(0.5f,0,0),
+            Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
             ADSR = new ADSREnvelope
             {
                 Attack = 0.1f,
@@ -94,9 +94,11 @@ public struct SynthData : IComponentData
     }
     public float amplitude;
 
-    public float SinFactor;
-    public float SawFactor;
-    public float SquareFactor;
+    public float3 Osc1SinSawSquareFactor;
+    public float Osc1Fine;
+    public float3 Osc2SinSawSquareFactor;
+    public float Osc2Fine;
+    public float Osc2Semi;
 
     public ADSREnvelope ADSR;
 
@@ -126,9 +128,11 @@ public class SynthAuthoring : MonoBehaviour
             {
                 amplitude = authoring.amplitude,
                 ADSR = authoring.ADSR,
-                SinFactor = 1 / 3f,
-                SawFactor = 1 / 3f,
-                SquareFactor = 1/3f,
+                Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
+                Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
+                //SinFactor = 1 / 3f,
+                //SawFactor = 1 / 3f,
+                //SquareFactor = 1/3f,
 
             });
 

@@ -28,14 +28,17 @@ public class UIManager : MonoBehaviour
 
     [SerializeField]
     private AudioManager audioManager;
+    [SerializeField]
+    private OscillatorUI oscillatorUI;
 
     [SerializeField]
     SliderMono simplexSlider;
 
+    public Transform toolTip;
+
     private EntityManager entityManager;
     //private EntityQuery Player_query;
 
-    public static PlayerControls playerControls;
 
     private Canvas canvas;
     private NativeArray<AABB> UIsurface;
@@ -50,10 +53,12 @@ public class UIManager : MonoBehaviour
     /// index, IsRecording
     List<(short,bool)> activeSliders;
 
+    private Vector2 PreviousMousePos;
+
 
     private void Awake()
     {
-        playerControls = new PlayerControls();
+
     }
 
     void Start()
@@ -65,19 +70,23 @@ public class UIManager : MonoBehaviour
 
         activeSliders = new List<(short, bool)>();
 
-        playerControls.Enable();
         canvas = this.gameObject.transform.parent.GetComponent<Canvas>();
 
         ConstructUIsurface();
         //NumOfSynths = SynthToolBar.GetComponentsInChildren<Button>().Length-1;
         SynthUIadd_rect = SynthToolBar.transform.GetChild(SynthToolBar.transform.childCount-1).GetComponent<RectTransform>();
 
+
     }
 
 
     void Update()
     {
-        var mousePos = Mouse.current.position.ReadValue();
+
+        var mousePos = InputManager.mousePos;
+        InputManager.mouseDelta = mousePos - PreviousMousePos;
+        //Debug.Log(mouseDelta);
+        PreviousMousePos = mousePos;
 
         UIInputSystem.MouseOverUI = false;
         for (int i = 0;i < UIsurface.Length;i++)
@@ -113,8 +122,21 @@ public class UIManager : MonoBehaviour
                 }
             }
         }
-        /// UPDATE SLIDERS
 
+    }
+
+    public void UpdateDisplayToolTip(Vector2 pos, String content)
+    {
+        //Debug.Log(toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x);
+        toolTip.GetChild(0).GetComponent<TextMeshProUGUI>().text = content;
+        // Force a layout update so we can use it's updated RectTransform right away
+        LayoutRebuilder.ForceRebuildLayoutImmediate(toolTip.GetComponent<RectTransform>());
+
+        //float sizeX = toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f;
+        //float sizey = toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f;
+        //toolTip.position = new Vector3(pos.x + sizeX, pos.y);
+        toolTip.position = new Vector3(pos.x + toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, pos.y);
+        //Debug.Log(toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f);
     }
 
     public void _SelectSynthUI(int index)
@@ -159,7 +181,9 @@ public class UIManager : MonoBehaviour
     {
         var synthData = AudioManager.audioGenerator.SynthsData[activeSynthIdx];
 
-        simplexSlider.UpdateSlider(synthData.SinFactor, synthData.SquareFactor,synthData.SawFactor);
+        oscillatorUI.UpdateUI(synthData);
+
+        //simplexSlider.UpdateSlider(synthData.SinFactor, synthData.SquareFactor,synthData.SawFactor);
 
     }
 
@@ -219,18 +243,6 @@ public class UIManager : MonoBehaviour
             entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(weapon_entity).Clear();
             entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(weapon_entity).Clear();
         }
-        //else
-        //{
-        //    var playbackRecordingData = new PlaybackRecordingData
-        //    {
-        //        duration = audioManager.TEMPplaybackDuration,
-        //        synthIndex = activeSynthIdx,
-        //        time = 0
-        //    };
-        //    ecb.SetComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
-        //    PlaybackRecordSystem.ClickPressed = false;
-        //    PlaybackRecordSystem.ClickReleased = false;
-        //}
     }
     public void _ActivatePlayback(int synthIdx)
     {

@@ -21,30 +21,30 @@ public partial class PlayerSystem : SystemBase
 
     //MOVE AWAY INPUT INTO SINGLE FILE ?
 
-    PlayerControls input_actions;
+    //PlayerControls input_actions;
 
 
     public Action<String, String> OnUpdateMode;
     public float modeSwitchBaseCD;
     private float modeSwitchCD;
 
-    public static Vector2 mousePos;
+
 
 
 
 
     protected override void OnCreate()
     {
-        input_actions = new PlayerControls();
+        //input_actions = new PlayerControls();
         modeSwitchBaseCD = 7;
         modeSwitchCD = modeSwitchBaseCD;
     }
     protected override void OnStartRunning()
     {
 
-        input_actions.Enable();
-        input_actions.ActionMap.Shoot.performed += OnPlayerShoot;
-        input_actions.ActionMap.Shoot.canceled += OnPlayerShoot;
+        //input_actions.Enable();
+        //input_actions.ActionMap.Shoot.performed += OnPlayerShoot;
+        //input_actions.ActionMap.Shoot.canceled += OnPlayerShoot;
         //physics
         foreach (var (shape, trans) in SystemAPI.Query<RefRW<CircleShapeData>, RefRO<LocalTransform>>())
         {
@@ -61,10 +61,8 @@ public partial class PlayerSystem : SystemBase
     protected override void OnUpdate()
     {
 
-        var moveDirection = input_actions.ActionMap.Mouvements.ReadValue<Vector2>();
+        var moveDirection = InputManager.playerMouvement;
 
-
-        mousePos = input_actions.ActionMap.MousePos.ReadValue<Vector2>();
 
         ///test physics move
         ///SET IN A INPUT EVENT ?
@@ -87,25 +85,25 @@ public partial class PlayerSystem : SystemBase
     }
 
 
-    private void OnPlayerShoot(CallbackContext context)
-    {
-        ///OPTI -> Activate 1 PlayPressed for all here and switch it at the end of the frame ?
-        bool IsShooting = input_actions.ActionMap.Shoot.IsPressed();
-        //Debug.Log(UIInputSystem.MouseOverUI);
-        WeaponSystem.PlayPressed = IsShooting;
-        WeaponSystem.PlayReleased = !IsShooting;
-        PlaybackRecordSystem.ClickPressed = IsShooting;
-        PlaybackRecordSystem.ClickReleased = !IsShooting;
+    //private void OnPlayerShoot(CallbackContext context)
+    //{
+    //    ///OPTI -> Activate 1 PlayPressed for all here and switch it at the end of the frame ?
+    //    bool IsShooting = input_actions.ActionMap.Shoot.IsPressed();
+    //    //Debug.Log(UIInputSystem.MouseOverUI);
+    //    WeaponSystem.PlayPressed = IsShooting;
+    //    WeaponSystem.PlayReleased = !IsShooting;
+    //    PlaybackRecordSystem.ClickPressed = IsShooting;
+    //    PlaybackRecordSystem.ClickReleased = !IsShooting;
 
 
-    }
+    //}
 
-    protected override void OnStopRunning()
-    {
-        input_actions.ActionMap.Shoot.performed -= OnPlayerShoot;
-        input_actions.ActionMap.Shoot.canceled -= OnPlayerShoot;
-        input_actions.Disable();
-    }
+    //protected override void OnStopRunning()
+    //{
+    //    input_actions.ActionMap.Shoot.performed -= OnPlayerShoot;
+    //    input_actions.ActionMap.Shoot.canceled -= OnPlayerShoot;
+    //    input_actions.Disable();
+    //}
 
 
 

@@ -33,7 +33,7 @@ public partial class PlaybackRecordSystem : SystemBase
     {
 
         /// OPTI -> Called this multiple times per frame
-        mousepos = Camera.main.ScreenToWorldPoint(PlayerSystem.mousePos);
+        mousepos = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
 
 
         EntityCommandBuffer ecb = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
