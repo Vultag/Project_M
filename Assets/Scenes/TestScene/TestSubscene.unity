@@ -435,13 +435,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1748953737}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66141101dab740f479dd8fbd37f40b47, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   active: 1
-  SpawnRate: 2
+  SpawnRate: 1
   SpawnRangeRadius: 5
   MonsterPrefab: {fileID: 3505441550876786229, guid: e4dd871981676b24bbfe2b95dab246f6, type: 3}
 --- !u!114 &1748953744

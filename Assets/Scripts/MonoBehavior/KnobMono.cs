@@ -16,7 +16,7 @@ public enum KnobChangeType
     OCS2semi
 }
 
-public class KnobMono : MonoBehaviour, IDragHandler,IPointerEnterHandler,IPointerExitHandler,IPointerUpHandler,IPointerDownHandler
+public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHandler,IPointerEnterHandler,IPointerExitHandler,IPointerUpHandler,IPointerDownHandler
 {
 
     private OscillatorUI oscillatorUI;
@@ -29,8 +29,9 @@ public class KnobMono : MonoBehaviour, IDragHandler,IPointerEnterHandler,IPointe
     [SerializeField]
     private int knobIncrementNum;
     /// Store the accumulated move for non free knob
-    private float knobAccumulator;
-    private string displayedValue;
+    private float knobAccumulator; 
+    [HideInInspector]
+    public string displayedValue;
     private bool mouseInKnob;
 
     private float turnSpeed;
@@ -61,7 +62,7 @@ public class KnobMono : MonoBehaviour, IDragHandler,IPointerEnterHandler,IPointe
         if (knobIncrementNum != 0)
         {
             //knobAccumulator += (PlayerSystem.mouseDelta.y * turnSpeed * 2)/ (knobIncrementNum - 1);
-            knobAccumulator += InputManager.mouseDelta.y * turnSpeed;
+            knobAccumulator += (eventData.delta.y / oscillatorUI.uiManager.canvas.scaleFactor) * turnSpeed;
             //Debug.Log(InputManager.mouseDelta.y * turnSpeed);
             if (Mathf.Abs(knobAccumulator) <= 145 / (knobIncrementNum + 1))
             {
@@ -77,7 +78,7 @@ public class KnobMono : MonoBehaviour, IDragHandler,IPointerEnterHandler,IPointe
             }
         }
         else
-            newRot = Mathf.Max(-145f, Mathf.Min(145f, iconRot - InputManager.mouseDelta.y* turnSpeed));
+            newRot = Mathf.Max(-145f, Mathf.Min(145f, iconRot - (eventData.delta.y / oscillatorUI.uiManager.canvas.scaleFactor)* turnSpeed));
         this.transform.rotation = Quaternion.Euler(0, 0, newRot);
 
         displayedValue = oscillatorUI.UIknobChange(knobChangeType,newRot);
@@ -115,4 +116,8 @@ public class KnobMono : MonoBehaviour, IDragHandler,IPointerEnterHandler,IPointe
     }
     /// Required for OnPointerUp to work
     public void OnPointerDown(PointerEventData eventData){}
+    public void OnInitializePotentialDrag(PointerEventData eventData)
+    {
+        eventData.useDragThreshold = false;
+    }
 }

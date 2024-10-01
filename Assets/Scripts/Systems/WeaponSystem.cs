@@ -51,7 +51,7 @@ public partial class WeaponSystem : SystemBase
         BeatCooldown = MusicUtils.BPM;
         BeatProximityThreshold = 0.08f;
         //temp -> put on component
-        mode = MusicUtils.MusicalMode.Lydian;
+        mode = MusicUtils.MusicalMode.Phrygian;
 
         ///todo
         ///remplace beatcooldown by note cooldown and make randomly 60 for noir ; 30 for croche ; 15 for double croche .... upon played
@@ -83,7 +83,9 @@ public partial class WeaponSystem : SystemBase
         DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         //TO MODIFY
-        var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
+        //var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
+        var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        //Debug.Log(ActiveSynth.ADSR.Sustain);
 
         ///BAD OPTI ?
         for (int i = 0; i < RkeyBuffer.Length; i++)
@@ -107,7 +109,7 @@ public partial class WeaponSystem : SystemBase
         //}
 
         /// Move to Synth system all together ?
-        foreach (var (Wtrans, trans, synth) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>, RefRO<SynthData>>())
+        foreach (var (Wtrans, trans) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>>().WithAll<SynthData>())
         {
             ///OPTI :
             if (!IsShooting && !UIInputSystem.MouseOverUI)
@@ -172,26 +174,28 @@ public partial class WeaponSystem : SystemBase
             if (PlayReleased)
             {
 
-                if (synth.ValueRO.ADSR.Sustain > 0 && SkeyBuffer.Length != 0)
+                if (ActiveSynth.ADSR.Sustain > 0 && SkeyBuffer.Length != 0)
                 {
                     float newDeltaFactor;
 
-                    if (SkeyBuffer[PlayedKeyIndex].Delta < synth.ValueRO.ADSR.Attack)
+                    if (SkeyBuffer[PlayedKeyIndex].Delta < ActiveSynth.ADSR.Attack)
                     {
-                        if (synth.ValueRO.ADSR.Attack == 0)
+                        if (ActiveSynth.ADSR.Attack == 0)
                             newDeltaFactor =  0f;
                         else
-                            newDeltaFactor = 1-Mathf.Clamp((SkeyBuffer[PlayedKeyIndex].Delta / synth.ValueRO.ADSR.Attack), 0, 1f);
+                            newDeltaFactor = 1-(SkeyBuffer[PlayedKeyIndex].Delta / ActiveSynth.ADSR.Attack);
                     }
                     else
                     {
-                        if (synth.ValueRO.ADSR.Decay == 0)
-                            newDeltaFactor = synth.ValueRO.ADSR.Sustain;
+                        if (ActiveSynth.ADSR.Decay == 0)
+                            newDeltaFactor = 1-ActiveSynth.ADSR.Sustain;
                         else
-                            newDeltaFactor = (1 - synth.ValueRO.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - synth.ValueRO.ADSR.Attack) / synth.ValueRO.ADSR.Decay), 0, 1f);
+                            newDeltaFactor = (1-ActiveSynth.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay), 0, 1f);
+                        //Debug.Log(((SkeyBuffer[PlayedKeyIndex].Delta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay));
                     }
 
-                    RkeyBuffer.Add(new ReleasedKeyBufferData { DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght, Delta = newDeltaFactor * synth.ValueRO.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
+                    //Debug.LogError("newDeltaFactor * ActiveSynth.ADSR.Release");
+                    RkeyBuffer.Add(new ReleasedKeyBufferData { DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght, Delta = Mathf.Exp(4.6f*(newDeltaFactor-1)) * ActiveSynth.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude,amplitudeAtRelease = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
                     SkeyBuffer.RemoveAt(PlayedKeyIndex);
                 }
                 IsShooting = false;
@@ -220,7 +224,13 @@ public partial class WeaponSystem : SystemBase
                     // hit line
                     //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
                     
-                    SkeyBuffer[i] = new SustainedKeyBufferData { Delta = newDelta, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance/ SkeyBuffer[i].DirLenght.magnitude), Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : 1f };
+                    SkeyBuffer[i] = new SustainedKeyBufferData {
+                        Delta = newDelta, 
+                        DirLenght = SkeyBuffer[i].DirLenght,
+                        EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance/ SkeyBuffer[i].DirLenght.magnitude), 
+                        Phase = SkeyBuffer[i].Phase,
+                        currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay))
+                    };
 
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
@@ -241,9 +251,14 @@ public partial class WeaponSystem : SystemBase
                 else
                 {
 
-                    SkeyBuffer[i] = new SustainedKeyBufferData { Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : 1f };
-
-
+                    SkeyBuffer[i] = new SustainedKeyBufferData { 
+                        Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, 
+                        DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, 
+                        Phase = SkeyBuffer[i].Phase,
+                        currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : Mathf.Max(ActiveSynth.ADSR.Sustain, 1 -((newDelta- ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay))
+                    };
+                    //Debug.Log(Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay)));
+                    
                     //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + SkeyBuffer[i].DirLenght, Color.white, SystemAPI.Time.DeltaTime);
 
                 }
@@ -268,7 +283,15 @@ public partial class WeaponSystem : SystemBase
                     // hit line
                     //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (RkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
 
-                    RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, EffectiveDirLenght = RkeyBuffer[i].DirLenght * (Hit.distance / RkeyBuffer[i].DirLenght.magnitude), Phase = RkeyBuffer[i].Phase, currentAmplitude = 1 - (newDelta / ActiveSynth.ADSR.Release) };
+                    RkeyBuffer[i] = new ReleasedKeyBufferData
+                    {
+                        Delta = newDelta,
+                        DirLenght = RkeyBuffer[i].DirLenght,
+                        EffectiveDirLenght = RkeyBuffer[i].DirLenght * (Hit.distance / RkeyBuffer[i].DirLenght.magnitude),
+                        Phase = RkeyBuffer[i].Phase,
+                        currentAmplitude = RkeyBuffer[i].amplitudeAtRelease * Mathf.Exp(-4.6f * RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release),
+                        amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease
+                    };
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
                     newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
@@ -288,10 +311,17 @@ public partial class WeaponSystem : SystemBase
                 else
                 {
 
-                    RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, EffectiveDirLenght = RkeyBuffer[i].DirLenght, Phase = RkeyBuffer[i].Phase, currentAmplitude = 1 - (newDelta / ActiveSynth.ADSR.Release) };
+                    RkeyBuffer[i] = new ReleasedKeyBufferData { 
+                        Delta = newDelta, DirLenght = RkeyBuffer[i].DirLenght, 
+                        EffectiveDirLenght = RkeyBuffer[i].DirLenght, 
+                        Phase = RkeyBuffer[i].Phase,
+                        currentAmplitude = RkeyBuffer[i].amplitudeAtRelease*Mathf.Exp(-4.6f * RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release),
+                        //currentAmplitude = RkeyBuffer[i].amplitudeAtRelease * (1 - newDelta / ActiveSynth.ADSR.Release),
+                        amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease
+                    };
+                    //Debug.Log(RkeyBuffer[i].currentAmplitude);
 
-
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + RkeyBuffer[i].DirLenght, new Color(1,1,1,), SystemAPI.Time.DeltaTime);
+                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + RkeyBuffer[i].DirLenght, new Color(1,1,1,1), SystemAPI.Time.DeltaTime);
 
                 }
 

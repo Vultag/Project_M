@@ -41,7 +41,6 @@ public class AudioGenerator : MonoBehaviour
     public static JobHandle _Audiojobhandle;
     private int _sampleRate;
 
-
     public static AudioRingBuffer<KeysBuffer> audioRingBuffer;
 
     private const int NumChannels = 1; // Mono audio
@@ -675,6 +674,8 @@ public struct AudioJob : IJob
         NativeArray<float> OSC1phaseIncrement = new NativeArray<float>(_JobFrequencies.Length + 1, Allocator.Temp);
         NativeArray<float> OSC2phaseIncrement = new NativeArray<float>(_JobFrequencies.Length + 1, Allocator.Temp);
 
+        //Debug.Log(_JobDeltas[0]);
+
         float value;
         activeKeyStartidx = 0;
         for (int i = 0; i < _activeKeynum.Length; i++)
@@ -758,7 +759,8 @@ public struct AudioJob : IJob
                     float OSC1phase = _JobPhases[y];
                     float OSC2phase = _JobPhases[_JobFrequencies.Length + y];
 
-                    float effectiveAmplitude = (1 - ((_JobDeltas[y] - (ADSR.Attack + ADSR.Decay)) / ADSR.Release)) * _KeyData[(i*12)+(y - activeKeyStartidx)].amplitudeAtRelease;
+                    ///4.6 is an arbitrary Exponential factor for the amplitude to be as close to 0 at the end 
+                    float effectiveAmplitude = Mathf.Exp(-4.6f*(((_JobDeltas[y] - (ADSR.Attack + ADSR.Decay)) / ADSR.Release))) * _KeyData[(i*12)+(y - activeKeyStartidx)].amplitudeAtRelease;
                     _JobDeltas[y] += deltaIncrement;
 
                     value = ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;

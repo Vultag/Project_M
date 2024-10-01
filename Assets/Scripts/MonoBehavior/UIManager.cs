@@ -30,6 +30,8 @@ public class UIManager : MonoBehaviour
     private AudioManager audioManager;
     [SerializeField]
     private OscillatorUI oscillatorUI;
+    [SerializeField]
+    private ADSRUI adsrUI;
 
     [SerializeField]
     SliderMono simplexSlider;
@@ -39,8 +41,8 @@ public class UIManager : MonoBehaviour
     private EntityManager entityManager;
     //private EntityQuery Player_query;
 
-
-    private Canvas canvas;
+    [HideInInspector]
+    public Canvas canvas;
     private NativeArray<AABB> UIsurface;
 
     [SerializeField]
@@ -84,7 +86,7 @@ public class UIManager : MonoBehaviour
     {
 
         var mousePos = InputManager.mousePos;
-        InputManager.mouseDelta = mousePos - PreviousMousePos;
+        //InputManager.mouseDelta = mousePos - PreviousMousePos;
         //Debug.Log(mouseDelta);
         PreviousMousePos = mousePos;
 
@@ -180,8 +182,9 @@ public class UIManager : MonoBehaviour
     void UpdateSynthUI()
     {
         var synthData = AudioManager.audioGenerator.SynthsData[activeSynthIdx];
-
+        //Debug.Log(synthData.ADSR.Sustain);
         oscillatorUI.UpdateUI(synthData);
+        adsrUI.UpdateUI(synthData);
 
         //simplexSlider.UpdateSlider(synthData.SinFactor, synthData.SquareFactor,synthData.SawFactor);
 

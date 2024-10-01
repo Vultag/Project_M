@@ -52,6 +52,7 @@ public struct ReleasedKeyBufferData : IBufferElementData
     public float Delta;
     public float Phase;
     public float currentAmplitude;
+    public float amplitudeAtRelease;
 
 }
 public struct PlaybackSustainedKeyBufferData : IBufferElementData
@@ -70,6 +71,7 @@ public struct PlaybackReleasedKeyBufferData : IBufferElementData
     public float Delta;
     public float Phase;
     public float currentAmplitude;
+    public float amplitudeAtRelease;
 
 }
 

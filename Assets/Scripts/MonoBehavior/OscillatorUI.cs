@@ -7,6 +7,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 
 public class OscillatorUI : MonoBehaviour
@@ -47,7 +48,11 @@ public class OscillatorUI : MonoBehaviour
         MixKnob.rotation = Quaternion.Euler(0, 0, (OCS1mixValue-0.5f)*2f*145f);
         OCS1fineKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc1Fine/30)* 145f);
         OCS2fineKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc2Fine / 30) * 145f);
-        OCSsemiKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc2Fine / 36) * 145f);
+        OCSsemiKnob.rotation = Quaternion.Euler(0, 0, 145f - (synthData.Osc2Semi / 36) * 290f);
+        MixKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}% - {1}%", Mathf.RoundToInt(OCS1mixValue * 100), 100 - Mathf.RoundToInt(OCS1mixValue * 100));
+        OCS1fineKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}", synthData.Osc1Fine, " cents");
+        OCS2fineKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}", synthData.Osc2Fine, " cents");
+        OCSsemiKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}",   synthData.Osc2Semi," semi");
     }
 
     /// <summary>
@@ -113,26 +118,26 @@ public class OscillatorUI : MonoBehaviour
                 //Debug.Log((-Mathf.Sign(-newsynth.Osc1SinSawSquareFactor.x) + 1) * 0.5f);
                 newsynth.Osc1SinSawSquareFactor = OSC1wavetable * factor;
                 newsynth.Osc2SinSawSquareFactor = OSC2wavetable * (1 - factor);
-                displayedValue = new String(Mathf.RoundToInt(((Vector3)newsynth.Osc1SinSawSquareFactor*100).magnitude).ToString() + "% - " + (Mathf.RoundToInt(((Vector3)newsynth.Osc2SinSawSquareFactor).magnitude * 100)).ToString()+ "%");
+                displayedValue = string.Format("{0}% - {1}%",Mathf.RoundToInt(((Vector3)newsynth.Osc1SinSawSquareFactor * 100).magnitude),Mathf.RoundToInt(((Vector3)newsynth.Osc2SinSawSquareFactor).magnitude * 100));
                 break;
             case KnobChangeType.OCS1fine:
                 increment = Mathf.Round((factor - 0.5f) * 2f * 30);
                 newsynth.Osc1Fine = increment;
                 newsynth.Osc2Fine = -increment;
                 OCS2fineKnob.rotation = Quaternion.Euler(0, 0, -newRot);
-                displayedValue = new String(increment.ToString() + " cents");
+                displayedValue = string.Format("{0}{1}", increment.ToString(), " cents");
                 break;
             case KnobChangeType.OCS2fine:
                 increment = Mathf.Round((factor - 0.5f) * 2f * 30);
                 newsynth.Osc1Fine = -increment;
                 newsynth.Osc2Fine = increment;
                 OCS1fineKnob.rotation = Quaternion.Euler(0, 0, -newRot);
-                displayedValue = new String(increment.ToString() + " cents");
+                displayedValue = string.Format("{0}{1}", increment.ToString(), " cents");
                 break;
             case KnobChangeType.OCS2semi:
                 increment = Mathf.Round(MathF.Abs((factor* 36)-36f));
                 newsynth.Osc2Semi = increment;
-                displayedValue = new String(increment.ToString() + " semi");
+                displayedValue = string.Format("{0}{1}", increment.ToString(), " semi");
 
                 break;
         }
