@@ -24,6 +24,68 @@ public struct ADSREnvelope
         Release = release;
     }
 }
+public struct Filter
+{
+    public float Cutoff;
+    public float Resonance;
+    /// Eveloppe ADSR here ?
+
+    public Filter(float cutoff, float resonance)
+    {
+        Cutoff = cutoff;
+        Resonance = resonance;
+    }
+}
+public struct FilterCoefficients
+{
+
+    public float b0;
+    public float b1;
+    public float b2;
+    public float a1;
+    public float a2;
+
+    public FilterCoefficients(float normalizedCutoff, float normalizedResonance)
+    {
+
+        // Map normalized cutoff (0 to 1) to frequency range (20 Hz to 20,000 Hz)
+        float minCutoff = 100.0f;
+        float maxCutoff = 8000.0f;
+        float cutoff = Mathf.Lerp(minCutoff, maxCutoff, normalizedCutoff);
+
+        // Map normalized resonance (0 to 1) to Q factor range (0.707 to 10)
+        float minQ = 0.707f;
+        float maxQ = 5.0f;
+        float q = Mathf.Lerp(minQ, maxQ, normalizedResonance);
+
+        float omega = 2.0f * Mathf.PI * cutoff / 48000;
+        float alpha = Mathf.Sin(omega) / (2.0f * q);
+        float cosw = Mathf.Cos(omega);
+
+        b0 = (1.0f - cosw) / 2.0f;
+        b1 = 1.0f - cosw;
+        b2 = (1.0f - cosw) / 2.0f;
+        float a0 = 1.0f + alpha;
+        a1 = -2.0f * cosw;
+        a2 = 1.0f - alpha;
+
+        // Normalize the coefficients
+        b0 /= a0;
+        b1 /= a0;
+        b2 /= a0;
+        a1 /= a0;
+        a2 /= a0;
+
+    }
+}
+public struct FilterDelayElements
+{
+    public float x0, x1; // input delay elements
+    public float y0, y1; // output delay elements
+}
+
+
+
 /* ADSR sample surface for optimized audio processing */
 public struct ADSRlayouts
 {
@@ -83,7 +145,7 @@ public struct SynthData : IComponentData
     {
         return new SynthData {
             amplitude = 0.2f,
-            Osc1SinSawSquareFactor = new float3(0.5f,0,0),
+            Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
             Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
             ADSR = new ADSREnvelope
             {
@@ -91,6 +153,11 @@ public struct SynthData : IComponentData
                 Decay = 2,
                 Sustain = 0.5f,
                 Release = 1
+            },
+            filter = new Filter
+            {
+                Cutoff = .5f,
+                Resonance = 0.0f
             }
         };
     }
@@ -103,6 +170,8 @@ public struct SynthData : IComponentData
     public float Osc2Semi;
 
     public ADSREnvelope ADSR;
+    public Filter filter;
+
 
 }
 

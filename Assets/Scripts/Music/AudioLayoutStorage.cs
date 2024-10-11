@@ -27,6 +27,7 @@ public struct AudioLayoutStorage
     // PRIVATize SOME STUFF !
     ///change synthdata component to index value here?
     public NativeArray<SynthData> SynthsData;
+    //public NativeArray<FilterDelayElements> filterDelayElements;
     public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
     public static int activeSynthIdx;
 

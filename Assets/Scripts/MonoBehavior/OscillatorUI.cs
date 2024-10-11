@@ -10,7 +10,7 @@ using UnityEngine.UI;
 using UnityEngine.UIElements;
 
 
-public class OscillatorUI : MonoBehaviour
+public class OscillatorUI : MonoBehaviour, IKnobController
 {
     [SerializeField]
     private TMP_Dropdown OCS1wavetable;
@@ -31,6 +31,8 @@ public class OscillatorUI : MonoBehaviour
     private float3 OSC2wavetable;
 
     private EntityManager entityManager;
+
+    UIManager IKnobController.uiManager => uiManager;
 
     void Start()
     {
@@ -147,5 +149,6 @@ public class OscillatorUI : MonoBehaviour
 
         return displayedValue;
     }
+
 
 }

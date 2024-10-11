@@ -59,6 +59,7 @@ public class AudioManager : MonoBehaviour
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0] = audioGenerator.SynthsData[0];
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        //AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = new NativeArray<FilterDelayElements>(1, Allocator.Persistent);
         //audioGenerator.PlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(1, Allocator.Persistent);
         WeaponSystem.WeaponEntities[0] = start_weapon;
 

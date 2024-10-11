@@ -23,8 +23,11 @@ public class AudioGenerator : MonoBehaviour
     //[HideInInspector]
     //public Entity WeaponSynthEntity;
 
-    /// 2 Differents SynthData storage : on weapon entities & here -> OPTI ?
+    /// 2 Differents SynthData storage : on weapon entities & here -> OPTI ? 
+    /// -> Reason ? can't use data from a class instance in a job ?
+    ///
     public NativeArray<SynthData> SynthsData;
+    public NativeArray<FilterDelayElements> _filterDelayElements;
 
     public NativeArray<KeyData> activeKeys;
     public NativeArray<int> activeKeyNumber;
@@ -67,6 +70,7 @@ public class AudioGenerator : MonoBehaviour
     {
         _sampleRate = AudioSettings.outputSampleRate;
         _audioData = new NativeArray<float>(512, Allocator.Persistent);
+        _filterDelayElements = new NativeArray<FilterDelayElements>(1, Allocator.Persistent);
         //audiojobCompleted = false; 
         int ringBufferCapacity = 4;
         //audioLayoutStorage = new AudioLayoutStorage();
@@ -135,6 +139,7 @@ public class AudioGenerator : MonoBehaviour
     private void OnAudioFilterRead(float[] data, int channels)
     {
 
+        /// To reset audio playbacks and keep them in sync with the main thread
         while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Count > 0)
         {
 
@@ -157,19 +162,23 @@ public class AudioGenerator : MonoBehaviour
             {
                 var newSynthsData = new NativeArray<SynthData>(SynthsData.Length+1, Allocator.Persistent);
                 var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
+                var newfilterDelayElements = new NativeArray<FilterDelayElements>(PlaybackAudioBundles.Length + 1, Allocator.Persistent);
 
                 for (int i = 0; i < SynthsData.Length; i++)
                 {
                     newSynthsData[i] = SynthsData[i];
                     newPlaybackBundle[i] = PlaybackAudioBundles[i];
+                    newfilterDelayElements[i] = _filterDelayElements[i];
                     //PlaybackAudioBundles[i].PlaybackKeys.Dispose();
                 }
                 //SynthsData.CopyTo(newSynthsData);
                 newSynthsData[SynthsData.Length] = AudioLayoutStorageHolder.audioLayoutStorage.ReadAddSynth();
                 SynthsData.Dispose();
                 PlaybackAudioBundles.Dispose();
+                newfilterDelayElements.Dispose();
                 SynthsData = newSynthsData;
                 PlaybackAudioBundles = newPlaybackBundle;
+                _filterDelayElements = newfilterDelayElements;
 
             }
             if(AudioLayoutStorageHolder.audioLayoutStorage.SelectSynthUpdateRequirement)
@@ -207,6 +216,9 @@ public class AudioGenerator : MonoBehaviour
                 if (activation.Item2 == true)
                 {
                     //Debug.Log("play");
+
+                    /// native array of FilterDelayElements ?
+                    /// extend the array here ?
 
                     var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length + 1) *12, Allocator.Persistent);
                     var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length+1, Allocator.Persistent);
@@ -541,6 +553,7 @@ public class AudioGenerator : MonoBehaviour
             _JobFrequencies,
             _JobPhases,
             _JobDeltas,
+            _filterDelayElements,
             _audioData,
             activeKeyNumber
             );
@@ -586,6 +599,8 @@ public struct AudioJob : IJob
     [DeallocateOnJobCompletion]
     private NativeArray<float> _JobDeltas;
 
+
+    private NativeArray<FilterDelayElements> _filterDelayElements;
     //[WriteOnly]
     private NativeArray<float> _audioData;
     //[WriteOnly]
@@ -600,6 +615,7 @@ public struct AudioJob : IJob
         NativeArray<float> JobFrequencies,
         NativeArray<float> JobPhases,
         NativeArray<float> JobDeltas,
+        NativeArray<FilterDelayElements> filterDelayElements,
         NativeArray<float> audioData,
         NativeArray<int> activeKeynum
        )
@@ -610,6 +626,7 @@ public struct AudioJob : IJob
         _JobFrequencies = JobFrequencies;
         _JobPhases = JobPhases;
         _JobDeltas = JobDeltas;
+        _filterDelayElements = filterDelayElements;
         _audioData = audioData;
         _activeKeynum = activeKeynum;
     }
@@ -674,6 +691,10 @@ public struct AudioJob : IJob
         NativeArray<float> OSC1phaseIncrement = new NativeArray<float>(_JobFrequencies.Length + 1, Allocator.Temp);
         NativeArray<float> OSC2phaseIncrement = new NativeArray<float>(_JobFrequencies.Length + 1, Allocator.Temp);
 
+        NativeArray<FilterCoefficients> filterCoefficientsStart = new NativeArray<FilterCoefficients>(_activeKeynum.Length + 1, Allocator.Temp);
+        ///NativeArray<FilterCoefficients> filterCoefficientsTarget = new NativeArray<FilterCoefficients>(_activeKeynum.Length + 1, Allocator.Temp);
+
+
         //Debug.Log(_JobDeltas[0]);
 
         float value;
@@ -681,6 +702,12 @@ public struct AudioJob : IJob
         for (int i = 0; i < _activeKeynum.Length; i++)
         {
             ADSREnvelope ADSR = _JobSynths[i].ADSR;
+
+            /// Compute Filter to FilterCoefficients here ?
+
+            filterCoefficientsStart[i] = new FilterCoefficients(_JobSynths[i].filter.Cutoff, _JobSynths[i].filter.Resonance);
+            /// do filterCoefficientsTarget for when Filter enveloppe -> interpolation
+
 
             for (int y = activeKeyStartidx; y < activeKeyStartidx + _activeKeynum[i]; y++)
             {
@@ -745,6 +772,10 @@ public struct AudioJob : IJob
                     _JobPhases[y] = (_JobPhases[y] + OSC1phaseIncrement[y]) % 1;
                     _JobPhases[_JobFrequencies.Length + y] = (_JobPhases[_JobFrequencies.Length + y] + OSC2phaseIncrement[y]) % 1;
 
+
+                    //value = ApplyBiquadFilter(value, filterCoefficientsStart[i], _filterDelayElements[i]);
+
+
                     /// populate all channels with the values
                     for (int channel = 0; channel < ChannelsNum; channel++)
                     {
@@ -775,7 +806,26 @@ public struct AudioJob : IJob
                     }
 
                 }
+
             }
+
+            /// Apply filter
+            for (int z = 0; z < 512; z += ChannelsNum) //512 DSP buffer size
+            {
+                (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(_audioData[z], filterCoefficientsStart[i], _filterDelayElements[i]);
+
+                _filterDelayElements[i] = newDelayElements;
+
+                /// Gain boost to compensate filter's cost
+                //filteredValue *= 1 + (1 - _JobSynths[i].filter.Cutoff)*2f;
+
+                /// populate all channels with the values
+                for (int channel = 0; channel < ChannelsNum; channel++)
+                {
+                    _audioData[z + channel] = filteredValue;
+                }
+            }
+
             activeKeyStartidx += _activeKeynum[i];
         }
 
@@ -812,6 +862,22 @@ public struct AudioJob : IJob
             activeKeyStartidx += _activeKeynum[i];
             _activeKeynum[i] = newkeysNum;
         }
+    }
+
+
+    public (float,FilterDelayElements) ApplyBiquadFilter(float input,FilterCoefficients coefficients,FilterDelayElements delayElements)
+    {
+        float output = coefficients.b0 * input + coefficients.b1 * delayElements.x0 + coefficients.b2 * delayElements.x1 - coefficients.a1 * delayElements.y0 - coefficients.a2 * delayElements.y1;
+
+        delayElements.x1 = delayElements.x0;
+        delayElements.x0 = input;
+
+        delayElements.y1 = delayElements.y0;
+        delayElements.y0 = output;
+
+
+
+        return (output, delayElements);
     }
 
 }

@@ -13,13 +13,22 @@ public enum KnobChangeType
     OCSmix,
     OCS1fine,
     OCS2fine,
-    OCS2semi
+    OCS2semi,
+    FilterCutoff,
+    FilterRes,
+    FilterEnv
 }
 
 public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHandler,IPointerEnterHandler,IPointerExitHandler,IPointerUpHandler,IPointerDownHandler
 {
 
-    private OscillatorUI oscillatorUI;
+    //private OscillatorUI oscillatorUI;
+
+    [SerializeField]
+    private MonoBehaviour knobControllerComponent;
+
+    private IKnobController knobControllerTarget;
+
     [SerializeField]
     private KnobChangeType knobChangeType;
     /// <summary>
@@ -44,13 +53,14 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
             knobIncrementNum = knobIncrementNum % 2 == 0 ? knobIncrementNum : knobIncrementNum+1;
         turnSpeed = 2f;
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
-        oscillatorUI = FindFirstObjectByType<OscillatorUI>().GetComponent<OscillatorUI>();
-        if (oscillatorUI == null)
-        {
-            Debug.LogError("OscillatorUI not found in the scene.");
-        }
+        knobControllerTarget = knobControllerComponent as IKnobController;
+        //oscillatorUI = FindFirstObjectByType<OscillatorUI>().GetComponent<OscillatorUI>();
+        //if (oscillatorUI == null)
+        //{
+        //    Debug.LogError("OscillatorUI not found in the scene.");
+        //}
         float iconRot = this.transform.eulerAngles.z - (180f * (Mathf.Sign(this.transform.eulerAngles.z - 180f) + 1));
-        displayedValue = oscillatorUI.UIknobChange(knobChangeType, iconRot);
+        ///displayedValue = knobControllerTarget.UIknobChange(knobChangeType, iconRot);
 
     }
 
@@ -62,7 +72,7 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
         if (knobIncrementNum != 0)
         {
             //knobAccumulator += (PlayerSystem.mouseDelta.y * turnSpeed * 2)/ (knobIncrementNum - 1);
-            knobAccumulator += (eventData.delta.y / oscillatorUI.uiManager.canvas.scaleFactor) * turnSpeed;
+            knobAccumulator += (eventData.delta.y / knobControllerTarget.uiManager.canvas.scaleFactor) * turnSpeed;
             //Debug.Log(InputManager.mouseDelta.y * turnSpeed);
             if (Mathf.Abs(knobAccumulator) <= 145 / (knobIncrementNum + 1))
             {
@@ -78,12 +88,12 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
             }
         }
         else
-            newRot = Mathf.Max(-145f, Mathf.Min(145f, iconRot - (eventData.delta.y / oscillatorUI.uiManager.canvas.scaleFactor)* turnSpeed));
+            newRot = Mathf.Max(-145f, Mathf.Min(145f, iconRot - (eventData.delta.y / knobControllerTarget.uiManager.canvas.scaleFactor)* turnSpeed));
         this.transform.rotation = Quaternion.Euler(0, 0, newRot);
 
-        displayedValue = oscillatorUI.UIknobChange(knobChangeType,newRot);
+        displayedValue = knobControllerTarget.UIknobChange(knobChangeType,newRot);
 
-        oscillatorUI.uiManager.UpdateDisplayToolTip(new Vector2(transform.position.x+transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, transform.position.y+ transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f), displayedValue);
+        knobControllerTarget.uiManager.UpdateDisplayToolTip(new Vector2(transform.position.x+transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, transform.position.y+ transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f), displayedValue);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -91,13 +101,13 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
 
         mouseInKnob = true;
 
-        if (oscillatorUI.uiManager.toolTip.gameObject.activeSelf)
+        if (knobControllerTarget.uiManager.toolTip.gameObject.activeSelf)
             return;
 
-        oscillatorUI.uiManager.toolTip.gameObject.SetActive(true);
+        knobControllerTarget.uiManager.toolTip.gameObject.SetActive(true);
 
         //Debug.Log(transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f);
-        oscillatorUI.uiManager.UpdateDisplayToolTip(new Vector2(transform.position.x + transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, transform.position.y + transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f), displayedValue);
+        knobControllerTarget.uiManager.UpdateDisplayToolTip(new Vector2(transform.position.x + transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, transform.position.y + transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f), displayedValue);
     
     }
 
@@ -105,14 +115,14 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
     {
         mouseInKnob = false;
         if(!eventData.pointerPress)
-            oscillatorUI.uiManager.toolTip.gameObject.SetActive(false);
+            knobControllerTarget.uiManager.toolTip.gameObject.SetActive(false);
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
         if (mouseInKnob)
             return;
-        oscillatorUI.uiManager.toolTip.gameObject.SetActive(false);
+        knobControllerTarget.uiManager.toolTip.gameObject.SetActive(false);
     }
     /// Required for OnPointerUp to work
     public void OnPointerDown(PointerEventData eventData){}
