@@ -28,7 +28,6 @@ public struct Filter
 {
     public float Cutoff;
     public float Resonance;
-    /// Eveloppe ADSR here ?
 
     public Filter(float cutoff, float resonance)
     {
@@ -49,8 +48,8 @@ public struct FilterCoefficients
     {
 
         // Map normalized cutoff (0 to 1) to frequency range (20 Hz to 20,000 Hz)
-        float minCutoff = 100.0f;
-        float maxCutoff = 8000.0f;
+        float minCutoff = 200.0f;
+        float maxCutoff = 24000.0f;
         float cutoff = Mathf.Lerp(minCutoff, maxCutoff, normalizedCutoff);
 
         // Map normalized resonance (0 to 1) to Q factor range (0.707 to 10)
@@ -97,6 +96,9 @@ public struct ADSRlayouts
 
 
 //internal buffer capacity
+/// <summary>
+/// Dont need phase here ??
+/// </summary>
 public struct SustainedKeyBufferData: IBufferElementData
 {
     public Vector2 DirLenght;
@@ -104,6 +106,8 @@ public struct SustainedKeyBufferData: IBufferElementData
     public float Delta;
     public float Phase;
     public float currentAmplitude;
+    ///filter for coloring
+    public Filter filter;
 
 }
 //internal buffer capacity
@@ -115,6 +119,9 @@ public struct ReleasedKeyBufferData : IBufferElementData
     public float Phase;
     public float currentAmplitude;
     public float amplitudeAtRelease;
+    ///filter for coloring
+    public Filter filter;
+    public float cutoffEnvelopeAtRelease;
 
 }
 public struct PlaybackSustainedKeyBufferData : IBufferElementData
@@ -124,6 +131,8 @@ public struct PlaybackSustainedKeyBufferData : IBufferElementData
     public float Delta;
     public float Phase;
     public float currentAmplitude;
+    ///filter for coloring
+    public Filter filter;
 
 }
 public struct PlaybackReleasedKeyBufferData : IBufferElementData
@@ -134,6 +143,9 @@ public struct PlaybackReleasedKeyBufferData : IBufferElementData
     public float Phase;
     public float currentAmplitude;
     public float amplitudeAtRelease;
+    ///filter for coloring
+    public Filter filter;
+    public float cutoffEnvelopeAtRelease;
 
 }
 
@@ -158,6 +170,13 @@ public struct SynthData : IComponentData
             {
                 Cutoff = .5f,
                 Resonance = 0.0f
+            },
+            filterADSR = new ADSREnvelope
+            {
+                Attack = 0.1f,
+                Decay = 2,
+                Sustain = 0.5f,
+                Release = 1
             }
         };
     }
@@ -171,17 +190,24 @@ public struct SynthData : IComponentData
 
     public ADSREnvelope ADSR;
     public Filter filter;
+    public float filterEnvelopeAmount;
+    public ADSREnvelope filterADSR;
 
 
 }
 
+/// <summary>
+/// 
+///  Only serve as a tag for now -> cleanup
+/// 
+/// </summary>
 public class SynthAuthoring : MonoBehaviour
 {
 
-    public float amplitude;
-    public float frequency;
+    //public float amplitude;
+    //public float frequency;
 
-    public ADSREnvelope ADSR;
+    //public ADSREnvelope ADSR;
 
     class SynthBaker : Baker<SynthAuthoring>
     {
@@ -191,16 +217,16 @@ public class SynthAuthoring : MonoBehaviour
 
             Entity entity = GetEntity(TransformUsageFlags.None);
 
-            AddBuffer<SustainedKeyBufferData>(entity);
-            AddBuffer<ReleasedKeyBufferData>(entity);
+            //AddBuffer<SustainedKeyBufferData>(entity);
+            //AddBuffer<ReleasedKeyBufferData>(entity);
 
 
             AddComponent(entity, new SynthData
             {
-                amplitude = authoring.amplitude,
-                ADSR = authoring.ADSR,
-                Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
-                Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
+                //amplitude = authoring.amplitude,
+                //ADSR = authoring.ADSR,
+                //Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
+                //Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
                 //SinFactor = 1 / 3f,
                 //SawFactor = 1 / 3f,
                 //SquareFactor = 1/3f,

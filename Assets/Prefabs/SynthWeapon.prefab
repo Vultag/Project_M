@@ -9,8 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4437353905377688589}
-  - component: {fileID: 4958081888234436}
-  - component: {fileID: 9049368698589168009}
+  - component: {fileID: 1844676003520532912}
   m_Layer: 0
   m_Name: SynthWeapon
   m_TagString: Untagged
@@ -34,21 +33,7 @@ Transform:
   - {fileID: 4895937195717505806}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4958081888234436
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4375985068073297386}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b031dd26d42de6a42bed3a6305fd8a54, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tempShootSpeed: 2
-  tempShootRange: 5
---- !u!114 &9049368698589168009
+--- !u!114 &1844676003520532912
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -60,13 +45,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 97b7368364385814383a8b21e5470117, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amplitude: 0.25
-  frequency: 246.1
-  ADSR:
-    Attack: 0.1
-    Decay: 2
-    Sustain: 0.5
-    Release: 1
 --- !u!1 &5514085566304492740
 GameObject:
   m_ObjectHideFlags: 0
@@ -141,7 +119,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
-  m_Color: {r: 1, g: 0, b: 0, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

@@ -6,6 +6,7 @@ using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 public class AudioManager : MonoBehaviour
 {
@@ -35,6 +36,14 @@ public class AudioManager : MonoBehaviour
 
     public EndSimulationEntityCommandBufferSystem endSimulationECBSystem;
 
+    private void Awake()
+    {
+        AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0] = SynthData.CreateDefault();
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = new NativeArray<FilterDelayElements>(12, Allocator.Persistent);
+    }
+
     //EntityQuery _query;
     void Start()
     {
@@ -49,16 +58,16 @@ public class AudioManager : MonoBehaviour
 
         Entity player_entity = Player_query.GetSingletonEntity();
         Entity start_weapon = entityManager.GetComponentData<PlayerData>(player_entity).ActiveCanon;
+        entityManager.AddBuffer<SustainedKeyBufferData>(start_weapon);
+        entityManager.AddBuffer<ReleasedKeyBufferData>(start_weapon);
         audioGenerator.activeKeys = new NativeArray<KeyData>(12, Allocator.Persistent);
         audioGenerator.activeKeyNumber = new NativeArray<int>(1, Allocator.Persistent);
         audioGenerator.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         audioGenerator.activeSynthsIdx = new NativeArray<int>(1, Allocator.Persistent);
-        audioGenerator.SynthsData[0] = entityManager.GetComponentData<SynthData>(start_weapon);
-        //audioGenerator.SynthsData[0] = SynthData.CreateDefault();
+        //audioGenerator.SynthsData[0] = entityManager.GetComponentData<SynthData>(start_weapon);
+        audioGenerator.SynthsData[0] = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0];
         audioGenerator.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
-        AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
-        AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0] = audioGenerator.SynthsData[0];
-        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+
         //AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = new NativeArray<FilterDelayElements>(1, Allocator.Persistent);
         //audioGenerator.PlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(1, Allocator.Persistent);
         WeaponSystem.WeaponEntities[0] = start_weapon;

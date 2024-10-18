@@ -26,7 +26,7 @@ public class VerticalSliderMono : MonoBehaviour, IInitializePotentialDragHandler
 
     void Start()
     {
-        ADSRui = FindFirstObjectByType<ADSRUI>().GetComponent<ADSRUI>();
+        ADSRui = this.transform.parent.parent.parent.GetComponent<ADSRUI>();
         Rtrans = this.GetComponent<RectTransform>();
         limit = transform.parent.GetComponent<RectTransform>().rect.height/2 -2;
         target = Rtrans.localPosition.y;

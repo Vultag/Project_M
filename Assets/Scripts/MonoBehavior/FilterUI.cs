@@ -16,8 +16,9 @@ public class FilterUI : MonoBehaviour,IKnobController
     [SerializeField]
     private Image FilterColorImage;
 
-    private float filterCuoff;
+    private float filterCutoff;
     private float filterResonance;
+    private float filterEnvelope;
 
     private EntityManager entityManager;
 
@@ -38,10 +39,11 @@ public class FilterUI : MonoBehaviour,IKnobController
         switch (knobChangeType)
         {
             case KnobChangeType.FilterCutoff:
-                filterCuoff = 1-factor;
+                filterCutoff = 1 - factor;
                 //Debug.Log(filterCuoff);
-                filterToShader.ModifyFilter(filterCuoff, filterResonance);
-                newsynth.filter.Cutoff = filterCuoff;
+                filterToShader.ModifyFilter(filterCutoff, filterResonance,filterEnvelope);
+                //newsynth.filter.Cutoff = Mathf.Exp(filterCutoff * 5 - 5)* filterCutoff;
+                newsynth.filter.Cutoff = filterCutoff;
                 //increment = Mathf.Round((factor - 0.5f) * 2f * 30);
                 //newsynth.Osc1Fine = increment;
                 //newsynth.Osc2Fine = -increment;
@@ -50,7 +52,7 @@ public class FilterUI : MonoBehaviour,IKnobController
             case KnobChangeType.FilterRes:
                 filterResonance = 1-factor;
                 //Debug.Log(filterResonance);
-                filterToShader.ModifyFilter(filterCuoff, filterResonance);
+                filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
                 newsynth.filter.Resonance = filterResonance;
                 //increment = Mathf.Round((factor - 0.5f) * 2f * 30);
                 //newsynth.Osc1Fine = increment;
@@ -59,10 +61,14 @@ public class FilterUI : MonoBehaviour,IKnobController
                 //displayedValue = string.Format("{0}{1}", increment.ToString(), " cents");
                 break;
             case KnobChangeType.FilterEnv:
+                filterEnvelope = 1 - factor;
+                filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
+                newsynth.filterEnvelopeAmount = 1-factor;
+                //to filterToShader
+
                 break;
         }
-
-        float3 color = GetColorFromFilter(filterCuoff, filterResonance);
+        float3 color = GetColorFromFilter(filterCutoff, filterResonance);
         FilterColorImage.color = new Color { r = color.x, g = color.y, b = color.z, a=1.0f };
 
         //Debug.LogError(AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0].Osc1SinSawSquareFactor);
@@ -71,7 +77,7 @@ public class FilterUI : MonoBehaviour,IKnobController
         return displayedValue;
     }
 
-    float3 GetColorFromFilter(float cutoff, float resonance)
+    public static float3 GetColorFromFilter(float cutoff, float resonance)
     {
         float3 blue = new float3(0.0f, 0.0f, 1.0f);
         float3 cyan = new float3(0.0f, 1.0f, 1.0f);
@@ -87,19 +93,19 @@ public class FilterUI : MonoBehaviour,IKnobController
 
 
         // Define thresholds for transitions
-        float t1 = (1f/6f)*1;
-        float t2 = (1f / 6f) * 2;
-        float t3 = (1f / 6f) * 3;
-        float t4 = (1f / 6f) * 4;
-        float t5 = (1f / 6f) * 5;
+        float t1 = (1f/5f)*1;
+        float t2 = (1f / 5f) * 2;
+        float t3 = (1f / 5f) * 3;
+        float t4 = (1f / 5f) * 4;
+        //float t5 = (1f / 6f) * 5;
 
         // Compute blend factors
         float blend1 = math.smoothstep(0.0f, t1, cutoff);
         float blend2 = math.smoothstep(t1, t2, cutoff);
         float blend3 = math.smoothstep(t2, t3, cutoff);
         float blend4 = math.smoothstep(t3, t4, cutoff);
-        float blend5 = math.smoothstep(t4, t5, cutoff);
-        float blend6 = math.smoothstep(t5, 1.0f, cutoff);
+        float blend5 = math.smoothstep(t4, (4.5f/5), cutoff);
+        float blend6 = math.smoothstep((4.5f / 5), 1.0f, cutoff);
 
         // Linearly interpolate between colors based on the blend factors
         color = Vector3.Lerp(blue, cyan, blend1);

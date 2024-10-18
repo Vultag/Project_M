@@ -12,6 +12,8 @@ public struct KeyData
     public float delta;
     /* at 0, key is pressed. != 0, the key is released */
     public float amplitudeAtRelease;
+    public float CutoffAmountAtRelease;
+    public FilterDelayElements filterDelayElements;
 
 }
 public struct KeysBuffer

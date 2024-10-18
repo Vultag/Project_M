@@ -61,6 +61,7 @@ Shader "Unlit/WeaponRaysShader"
                 float2 direction;
                 float frequency;
                 float amplitude;
+                float3 color;
             };
             
             //sampler2D _SignalData;
@@ -151,7 +152,8 @@ Shader "Unlit/WeaponRaysShader"
 
                     //color += fixed4(1.,0,0,max(0.,sinWave));
                     //color += fixed4(max(0.,sinWave),max(0.,sawWave),max(0.,squareWave),max(0.,(squareWave*sd.SinSawSquareFactor.z)+(sawWave*sd.SinSawSquareFactor.y)+(sinWave*sd.SinSawSquareFactor.x)));
-                    color += fixed4(1.,1.,1.,max(0.,(squareWave*sd.SinSawSquareFactor.z)+(sawWave*sd.SinSawSquareFactor.y)+(sinWave*sd.SinSawSquareFactor.x)));
+                    float alpha = max(0.,(squareWave*sd.SinSawSquareFactor.z)+(sawWave*sd.SinSawSquareFactor.y)+(sinWave*sd.SinSawSquareFactor.x));
+                    color += fixed4(sd.color.x*alpha,sd.color.y*alpha,sd.color.z*alpha,alpha);
                     //color = fixed4(1.,1.,1.,1.);
                 }
 

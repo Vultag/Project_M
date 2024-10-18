@@ -309,7 +309,12 @@ PrefabInstance:
       propertyPath: amplitude
       value: 0.2
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 9049368698589168009, guid: 50ea754e5d2005047b35cc12dddc1187, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 9049368698589168009, guid: 50ea754e5d2005047b35cc12dddc1187, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

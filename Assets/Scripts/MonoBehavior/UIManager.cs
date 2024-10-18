@@ -31,7 +31,9 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     private OscillatorUI oscillatorUI;
     [SerializeField]
-    private ADSRUI adsrUI;
+    private ADSRUI volumeAdsrUI;
+    [SerializeField]
+    private ADSRUI filterAdsrUI;
 
     [SerializeField]
     SliderMono simplexSlider;
@@ -184,7 +186,8 @@ public class UIManager : MonoBehaviour
         var synthData = AudioManager.audioGenerator.SynthsData[activeSynthIdx];
         //Debug.Log(synthData.ADSR.Sustain);
         oscillatorUI.UpdateUI(synthData);
-        adsrUI.UpdateUI(synthData);
+        volumeAdsrUI.UpdateUI(synthData);
+        filterAdsrUI.UpdateUI(synthData);
 
         //simplexSlider.UpdateSlider(synthData.SinFactor, synthData.SquareFactor,synthData.SawFactor);
 

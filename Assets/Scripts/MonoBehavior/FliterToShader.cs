@@ -29,15 +29,16 @@ public class FliterToShader : MonoBehaviour
     }
 
 
-    public void ModifyFilter(float cutoff, float resonance)
+    public void ModifyFilter(float cutoff, float resonance,float envelope)
     {
         // Ensure the shader properties are updated before baking
         //filterMat.SetPass(0);
 
         filterMat.shader = bakingShader;
 
-        filterMat.SetFloat("_Frequency", cutoff);
+        filterMat.SetFloat("_FrequencyNorm", cutoff);
         filterMat.SetFloat("_Q", resonance);
+        filterMat.SetFloat("_Envelope", envelope);
 
         //Debug.Log(resonance);
 

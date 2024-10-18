@@ -8,6 +8,7 @@ using MusicNamespace;
 using Unity.Mathematics;
 using Unity.Entities.UniversalDelegates;
 using UnityEditor.Rendering;
+using NUnit.Framework.Internal.Filters;
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateAfter(typeof(PhyResolutionSystem))]
@@ -74,8 +75,6 @@ public partial class WeaponSystem : SystemBase
         ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
         BeatProximity = 0.5f - Mathf.Abs(0.5f - (BeatCooldown / MusicUtils.BPM));
-
-
 
         //Entity weapon_entity = AudioManager.ActiveWeapon_query.GetSingletonEntity();
 
@@ -147,7 +146,7 @@ public partial class WeaponSystem : SystemBase
                     {
                         //add to play buffer
                         PlayedKeyIndex = SkeyBuffer.Length;
-                        SkeyBuffer.Add(new SustainedKeyBufferData { DirLenght = direction, EffectiveDirLenght = direction, Delta = 0, Phase = 0 });
+                        SkeyBuffer.Add(new SustainedKeyBufferData { DirLenght = direction, EffectiveDirLenght = direction, Delta = 0, Phase = 0});
                     }
                     else
                     {
@@ -195,7 +194,18 @@ public partial class WeaponSystem : SystemBase
                     }
 
                     //Debug.LogError("newDeltaFactor * ActiveSynth.ADSR.Release");
-                    RkeyBuffer.Add(new ReleasedKeyBufferData { DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght, Delta = Mathf.Exp(4.6f*(newDeltaFactor-1)) * ActiveSynth.ADSR.Release, Phase = SkeyBuffer[PlayedKeyIndex].Phase, currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude,amplitudeAtRelease = SkeyBuffer[PlayedKeyIndex].currentAmplitude });
+                    RkeyBuffer.Add(new ReleasedKeyBufferData { 
+                        DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, 
+                        EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght,
+                        //Delta = Mathf.Exp(4.6f*(newDeltaFactor-1)) * ActiveSynth.ADSR.Release, 
+                        Delta = 0, 
+                        Phase = SkeyBuffer[PlayedKeyIndex].Phase, 
+                        currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude,
+                        amplitudeAtRelease = SkeyBuffer[PlayedKeyIndex].currentAmplitude,
+                        filter = SkeyBuffer[PlayedKeyIndex].filter,
+                        cutoffEnvelopeAtRelease = SkeyBuffer[PlayedKeyIndex].filter.Cutoff - ActiveSynth.filter.Cutoff
+                    });
+
                     SkeyBuffer.RemoveAt(PlayedKeyIndex);
                 }
                 IsShooting = false;
@@ -209,7 +219,7 @@ public partial class WeaponSystem : SystemBase
             KeysBuffer keysBuffer = new KeysBuffer { keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), KeyNumber = new NativeArray<short>(1, Allocator.Temp) };
             keysBuffer.KeyNumber[0] = (short)(SkeyBuffer.Length);
 
-            /// Damage processing + Delta/amplitude incrementing + audioBufferData filling
+            /// Damage processing + Delta/amplitude/filtering incrementing + audioBufferData filling
             for (int i = 0; i < SkeyBuffer.Length; i++)
             {
                 keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(SkeyBuffer[i].DirLenght);
@@ -217,6 +227,36 @@ public partial class WeaponSystem : SystemBase
                 RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y),DirLength=SkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
 
                 float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
+                float newCurrentAmplitude;
+                Filter newFilter = new Filter(0,0);
+                //float Cutoff = ActiveSynth.filter.Cutoff / (Mathf.Exp(* 5 - 5));
+
+                newCurrentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? 
+                    newDelta / ActiveSynth.ADSR.Attack : 
+                    Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay));
+                
+                newFilter.Cutoff = newDelta < ActiveSynth.filterADSR.Attack? 
+                    ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (newDelta / ActiveSynth.filterADSR.Attack)):
+                    ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (1 - (Mathf.Min(ActiveSynth.filterADSR.Attack + ActiveSynth.filterADSR.Decay, newDelta) - ActiveSynth.filterADSR.Attack) / ActiveSynth.filterADSR.Decay) * (1 - ActiveSynth.filterADSR.Sustain) + (ActiveSynth.filterADSR.Sustain* ActiveSynth.filterEnvelopeAmount));
+
+                //if (newDelta < ActiveSynth.ADSR.Attack)
+                //{
+                //    newCurrentAmplitude = newDelta / ActiveSynth.ADSR.Attack;
+                //}
+                //else
+                //{
+                //    newCurrentAmplitude = Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay));
+                // }
+                //if (newDelta < ActiveSynth.filterADSR.Attack)
+                //{
+                //    newFilter.Cutoff = ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (newDelta / ActiveSynth.filterADSR.Attack));
+                //}
+                //else
+                //{
+                //    newFilter.Cutoff = ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (1 - (Mathf.Min(ActiveSynth.filterADSR.Attack + ActiveSynth.filterADSR.Decay, newDelta) - ActiveSynth.filterADSR.Attack) / ActiveSynth.filterADSR.Decay) * (1 - ActiveSynth.filterADSR.Sustain) + ActiveSynth.filterADSR.Sustain);
+                //}
+
+
 
                 if (Hit.entity != Entity.Null)
                 {
@@ -229,7 +269,8 @@ public partial class WeaponSystem : SystemBase
                         DirLenght = SkeyBuffer[i].DirLenght,
                         EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance/ SkeyBuffer[i].DirLenght.magnitude), 
                         Phase = SkeyBuffer[i].Phase,
-                        currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay))
+                        currentAmplitude = newCurrentAmplitude,
+                        filter = newFilter
                     };
 
 
@@ -255,7 +296,8 @@ public partial class WeaponSystem : SystemBase
                         Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, 
                         DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, 
                         Phase = SkeyBuffer[i].Phase,
-                        currentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? newDelta / ActiveSynth.ADSR.Attack : Mathf.Max(ActiveSynth.ADSR.Sustain, 1 -((newDelta- ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay))
+                        currentAmplitude = newCurrentAmplitude,
+                        filter = newFilter
                     };
                     //Debug.Log(Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay)));
                     
@@ -268,6 +310,14 @@ public partial class WeaponSystem : SystemBase
             {
 
                 float newDelta = RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
+                //float Cutoff = ActiveSynth.filter.Cutoff / (Mathf.Exp(ActiveSynth.filter.Cutoff * 5 - 5) * ActiveSynth.filter.Cutoff);
+                
+                Filter newFilter = new Filter
+                {
+                    Cutoff = ActiveSynth.filter.Cutoff + ((RkeyBuffer[i].cutoffEnvelopeAtRelease) * (1- Mathf.Min(ActiveSynth.filterADSR.Release, newDelta) /ActiveSynth.filterADSR.Release)),
+                    Resonance = 0
+                };
+
                 if (newDelta > ActiveSynth.ADSR.Release)
                 {
                     RkeyBuffer.RemoveAt(i);
@@ -290,7 +340,9 @@ public partial class WeaponSystem : SystemBase
                         EffectiveDirLenght = RkeyBuffer[i].DirLenght * (Hit.distance / RkeyBuffer[i].DirLenght.magnitude),
                         Phase = RkeyBuffer[i].Phase,
                         currentAmplitude = RkeyBuffer[i].amplitudeAtRelease * Mathf.Exp(-4.6f * RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release),
-                        amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease
+                        amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease,
+                        filter = newFilter,
+                        cutoffEnvelopeAtRelease = RkeyBuffer[i].cutoffEnvelopeAtRelease,
                     };
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
@@ -317,12 +369,15 @@ public partial class WeaponSystem : SystemBase
                         Phase = RkeyBuffer[i].Phase,
                         currentAmplitude = RkeyBuffer[i].amplitudeAtRelease*Mathf.Exp(-4.6f * RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release),
                         //currentAmplitude = RkeyBuffer[i].amplitudeAtRelease * (1 - newDelta / ActiveSynth.ADSR.Release),
-                        amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease
+                        amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease,
+                        filter = newFilter,
+                        cutoffEnvelopeAtRelease = RkeyBuffer[i].cutoffEnvelopeAtRelease,
                     };
                     //Debug.Log(RkeyBuffer[i].currentAmplitude);
 
                     //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + RkeyBuffer[i].DirLenght, new Color(1,1,1,1), SystemAPI.Time.DeltaTime);
 
+                    //Debug.Log(RkeyBuffer[i].filter.Cutoff);
                 }
 
 
