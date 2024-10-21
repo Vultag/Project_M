@@ -54,13 +54,9 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
         turnSpeed = 2f;
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         knobControllerTarget = knobControllerComponent as IKnobController;
-        //oscillatorUI = FindFirstObjectByType<OscillatorUI>().GetComponent<OscillatorUI>();
-        //if (oscillatorUI == null)
-        //{
-        //    Debug.LogError("OscillatorUI not found in the scene.");
-        //}
+
         float iconRot = this.transform.eulerAngles.z - (180f * (Mathf.Sign(this.transform.eulerAngles.z - 180f) + 1));
-        ///displayedValue = knobControllerTarget.UIknobChange(knobChangeType, iconRot);
+        displayedValue = knobControllerTarget.UIknobChange(knobChangeType, iconRot);
 
     }
 

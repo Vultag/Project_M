@@ -93,10 +93,6 @@ public struct AudioLayoutStorage
         var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
         PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
         newPlaybackAudioBundles[synthIdx] = newPlaybackAudioBundle;
-        //for (int i = 0; i < PlaybackAudioBundles.Length; i++)
-        //{
-        //    PlaybackAudioBundles[i].PlaybackKeys.Dispose();
-        //}
         PlaybackAudioBundles.Dispose();
         PlaybackAudioBundles = newPlaybackAudioBundles;
 

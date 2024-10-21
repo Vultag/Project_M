@@ -41,7 +41,8 @@ public class AudioManager : MonoBehaviour
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0] = SynthData.CreateDefault();
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
-        AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = new NativeArray<FilterDelayElements>(12, Allocator.Persistent);
+        /// starting active synth(12) + starting synth playback(12) = 24
+        AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = new NativeArray<FilterDelayElements>(24, Allocator.Persistent);
     }
 
     //EntityQuery _query;
@@ -155,6 +156,8 @@ public class AudioManager : MonoBehaviour
         ecb.AddComponent(new_weapon, new Parent { Value = player_entity });
         // Add the LocalToWorld component to the child entity to ensure its position is calculated correctly
         ecb.AddComponent(new_weapon, new LocalToWorld { Value = float4x4.identity });
+        ecb.AddBuffer<SustainedKeyBufferData>(new_weapon);
+        ecb.AddBuffer<ReleasedKeyBufferData>(new_weapon);
 
         AudioLayoutStorageHolder.audioLayoutStorage.WriteAddSynth(SynthData.CreateDefault());
 

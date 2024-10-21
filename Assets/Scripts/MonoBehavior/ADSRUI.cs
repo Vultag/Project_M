@@ -100,6 +100,8 @@ public class ADSRUI : MonoBehaviour
                         newsynth.filterADSR = new ADSREnvelope { Attack = value, Decay = newsynth.filterADSR.Decay, Sustain = newsynth.filterADSR.Sustain, Release = newsynth.filterADSR.Release };
                         break;
                     case 1:
+                        /// important to make it !=0
+                        value += 0.000001f;
                         newsynth.filterADSR = new ADSREnvelope { Attack = newsynth.filterADSR.Attack, Decay = value, Sustain = newsynth.filterADSR.Sustain, Release = newsynth.filterADSR.Release };
                         break;
                     case 2:

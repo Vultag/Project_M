@@ -47,9 +47,10 @@ public struct FilterCoefficients
     public FilterCoefficients(float normalizedCutoff, float normalizedResonance)
     {
 
-        // Map normalized cutoff (0 to 1) to frequency range (20 Hz to 20,000 Hz)
+        /// Map normalized cutoff (0 to 1) to frequency range (200 Hz to 24,000 Hz)
+        /// tweaked to 23998 to prevend accasional artefacts happening on key release when cutoff>=24000 for a unknowed reason
         float minCutoff = 200.0f;
-        float maxCutoff = 24000.0f;
+        float maxCutoff = 23998.0f;
         float cutoff = Mathf.Lerp(minCutoff, maxCutoff, normalizedCutoff);
 
         // Map normalized resonance (0 to 1) to Q factor range (0.707 to 10)
@@ -168,7 +169,7 @@ public struct SynthData : IComponentData
             },
             filter = new Filter
             {
-                Cutoff = .5f,
+                Cutoff = 1.0f,
                 Resonance = 0.0f
             },
             filterADSR = new ADSREnvelope

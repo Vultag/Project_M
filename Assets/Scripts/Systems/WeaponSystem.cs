@@ -76,7 +76,7 @@ public partial class WeaponSystem : SystemBase
 
         BeatProximity = 0.5f - Mathf.Abs(0.5f - (BeatCooldown / MusicUtils.BPM));
 
-        //Entity weapon_entity = AudioManager.ActiveWeapon_query.GetSingletonEntity();
+        //Debug.Log(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
         DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
@@ -94,18 +94,7 @@ public partial class WeaponSystem : SystemBase
             {
                 RkeyBuffer.RemoveAt(i);
             }
-            else
-            {
-                //RkeyBuffer[i] = new ReleasedKeyBufferData { Delta = newDelta, Direction = RkeyBuffer[i].Direction, Phase = RkeyBuffer[i].Phase, currentAmplitude = 1-(newDelta / ActiveSynth.ADSR.Release) };
-            }
         }
-        //for (int i = 0; i < SkeyBuffer.Length; i++)
-        //{
-        //    float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
-        //    SkeyBuffer[i] = new SustainedKeyBufferData { Delta = newDelta, Direction = SkeyBuffer[i].Direction, Phase = SkeyBuffer[i].Phase, currentAmplitude = newDelta<ActiveSynth.ADSR.Attack?newDelta/ ActiveSynth.ADSR.Attack:1f };
-        //    //if (SkeyBuffer[i].Delta > ActiveSynth.ADSR.Attack+1.5f)
-        //    //    Debug.Break();
-        //}
 
         /// Move to Synth system all together ?
         foreach (var (Wtrans, trans) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>>().WithAll<SynthData>())
@@ -175,24 +164,6 @@ public partial class WeaponSystem : SystemBase
 
                 if (ActiveSynth.ADSR.Sustain > 0 && SkeyBuffer.Length != 0)
                 {
-                    float newDeltaFactor;
-
-                    if (SkeyBuffer[PlayedKeyIndex].Delta < ActiveSynth.ADSR.Attack)
-                    {
-                        if (ActiveSynth.ADSR.Attack == 0)
-                            newDeltaFactor =  0f;
-                        else
-                            newDeltaFactor = 1-(SkeyBuffer[PlayedKeyIndex].Delta / ActiveSynth.ADSR.Attack);
-                    }
-                    else
-                    {
-                        if (ActiveSynth.ADSR.Decay == 0)
-                            newDeltaFactor = 1-ActiveSynth.ADSR.Sustain;
-                        else
-                            newDeltaFactor = (1-ActiveSynth.ADSR.Sustain) * Mathf.Clamp(((SkeyBuffer[PlayedKeyIndex].Delta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay), 0, 1f);
-                        //Debug.Log(((SkeyBuffer[PlayedKeyIndex].Delta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay));
-                    }
-
                     //Debug.LogError("newDeltaFactor * ActiveSynth.ADSR.Release");
                     RkeyBuffer.Add(new ReleasedKeyBufferData { 
                         DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, 
@@ -229,8 +200,7 @@ public partial class WeaponSystem : SystemBase
                 float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                 float newCurrentAmplitude;
                 Filter newFilter = new Filter(0,0);
-                //float Cutoff = ActiveSynth.filter.Cutoff / (Mathf.Exp(* 5 - 5));
-
+              
                 newCurrentAmplitude = newDelta < ActiveSynth.ADSR.Attack ? 
                     newDelta / ActiveSynth.ADSR.Attack : 
                     Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay));
@@ -238,24 +208,6 @@ public partial class WeaponSystem : SystemBase
                 newFilter.Cutoff = newDelta < ActiveSynth.filterADSR.Attack? 
                     ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (newDelta / ActiveSynth.filterADSR.Attack)):
                     ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (1 - (Mathf.Min(ActiveSynth.filterADSR.Attack + ActiveSynth.filterADSR.Decay, newDelta) - ActiveSynth.filterADSR.Attack) / ActiveSynth.filterADSR.Decay) * (1 - ActiveSynth.filterADSR.Sustain) + (ActiveSynth.filterADSR.Sustain* ActiveSynth.filterEnvelopeAmount));
-
-                //if (newDelta < ActiveSynth.ADSR.Attack)
-                //{
-                //    newCurrentAmplitude = newDelta / ActiveSynth.ADSR.Attack;
-                //}
-                //else
-                //{
-                //    newCurrentAmplitude = Mathf.Max(ActiveSynth.ADSR.Sustain, 1 - ((newDelta - ActiveSynth.ADSR.Attack) / ActiveSynth.ADSR.Decay));
-                // }
-                //if (newDelta < ActiveSynth.filterADSR.Attack)
-                //{
-                //    newFilter.Cutoff = ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (newDelta / ActiveSynth.filterADSR.Attack));
-                //}
-                //else
-                //{
-                //    newFilter.Cutoff = ActiveSynth.filter.Cutoff + (ActiveSynth.filterEnvelopeAmount * (1 - (Mathf.Min(ActiveSynth.filterADSR.Attack + ActiveSynth.filterADSR.Decay, newDelta) - ActiveSynth.filterADSR.Attack) / ActiveSynth.filterADSR.Decay) * (1 - ActiveSynth.filterADSR.Sustain) + ActiveSynth.filterADSR.Sustain);
-                //}
-
 
 
                 if (Hit.entity != Entity.Null)
@@ -383,12 +335,6 @@ public partial class WeaponSystem : SystemBase
 
 
             }
-
-            //if (keysBuffer.keyFrenquecies[0] == 0 && keysBuffer.KeyNumber[0]!=0)
-            //    Debug.Log("tetetetet");
-            //if(SkeyBuffer.Length !=0)
-            //    Debug.LogError(SkeyBuffer[0].Direction);
-            //Debug.LogError(keysBuffer.keyFrenquecies[0]);
 
             /// Write to the audioRingBuffer to be played on the audio thread
             if (!AudioGenerator.audioRingBuffer.IsFull)

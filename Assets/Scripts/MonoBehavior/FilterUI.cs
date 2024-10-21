@@ -6,6 +6,7 @@ using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.Rendering.DebugUI;
 
 public class FilterUI : MonoBehaviour,IKnobController
 {
@@ -15,6 +16,12 @@ public class FilterUI : MonoBehaviour,IKnobController
     private FliterToShader filterToShader;
     [SerializeField]
     private Image FilterColorImage;
+    [SerializeField]
+    private Transform filterCutoffKnob;
+    [SerializeField]
+    private Transform filterResonanceKnob;
+    [SerializeField]
+    private Transform filterEnvelopeAmountKnob;
 
     private float filterCutoff;
     private float filterResonance;
@@ -27,54 +34,60 @@ public class FilterUI : MonoBehaviour,IKnobController
     void Start()
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        filterCutoff = 1;
+        filterResonance = 0;
+        filterEnvelope = 0;
+    }
+
+    public void UpdateUI(SynthData synthData)
+    {
+        filterCutoff = synthData.filter.Cutoff;
+        filterResonance = synthData.filter.Resonance;
+        filterEnvelope = synthData.filterEnvelopeAmount;
+        filterToShader.ModifyFilter(synthData.filter.Cutoff, synthData.filter.Resonance,synthData.filterEnvelopeAmount);
+        filterCutoffKnob.rotation = Quaternion.Euler(0, 0, ((1 - synthData.filter.Cutoff) - 0.5f) * 2f * 145f);
+        filterResonanceKnob.rotation = Quaternion.Euler(0, 0, ((1-synthData.filter.Resonance) - 0.5f) * 2f * 145f);
+        filterEnvelopeAmountKnob.rotation = Quaternion.Euler(0, 0, ((1-synthData.filterEnvelopeAmount) - 0.5f) * 2f * 145f);
+        filterCutoffKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - synthData.filter.Cutoff));
+        filterResonanceKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - synthData.filter.Resonance));
+        filterCutoffKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - synthData.filterEnvelopeAmount));
     }
 
     public String UIknobChange(KnobChangeType knobChangeType, float newRot)
     {
         SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
         float factor = (newRot + 145) / 290;
-        float increment = 0;
-        String displayedValue = "";
+        float displayedValue=0;
 
         switch (knobChangeType)
         {
             case KnobChangeType.FilterCutoff:
                 filterCutoff = 1 - factor;
                 //Debug.Log(filterCuoff);
-                filterToShader.ModifyFilter(filterCutoff, filterResonance,filterEnvelope);
-                //newsynth.filter.Cutoff = Mathf.Exp(filterCutoff * 5 - 5)* filterCutoff;
                 newsynth.filter.Cutoff = filterCutoff;
-                //increment = Mathf.Round((factor - 0.5f) * 2f * 30);
-                //newsynth.Osc1Fine = increment;
-                //newsynth.Osc2Fine = -increment;
-                //displayedValue = string.Format("{0}{1}", increment.ToString(), " cents");
+                displayedValue = filterCutoff;
                 break;
             case KnobChangeType.FilterRes:
                 filterResonance = 1-factor;
                 //Debug.Log(filterResonance);
-                filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
                 newsynth.filter.Resonance = filterResonance;
-                //increment = Mathf.Round((factor - 0.5f) * 2f * 30);
-                //newsynth.Osc1Fine = increment;
-                //newsynth.Osc2Fine = -increment;
-                //OCS2fineKnob.rotation = Quaternion.Euler(0, 0, -newRot);
-                //displayedValue = string.Format("{0}{1}", increment.ToString(), " cents");
+                displayedValue = filterResonance;
                 break;
             case KnobChangeType.FilterEnv:
                 filterEnvelope = 1 - factor;
-                filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
                 newsynth.filterEnvelopeAmount = 1-factor;
-                //to filterToShader
-
+                displayedValue = filterEnvelope;
                 break;
         }
+
+        filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
         float3 color = GetColorFromFilter(filterCutoff, filterResonance);
         FilterColorImage.color = new Color { r = color.x, g = color.y, b = color.z, a=1.0f };
 
         //Debug.LogError(AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0].Osc1SinSawSquareFactor);
         AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
 
-        return displayedValue;
+        return string.Format("{0:0.00}", displayedValue);
     }
 
     public static float3 GetColorFromFilter(float cutoff, float resonance)

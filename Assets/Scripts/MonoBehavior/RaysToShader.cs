@@ -76,8 +76,6 @@ public class RaysToShader : MonoBehaviour
         DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
         DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
 
-        //SynthWeaponData activeWeapon_data = entityManager.GetComponentData<SynthWeaponData>(activeWeapon_entity);
-
         //Debug.Log(ActivePlaybackBufferEntityQuery.CalculateEntityCount());
 
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
@@ -94,52 +92,46 @@ public class RaysToShader : MonoBehaviour
             Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);
             Signals[i].amplitude = SkeyBuffer[i].currentAmplitude;
             Signals[i].color = FilterUI.GetColorFromFilter(SkeyBuffer[i].filter.Cutoff, SkeyBuffer[i].filter.Resonance);
-            //Debug.Log(FilterUI.GetColorFromFilter(SkeyBuffer[i].filter.Cutoff, SkeyBuffer[i].filter.Resonance));
-            //Signals[i].color = new float3(0,1,0);
         }
         int y = i;
         for (; y < RkeyBuffer.Length+i; y++)
         {
-            //Debug.Log(FilterUI.GetColorFromFilter(RkeyBuffer[y - i].filter.Cutoff, RkeyBuffer[y - i].filter.Resonance));
-            //Debug.Log(RkeyBuffer.Length);
             Signals[y].SinSawSquareFactor = audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc1SinSawSquareFactor + audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc2SinSawSquareFactor;
             Signals[y].direction = (float2)RkeyBuffer[y - i].EffectiveDirLenght;
             Signals[y].frequency = MusicUtils.DirectionToFrequency(RkeyBuffer[y-i].EffectiveDirLenght);
             Signals[y].amplitude = RkeyBuffer[y-i].currentAmplitude;
             Signals[y].color = FilterUI.GetColorFromFilter(RkeyBuffer[y - i].filter.Cutoff, RkeyBuffer[y - i].filter.Resonance);
-            //Signals[y].color = new float3(1, 0, 0);
         }
         // Populate the signals array with playback weapon signals
         NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackBufferEntityQuery.ToEntityArray(Allocator.Temp);
         int c = y;
-        //for (int z = 0; z < PlaybackBufferEntities.Length; z++)
-        //{
-        //    DynamicBuffer<PlaybackSustainedKeyBufferData> PlaybackSkeyBuffer = entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(PlaybackBufferEntities[z]);
-        //    DynamicBuffer<PlaybackReleasedKeyBufferData> PlaybackRkeyBuffer = entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(PlaybackBufferEntities[z]);
-        //    //Debug.Log(PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length);
-        //    SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
-        //    SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex];
-        //    int a = 0;
-        //    for (; a < PlaybackSkeyBuffer.Length; a++)
-        //    {
-        //        Signals[c+a].SinSawSquareFactor = PlaybackData.Osc1SinSawSquareFactor + PlaybackData.Osc2SinSawSquareFactor;
-        //        Signals[c + a].direction = (float2)PlaybackSkeyBuffer[a].EffectiveDirLenght;
-        //        Signals[c + a].frequency = MusicUtils.DirectionToFrequency(PlaybackSkeyBuffer[a].EffectiveDirLenght);
-        //        Signals[c + a].amplitude = PlaybackSkeyBuffer[a].currentAmplitude;
-        //        Signals[c + a].color = FilterUI.GetColorFromFilter(PlaybackSkeyBuffer[a].filter.Cutoff, PlaybackSkeyBuffer[a].filter.Resonance);
-        //    }
-        //    int b = a;
-        //    for (; b < PlaybackRkeyBuffer.Length+a; b++)
-        //    {
-        //        Signals[c + b].SinSawSquareFactor = PlaybackData.Osc1SinSawSquareFactor + PlaybackData.Osc2SinSawSquareFactor;
-        //        Signals[c + b].direction = (float2)PlaybackRkeyBuffer[b-a].EffectiveDirLenght;
-        //        Signals[c + b].frequency = MusicUtils.DirectionToFrequency(PlaybackRkeyBuffer[b - a].EffectiveDirLenght);
-        //        Signals[c + b].amplitude = PlaybackRkeyBuffer[b - a].currentAmplitude;
-        //        Signals[c + b].color = FilterUI.GetColorFromFilter(PlaybackRkeyBuffer[b - a].filter.Cutoff, PlaybackRkeyBuffer[b - a].filter.Resonance);
-        //    }
-        //    c += b;
-        //}
-        
+        for (int z = 0; z < PlaybackBufferEntities.Length; z++)
+        {
+            DynamicBuffer<PlaybackSustainedKeyBufferData> PlaybackSkeyBuffer = entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(PlaybackBufferEntities[z]);
+            DynamicBuffer<PlaybackReleasedKeyBufferData> PlaybackRkeyBuffer = entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(PlaybackBufferEntities[z]);
+            SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
+            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex];
+            int a = 0;
+            for (; a < PlaybackSkeyBuffer.Length; a++)
+            {
+                Signals[c + a].SinSawSquareFactor = PlaybackData.Osc1SinSawSquareFactor + PlaybackData.Osc2SinSawSquareFactor;
+                Signals[c + a].direction = (float2)PlaybackSkeyBuffer[a].EffectiveDirLenght;
+                Signals[c + a].frequency = MusicUtils.DirectionToFrequency(PlaybackSkeyBuffer[a].EffectiveDirLenght);
+                Signals[c + a].amplitude = PlaybackSkeyBuffer[a].currentAmplitude;
+                Signals[c + a].color = FilterUI.GetColorFromFilter(PlaybackSkeyBuffer[a].filter.Cutoff, PlaybackSkeyBuffer[a].filter.Resonance);
+            }
+            int b = a;
+            for (; b < PlaybackRkeyBuffer.Length + a; b++)
+            {
+                Signals[c + b].SinSawSquareFactor = PlaybackData.Osc1SinSawSquareFactor + PlaybackData.Osc2SinSawSquareFactor;
+                Signals[c + b].direction = (float2)PlaybackRkeyBuffer[b - a].EffectiveDirLenght;
+                Signals[c + b].frequency = MusicUtils.DirectionToFrequency(PlaybackRkeyBuffer[b - a].EffectiveDirLenght);
+                Signals[c + b].amplitude = PlaybackRkeyBuffer[b - a].currentAmplitude;
+                Signals[c + b].color = FilterUI.GetColorFromFilter(PlaybackRkeyBuffer[b - a].filter.Cutoff, PlaybackRkeyBuffer[b - a].filter.Resonance);
+            }
+            c += b;
+        }
+
 
         // Update the compute buffer with the new signal data
         SignalBuffer.SetData(Signals, 0, 0, SignalCount);

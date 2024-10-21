@@ -25,6 +25,7 @@ public class FliterToShader : MonoBehaviour
         imageRes = new Vector2(this.GetComponent<RectTransform>().rect.width, this.GetComponent<RectTransform>().rect.height);
         displayShader = Shader.Find("Unlit/TextureDisplayShader");
         bakingShader = Shader.Find("Unlit/FilterScreenShader");
+        ModifyFilter(1,0, 0);
         //BakeShaderToTexture();
     }
 
@@ -33,6 +34,8 @@ public class FliterToShader : MonoBehaviour
     {
         // Ensure the shader properties are updated before baking
         //filterMat.SetPass(0);
+        if (filterMat == null)
+            return;
 
         filterMat.shader = bakingShader;
 

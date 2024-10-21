@@ -4265,6 +4265,7 @@ MonoBehaviour:
   oscillatorUI: {fileID: 1335034224}
   volumeAdsrUI: {fileID: 921416181}
   filterAdsrUI: {fileID: 1547946112}
+  filterUI: {fileID: 2125048453}
   simplexSlider: {fileID: 1434762584}
   toolTip: {fileID: 406741879}
   canvas: {fileID: 0}
@@ -11837,6 +11838,9 @@ MonoBehaviour:
   uiManager: {fileID: 650962313}
   filterToShader: {fileID: 1600729191}
   FilterColorImage: {fileID: 1662664116}
+  filterCutoffKnob: {fileID: 1127628598}
+  filterResonanceKnob: {fileID: 165431214}
+  filterEnvelopeAmountKnob: {fileID: 1167578315}
 --- !u!1 &2135769243
 GameObject:
   m_ObjectHideFlags: 0
