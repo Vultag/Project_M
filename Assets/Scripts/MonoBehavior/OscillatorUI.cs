@@ -24,6 +24,10 @@ public class OscillatorUI : MonoBehaviour, IKnobController
     private Transform OCS2fineKnob;
     [SerializeField]
     private Transform OCSsemiKnob;
+    [SerializeField]
+    private Transform OCS1pwKnob;
+    [SerializeField]
+    private Transform OCS2pwKnob;
 
     public UIManager uiManager;
 
@@ -51,10 +55,35 @@ public class OscillatorUI : MonoBehaviour, IKnobController
         OCS1fineKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc1Fine/30)* 145f);
         OCS2fineKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc2Fine / 30) * 145f);
         OCSsemiKnob.rotation = Quaternion.Euler(0, 0, 145f - (synthData.Osc2Semi / 36) * 290f);
+
+        /// Osc using square waveform
+        if(synthData.Osc1SinSawSquareFactor.z>0)
+        {
+            OCS1pwKnob.transform.parent.gameObject.SetActive(true);
+        }
+        else
+        {
+            OCS1pwKnob.transform.parent.gameObject.SetActive(false);
+        }
+        if (synthData.Osc2SinSawSquareFactor.z > 0)
+        {
+            OCS2pwKnob.transform.parent.gameObject.SetActive(true);
+        }
+        else
+        {
+            OCS2pwKnob.transform.parent.gameObject.SetActive(false);
+        }
+
+
+        OCS1pwKnob.rotation = synthData.Osc1PW>=0.25f?Quaternion.Euler(0, 0, (synthData.Osc1PW - 0.25f) * 4f * -145f): Quaternion.Euler(0, 0, (synthData.Osc1PW - 0.12f) * (1/0.13f) * 145f);
+        OCS2pwKnob.rotation = synthData.Osc2PW >= 0.25f ? Quaternion.Euler(0, 0, (synthData.Osc2PW - 0.25f) * 4f * -145f) : Quaternion.Euler(0, 0, (synthData.Osc2PW - 0.12f) * (1 / 0.13f) * 145f);
+
         MixKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}% - {1}%", Mathf.RoundToInt(OCS1mixValue * 100), 100 - Mathf.RoundToInt(OCS1mixValue * 100));
         OCS1fineKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}", synthData.Osc1Fine, " cents");
         OCS2fineKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}", synthData.Osc2Fine, " cents");
         OCSsemiKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}",   synthData.Osc2Semi," semi");
+        OCS1pwKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.00}", synthData.Osc1PW);
+        OCS2pwKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.00}", synthData.Osc2PW);
     }
 
     /// <summary>
@@ -69,14 +98,23 @@ public class OscillatorUI : MonoBehaviour, IKnobController
         {
             case 0:
                 newsynth.Osc1SinSawSquareFactor = new float3(dropdownItemValue,0,0);
+
+                OCS1pwKnob.transform.parent.gameObject.SetActive(false);
+
                 OSC1wavetable = new float3(1, 0, 0);
                 break;
             case 1:
                 newsynth.Osc1SinSawSquareFactor = new float3(0, dropdownItemValue, 0);
+
+                OCS1pwKnob.transform.parent.gameObject.SetActive(false);
+
                 OSC1wavetable = new float3(0, 1, 0);
                 break;
             case 2:
                 newsynth.Osc1SinSawSquareFactor = new float3(0, 0, dropdownItemValue);
+
+                OCS1pwKnob.transform.parent.gameObject.SetActive(true);
+
                 OSC1wavetable = new float3(0, 0, 1);
                 break;
 
@@ -92,14 +130,23 @@ public class OscillatorUI : MonoBehaviour, IKnobController
         {
             case 0:
                 newsynth.Osc2SinSawSquareFactor = new float3(dropdownItemValue, 0, 0);
+
+                OCS2pwKnob.transform.parent.gameObject.SetActive(false);
+
                 OSC2wavetable = new float3(1, 0, 0);
                 break;
             case 1:
                 newsynth.Osc2SinSawSquareFactor = new float3(0, dropdownItemValue, 0);
+           
+                OCS2pwKnob.transform.parent.gameObject.SetActive(false);
+                
                 OSC2wavetable = new float3(0, 1, 0);
                 break;
             case 2:
                 newsynth.Osc2SinSawSquareFactor = new float3(0, 0, dropdownItemValue);
+              
+                OCS2pwKnob.transform.parent.gameObject.SetActive(true);
+                
                 OSC2wavetable = new float3(0, 0, 1);
                 break;
 
@@ -140,7 +187,14 @@ public class OscillatorUI : MonoBehaviour, IKnobController
                 increment = Mathf.Round(MathF.Abs((factor* 36)-36f));
                 newsynth.Osc2Semi = increment;
                 displayedValue = string.Format("{0}{1}", increment.ToString(), " semi");
-
+                break;
+            case KnobChangeType.OCS1PW:
+                newsynth.Osc1PW = factor<0.5f? (1-factor) * 0.5f:Mathf.Lerp(0.12f,0.25f, (1 - factor) * 2);
+                displayedValue = string.Format("{0:0.00}", newsynth.Osc1PW);
+                break;
+            case KnobChangeType.OCS2PW:
+                newsynth.Osc2PW = factor < 0.5f ? (1 - factor) * 0.5f : Mathf.Lerp(0.12f, 0.25f, (1 - factor) * 2);
+                displayedValue = string.Format("{0:0.00}", newsynth.Osc2PW);
                 break;
         }
 

@@ -8,8 +8,10 @@ public class FliterToShader : MonoBehaviour
 {
 
     Material filterMat;
-    private Shader displayShader;
-    private Shader bakingShader;
+    private Shader lowpassShader;
+    private Shader highpassShader;
+    private Shader bandpassShader;
+    private Shader activeShader;
     //private RenderTexture renderTexture;
     private Vector2 imageRes;
 
@@ -23,12 +25,30 @@ public class FliterToShader : MonoBehaviour
 
         filterMat = this.GetComponent<Image>().material;
         imageRes = new Vector2(this.GetComponent<RectTransform>().rect.width, this.GetComponent<RectTransform>().rect.height);
-        displayShader = Shader.Find("Unlit/TextureDisplayShader");
-        bakingShader = Shader.Find("Unlit/FilterScreenShader");
+        lowpassShader = Shader.Find("Unlit/LowpassFilterScreenShader");
+        highpassShader = Shader.Find("Unlit/HighpassFilterScreenShader");
+        bandpassShader = Shader.Find("Unlit/BandpassFilterScreenShader");
+        activeShader = lowpassShader;
         ModifyFilter(1,0, 0);
         //BakeShaderToTexture();
     }
 
+    public void SwitchFilterShader(short type)
+    {
+        switch (type)
+        {
+            case 0:
+                activeShader = lowpassShader;
+                break;
+            case 1:
+                activeShader = highpassShader;
+                break;
+            case 2:
+                activeShader = bandpassShader;
+                break;
+        }
+        filterMat.shader = activeShader;
+    }
 
     public void ModifyFilter(float cutoff, float resonance,float envelope)
     {
@@ -37,7 +57,7 @@ public class FliterToShader : MonoBehaviour
         if (filterMat == null)
             return;
 
-        filterMat.shader = bakingShader;
+        filterMat.shader = activeShader;
 
         filterMat.SetFloat("_FrequencyNorm", cutoff);
         filterMat.SetFloat("_Q", resonance);
@@ -48,7 +68,9 @@ public class FliterToShader : MonoBehaviour
         //BakeShaderToTexture();
     }
 
-
+    /// <summary>
+    /// to rework / fix
+    /// </summary>
     public void BakeShaderToTexture()
     {
 
@@ -84,7 +106,7 @@ public class FliterToShader : MonoBehaviour
         //texture2D.
 
 
-        filterMat.shader = displayShader;
+        filterMat.shader = activeShader;
         filterMat.mainTexture = texture2D;
         //filterMat.SetTexture("_MainTex",texture2D);
 
@@ -109,7 +131,8 @@ public class FliterToShader : MonoBehaviour
 
     private void OnDisable()
     {
-        filterMat.shader = bakingShader;
+        activeShader = lowpassShader;
+        filterMat.shader = activeShader;
     }
 
 }

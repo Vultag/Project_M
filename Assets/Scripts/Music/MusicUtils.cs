@@ -204,10 +204,10 @@ namespace MusicNamespace
             //??
             return (((phase)%1)-0.5f)*2f;
         }
-        public static float Square(float phase)
+        public static float Square(float phase, float pulseWidth)
         {
-            //??
-            return (Mathf.Round((phase) % 1)-0.5f) *2f ;
+            //return (Mathf.Round((phase) % 1)-0.5f) *2f ;
+            return ((phase) % 1)> pulseWidth ? 1f:-1f;
         }
 
     }

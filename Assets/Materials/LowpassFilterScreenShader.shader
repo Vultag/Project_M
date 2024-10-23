@@ -1,4 +1,4 @@
-Shader "Unlit/FilterScreenShader"
+Shader "Unlit/LowpassFilterScreenShader"
 {
 	  Properties
     {

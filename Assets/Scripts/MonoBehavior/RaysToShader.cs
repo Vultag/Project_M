@@ -76,6 +76,8 @@ public class RaysToShader : MonoBehaviour
         DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
         DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
 
+        SynthData activeSynthData = audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx];
+
         //Debug.Log(ActivePlaybackBufferEntityQuery.CalculateEntityCount());
 
         Vector3 mousePosition = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
@@ -87,20 +89,20 @@ public class RaysToShader : MonoBehaviour
         // OPTI : 4 statementes -> 1
         for (; i < SkeyBuffer.Length; i++)
         {
-            Signals[i].SinSawSquareFactor = audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc1SinSawSquareFactor + audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc2SinSawSquareFactor;
+            Signals[i].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
             Signals[i].direction = (float2)SkeyBuffer[i].EffectiveDirLenght;
             Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);
             Signals[i].amplitude = SkeyBuffer[i].currentAmplitude;
-            Signals[i].color = FilterUI.GetColorFromFilter(SkeyBuffer[i].filter.Cutoff, SkeyBuffer[i].filter.Resonance);
+            Signals[i].color = FilterUI.GetColorFromFilter(SkeyBuffer[i].filter.Cutoff, SkeyBuffer[i].filter.Resonance, activeSynthData.filterType);
         }
         int y = i;
         for (; y < RkeyBuffer.Length+i; y++)
         {
-            Signals[y].SinSawSquareFactor = audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc1SinSawSquareFactor + audioGenerator.SynthsData[AudioLayoutStorage.activeSynthIdx].Osc2SinSawSquareFactor;
+            Signals[y].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
             Signals[y].direction = (float2)RkeyBuffer[y - i].EffectiveDirLenght;
             Signals[y].frequency = MusicUtils.DirectionToFrequency(RkeyBuffer[y-i].EffectiveDirLenght);
             Signals[y].amplitude = RkeyBuffer[y-i].currentAmplitude;
-            Signals[y].color = FilterUI.GetColorFromFilter(RkeyBuffer[y - i].filter.Cutoff, RkeyBuffer[y - i].filter.Resonance);
+            Signals[y].color = FilterUI.GetColorFromFilter(RkeyBuffer[y - i].filter.Cutoff, RkeyBuffer[y - i].filter.Resonance, activeSynthData.filterType);
         }
         // Populate the signals array with playback weapon signals
         NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackBufferEntityQuery.ToEntityArray(Allocator.Temp);
@@ -118,7 +120,7 @@ public class RaysToShader : MonoBehaviour
                 Signals[c + a].direction = (float2)PlaybackSkeyBuffer[a].EffectiveDirLenght;
                 Signals[c + a].frequency = MusicUtils.DirectionToFrequency(PlaybackSkeyBuffer[a].EffectiveDirLenght);
                 Signals[c + a].amplitude = PlaybackSkeyBuffer[a].currentAmplitude;
-                Signals[c + a].color = FilterUI.GetColorFromFilter(PlaybackSkeyBuffer[a].filter.Cutoff, PlaybackSkeyBuffer[a].filter.Resonance);
+                Signals[c + a].color = FilterUI.GetColorFromFilter(PlaybackSkeyBuffer[a].filter.Cutoff, PlaybackSkeyBuffer[a].filter.Resonance, PlaybackData.filterType);
             }
             int b = a;
             for (; b < PlaybackRkeyBuffer.Length + a; b++)
@@ -127,7 +129,7 @@ public class RaysToShader : MonoBehaviour
                 Signals[c + b].direction = (float2)PlaybackRkeyBuffer[b - a].EffectiveDirLenght;
                 Signals[c + b].frequency = MusicUtils.DirectionToFrequency(PlaybackRkeyBuffer[b - a].EffectiveDirLenght);
                 Signals[c + b].amplitude = PlaybackRkeyBuffer[b - a].currentAmplitude;
-                Signals[c + b].color = FilterUI.GetColorFromFilter(PlaybackRkeyBuffer[b - a].filter.Cutoff, PlaybackRkeyBuffer[b - a].filter.Resonance);
+                Signals[c + b].color = FilterUI.GetColorFromFilter(PlaybackRkeyBuffer[b - a].filter.Cutoff, PlaybackRkeyBuffer[b - a].filter.Resonance, PlaybackData.filterType);
             }
             c += b;
         }

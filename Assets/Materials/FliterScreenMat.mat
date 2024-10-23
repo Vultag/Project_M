@@ -83,9 +83,9 @@ Material:
     - _DetailNormalMapScale: 1
     - _DstBlend: 0
     - _EnableExternalAlpha: 0
-    - _Envelope: 0.37789387
+    - _Envelope: 0.26452518
     - _Frequency: 0.37152493
-    - _FrequencyNorm: 0.021593928
+    - _FrequencyNorm: 0.26040953
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1

@@ -1,12 +1,16 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
+using TMPro;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Rendering.DebugUI;
+using Quaternion = UnityEngine.Quaternion;
+using Vector3 = UnityEngine.Vector3;
 
 public class FilterUI : MonoBehaviour,IKnobController
 {
@@ -53,6 +57,42 @@ public class FilterUI : MonoBehaviour,IKnobController
         filterCutoffKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - synthData.filterEnvelopeAmount));
     }
 
+    public void ChangeFilterTypeUI(TMP_Dropdown dropdown)
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        switch (dropdown.value)
+        {
+            case 0:
+                filterCutoff = 1;
+                break;
+            case 1:
+                filterCutoff = 0;
+                break;
+            case 2:
+                filterCutoff = 0.5f;
+                break;
+        }
+        filterResonance = 0;
+        filterEnvelope = 0;
+        newsynth.filter.Cutoff = filterCutoff;
+        newsynth.filter.Resonance = filterResonance;
+        newsynth.filterEnvelopeAmount = 0;
+        newsynth.filterType = (short)dropdown.value;
+        filterCutoffKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filter.Cutoff) - 0.5f) * 2f * 145f);
+        filterResonanceKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filter.Resonance) - 0.5f) * 2f * 145f);
+        filterEnvelopeAmountKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filterEnvelopeAmount) - 0.5f) * 2f * 145f);
+        filterCutoffKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - newsynth.filter.Cutoff));
+        filterResonanceKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - newsynth.filter.Resonance));
+        filterCutoffKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - newsynth.filterEnvelopeAmount));
+        filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
+        float3 color = GetColorFromFilter(filterCutoff, filterResonance, newsynth.filterType);
+        FilterColorImage.color = new Color { r = color.x, g = color.y, b = color.z, a = 1.0f };
+
+        filterToShader.SwitchFilterShader((short)dropdown.value);
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+
+    }
+
     public String UIknobChange(KnobChangeType knobChangeType, float newRot)
     {
         SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
@@ -81,7 +121,7 @@ public class FilterUI : MonoBehaviour,IKnobController
         }
 
         filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
-        float3 color = GetColorFromFilter(filterCutoff, filterResonance);
+        float3 color = GetColorFromFilter(filterCutoff, filterResonance, newsynth.filterType);
         FilterColorImage.color = new Color { r = color.x, g = color.y, b = color.z, a=1.0f };
 
         //Debug.LogError(AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0].Osc1SinSawSquareFactor);
@@ -90,7 +130,7 @@ public class FilterUI : MonoBehaviour,IKnobController
         return string.Format("{0:0.00}", displayedValue);
     }
 
-    public static float3 GetColorFromFilter(float cutoff, float resonance)
+    public static float3 GetColorFromFilter(float cutoff, float resonance, short filtertype)
     {
         float3 blue = new float3(0.0f, 0.0f, 1.0f);
         float3 cyan = new float3(0.0f, 1.0f, 1.0f);
@@ -104,7 +144,7 @@ public class FilterUI : MonoBehaviour,IKnobController
         //cutoff /= 6;
 
 
-
+  
         // Define thresholds for transitions
         float t1 = (1f/5f)*1;
         float t2 = (1f / 5f) * 2;
@@ -112,21 +152,66 @@ public class FilterUI : MonoBehaviour,IKnobController
         float t4 = (1f / 5f) * 4;
         //float t5 = (1f / 6f) * 5;
 
-        // Compute blend factors
-        float blend1 = math.smoothstep(0.0f, t1, cutoff);
-        float blend2 = math.smoothstep(t1, t2, cutoff);
-        float blend3 = math.smoothstep(t2, t3, cutoff);
-        float blend4 = math.smoothstep(t3, t4, cutoff);
-        float blend5 = math.smoothstep(t4, (4.5f/5), cutoff);
-        float blend6 = math.smoothstep((4.5f / 5), 1.0f, cutoff);
+        switch (filtertype)
+        {
+            case 0:
+            {
+                // Compute blend factors
+                float blend1 = math.smoothstep(0.0f, t1, cutoff);
+                float blend2 = math.smoothstep(t1, t2, cutoff);
+                float blend3 = math.smoothstep(t2, t3, cutoff);
+                float blend4 = math.smoothstep(t3, t4, cutoff);
+                float blend5 = math.smoothstep(t4, (4.5f / 5), cutoff);
+                float blend6 = math.smoothstep((4.5f / 5), 1.0f, cutoff);
 
-        // Linearly interpolate between colors based on the blend factors
-        color = Vector3.Lerp(blue, cyan, blend1);
-        color = Vector3.Lerp(color, green, blend2);
-        color = Vector3.Lerp(color, yellow, blend3);
-        color = Vector3.Lerp(color, orange, blend4);
-        color = Vector3.Lerp(color, red, blend5);
-        color = Vector3.Lerp(color, white, blend6);
+                // Linearly interpolate between colors based on the blend factors
+                color = Vector3.Lerp(blue, cyan, blend1);
+                color = Vector3.Lerp(color, green, blend2);
+                color = Vector3.Lerp(color, yellow, blend3);
+                color = Vector3.Lerp(color, orange, blend4);
+                color = Vector3.Lerp(color, red, blend5);
+                color = Vector3.Lerp(color, white, blend6);
+                break;
+            }
+            case 1:
+            {
+                // Compute blend factors
+                float blend0 = math.smoothstep(0.0f, (0.5f / 5), cutoff);
+                float blend1 = math.smoothstep((0.5f / 5), t1, cutoff);
+                float blend2 = math.smoothstep(t1, t2, cutoff);
+                float blend3 = math.smoothstep(t2, t3, cutoff);
+                float blend4 = math.smoothstep(t3, t4, cutoff);
+                float blend5 = math.smoothstep(t4, 1.0f, cutoff);
+
+                // Linearly interpolate between colors based on the blend factors
+                color = Vector3.Lerp(white, blue, blend0);
+                color = Vector3.Lerp(color, cyan, blend1);
+
+                color = Vector3.Lerp(color, green, blend2);
+                color = Vector3.Lerp(color, yellow, blend3);
+                color = Vector3.Lerp(color, orange, blend4);
+                color = Vector3.Lerp(color, red, blend5);
+                break;
+            }
+            case 2:
+            {
+                // Compute blend factors
+                float blend1 = math.smoothstep(0.0f, t1, cutoff);
+                float blend2 = math.smoothstep(t1, t2, cutoff);
+                float blend3 = math.smoothstep(t2, t3, cutoff);
+                float blend4 = math.smoothstep(t3, t4, cutoff);
+                float blend5 = math.smoothstep(t4, 1.0f, cutoff);
+
+                // Linearly interpolate between colors based on the blend factors
+                color = Vector3.Lerp(blue, cyan, blend1);
+                color = Vector3.Lerp(color, green, blend2);
+                color = Vector3.Lerp(color, yellow, blend3);
+                color = Vector3.Lerp(color, orange, blend4);
+                color = Vector3.Lerp(color, red, blend5);
+                break;
+            }
+        }
+
 
         // // Intensity scaling to simulate the human eye sensitivity
         // float intensity = 1.0;

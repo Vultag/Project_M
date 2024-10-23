@@ -14,6 +14,8 @@ public enum KnobChangeType
     OCS1fine,
     OCS2fine,
     OCS2semi,
+    OCS1PW,
+    OCS2PW,
     FilterCutoff,
     FilterRes,
     FilterEnv
