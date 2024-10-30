@@ -49,7 +49,7 @@ Material:
     - _EditorCamRatio: 0.8116883
     - _EnableExternalAlpha: 0
     - _Frequency: 8
-    - _SignalCount: 0
+    - _SignalCount: 8
     - _Time: 8.681143
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
@@ -57,5 +57,5 @@ Material:
     - _MousePos: {r: -20.839241, g: -11.73, b: 0, a: 0}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
     - _SinSawSquareFactor: {r: 1, g: 1, b: 1, a: 1}
-    - _WeaponPos: {r: -0.61, g: -1.97, b: 0, a: 0}
+    - _WeaponPos: {r: -5.813833, g: 1.795119, b: 0, a: 0}
   m_BuildTextureStacks: []

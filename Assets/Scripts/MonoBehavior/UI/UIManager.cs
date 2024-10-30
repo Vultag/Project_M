@@ -36,6 +36,8 @@ public class UIManager : MonoBehaviour
     private ADSRUI filterAdsrUI;
     [SerializeField]
     private FilterUI filterUI;
+    [SerializeField]
+    private UnissonUI unissonUI;
 
     [SerializeField]
     SliderMono simplexSlider;
@@ -191,6 +193,8 @@ public class UIManager : MonoBehaviour
         volumeAdsrUI.UpdateUI(synthData);
         filterAdsrUI.UpdateUI(synthData);
         filterUI.UpdateUI(synthData);
+        unissonUI.UpdateUI(synthData);
+
     }
 
     public void _RecordPlayback()

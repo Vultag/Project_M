@@ -8,6 +8,7 @@ using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class AudioGenerator : MonoBehaviour
 {
@@ -32,6 +33,7 @@ public class AudioGenerator : MonoBehaviour
     public NativeArray<KeyData> activeKeys;
     public NativeArray<int> activeKeyNumber;
     public NativeArray<int> activeSynthsIdx;
+    public NativeArray<float> _OCSphaseIncrements;
 
     public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
     public NativeArray<PlaybackAudioBundleContext> PlaybackAudioBundlesContext;
@@ -77,6 +79,7 @@ public class AudioGenerator : MonoBehaviour
         //AudioLayoutStorageHolder.audioLayoutStorage = new AudioLayoutStorage();
         audioRingBuffer = new AudioRingBuffer<KeysBuffer>(ringBufferCapacity);
         audioRingBuffer.InitializeBuffer(ringBufferCapacity);
+        _OCSphaseIncrements = new NativeArray<float>(8, Allocator.Persistent);
 
         //activeKeys = new NativeArray<KeyData>(12, Allocator.Persistent);
         //activeKeyNumber = new NativeArray<int>(1, Allocator.Persistent);
@@ -162,7 +165,8 @@ public class AudioGenerator : MonoBehaviour
             {
                 var newSynthsData = new NativeArray<SynthData>(SynthsData.Length+1, Allocator.Persistent);
                 var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
-                var newfilterDelayElements = new NativeArray<FilterDelayElements>((PlaybackAudioBundles.Length + 2) * 12, Allocator.Persistent);
+                /// 12 = max number of notes ; 4 = max number of unisson
+                var newfilterDelayElements = new NativeArray<FilterDelayElements>((PlaybackAudioBundles.Length + 2) * 12 * 4, Allocator.Persistent);
 
                 for (int i = 0; i < SynthsData.Length; i++)
                 {
@@ -384,7 +388,23 @@ public class AudioGenerator : MonoBehaviour
                     ///Key already being released, check if repressed
                     if (activeKeys[y].amplitudeAtRelease != 0)
                     {
-                        activeKeys[y] = new KeyData { frequency = activeKeys[y].frequency, delta = 0f, OCS1phase = activeKeys[y].OCS1phase, OCS2phase = activeKeys[y].OCS2phase, amplitudeAtRelease = 0,filterDelayElements = activeKeys[y].filterDelayElements};
+                        activeKeys[y] = new KeyData { 
+                            frequency = activeKeys[y].frequency, 
+                            delta = 0f, 
+                            OCS1phaseV1 = activeKeys[y].OCS1phaseV1,
+                            OCS1phaseV2 = activeKeys[y].OCS1phaseV2,
+                            OCS1phaseV3 = activeKeys[y].OCS1phaseV3,
+                            OCS1phaseV4 = activeKeys[y].OCS1phaseV4,
+                            OCS2phaseV1 = activeKeys[y].OCS2phaseV1,
+                            OCS2phaseV2 = activeKeys[y].OCS2phaseV2,
+                            OCS2phaseV3 = activeKeys[y].OCS2phaseV3,
+                            OCS2phaseV4 = activeKeys[y].OCS2phaseV4,
+                            amplitudeAtRelease = 0,
+                            filterDelayElementsV1 = activeKeys[y].filterDelayElementsV1,
+                            filterDelayElementsV2 = activeKeys[y].filterDelayElementsV2,
+                            filterDelayElementsV3 = activeKeys[y].filterDelayElementsV3,
+                            filterDelayElementsV4 = activeKeys[y].filterDelayElementsV4,
+                        };
                     }
                 }
                 /// the buffer no longuer contains the frequency. release.
@@ -408,14 +428,23 @@ public class AudioGenerator : MonoBehaviour
 
                     activeKeys[y] = new KeyData { 
                         frequency = activeKeys[y].frequency, 
-                        delta = 0,  
-                        OCS1phase = activeKeys[y].OCS1phase, 
-                        OCS2phase = activeKeys[y].OCS2phase, 
+                        delta = 0,
+                        OCS1phaseV1 = activeKeys[y].OCS1phaseV1,
+                        OCS1phaseV2 = activeKeys[y].OCS1phaseV2,
+                        OCS1phaseV3 = activeKeys[y].OCS1phaseV3,
+                        OCS1phaseV4 = activeKeys[y].OCS1phaseV4,
+                        OCS2phaseV1 = activeKeys[y].OCS2phaseV1,
+                        OCS2phaseV2 = activeKeys[y].OCS2phaseV2,
+                        OCS2phaseV3 = activeKeys[y].OCS2phaseV3,
+                        OCS2phaseV4 = activeKeys[y].OCS2phaseV4,
                         amplitudeAtRelease = releaseAmplitude + 0.0001f /*make sure the key is considered released*/,
                         CutoffAmountAtRelease = delta < SynthsData[synthidx].filterADSR.Attack? 
                         (delta / SynthsData[synthidx].filterADSR.Attack)://* SynthsData[synthidx].filterEnvelopeAmount: 
                         (((1 - (delta - SynthsData[synthidx].filterADSR.Attack) / SynthsData[synthidx].filterADSR.Decay)) * (1 - SynthsData[synthidx].filterADSR.Sustain) + SynthsData[synthidx].filterADSR.Sustain),// * SynthsData[synthidx].filterEnvelopeAmount,
-                        filterDelayElements = activeKeys[y].filterDelayElements
+                        filterDelayElementsV1 = activeKeys[y].filterDelayElementsV1,
+                        filterDelayElementsV2 = activeKeys[y].filterDelayElementsV2,
+                        filterDelayElementsV3 = activeKeys[y].filterDelayElementsV3,
+                        filterDelayElementsV4 = activeKeys[y].filterDelayElementsV4
                     };
 
                 }
@@ -465,7 +494,20 @@ public class AudioGenerator : MonoBehaviour
                     ///Key already being released, check if repressed
                     if (ActiveKeysSlice[y].amplitudeAtRelease != 0)
                     {
-                        ActiveKeysSlice[y] = new KeyData { frequency = ActiveKeysSlice[y].frequency, delta = 0f, OCS1phase = ActiveKeysSlice[y].OCS1phase, OCS2phase = ActiveKeysSlice[y].OCS2phase, amplitudeAtRelease = 0,CutoffAmountAtRelease = ActiveKeysSlice[y].CutoffAmountAtRelease};
+                        ActiveKeysSlice[y] = new KeyData { 
+                            frequency = ActiveKeysSlice[y].frequency, 
+                            delta = 0f, 
+                            OCS1phaseV1 = ActiveKeysSlice[y].OCS1phaseV1,
+                            OCS1phaseV2 = ActiveKeysSlice[y].OCS1phaseV2,
+                            OCS1phaseV3 = ActiveKeysSlice[y].OCS1phaseV3,
+                            OCS1phaseV4 = ActiveKeysSlice[y].OCS1phaseV4,
+                            OCS2phaseV1 = ActiveKeysSlice[y].OCS2phaseV1,
+                            OCS2phaseV2 = ActiveKeysSlice[y].OCS2phaseV2,
+                            OCS2phaseV3 = ActiveKeysSlice[y].OCS2phaseV3,
+                            OCS2phaseV4 = ActiveKeysSlice[y].OCS2phaseV4,
+                            amplitudeAtRelease = 0,
+                            CutoffAmountAtRelease = ActiveKeysSlice[y].CutoffAmountAtRelease
+                        };
                     }
                 }
                 /// the buffer no longuer contains the frequency. release.
@@ -488,16 +530,25 @@ public class AudioGenerator : MonoBehaviour
                     else
                         releaseAmplitude = SynthsData[synthidx].ADSR.Sustain * SynthsData[synthidx].amplitude;
 
-                    ActiveKeysSlice[y] = new KeyData { 
-                        frequency = ActiveKeysSlice[y].frequency, 
-                        delta = 0, 
-                        OCS1phase = ActiveKeysSlice[y].OCS1phase, 
-                        OCS2phase = ActiveKeysSlice[y].OCS2phase, 
+                    ActiveKeysSlice[y] = new KeyData {
+                        frequency = ActiveKeysSlice[y].frequency,
+                        delta = 0,
+                        OCS1phaseV1 = ActiveKeysSlice[y].OCS1phaseV1,
+                        OCS1phaseV2 = ActiveKeysSlice[y].OCS1phaseV2,
+                        OCS1phaseV3 = ActiveKeysSlice[y].OCS1phaseV3,
+                        OCS1phaseV4 = ActiveKeysSlice[y].OCS1phaseV4,
+                        OCS2phaseV1 = ActiveKeysSlice[y].OCS2phaseV1,
+                        OCS2phaseV2 = ActiveKeysSlice[y].OCS2phaseV2,
+                        OCS2phaseV3 = ActiveKeysSlice[y].OCS2phaseV3,
+                        OCS2phaseV4 = ActiveKeysSlice[y].OCS2phaseV4,
                         amplitudeAtRelease = releaseAmplitude + 0.00001f, /*make sure the key is considered released*/
                         CutoffAmountAtRelease = delta < SynthsData[synthidx].filterADSR.Attack ?
                         (delta / SynthsData[synthidx].filterADSR.Attack) :
                         (((1 - (delta - SynthsData[synthidx].filterADSR.Attack) / SynthsData[synthidx].filterADSR.Decay)) * (1 - SynthsData[synthidx].filterADSR.Sustain) + SynthsData[synthidx].filterADSR.Sustain),
-                        filterDelayElements = activeKeys[y].filterDelayElements
+                        filterDelayElementsV1 = activeKeys[y].filterDelayElementsV1,
+                        filterDelayElementsV2 = activeKeys[y].filterDelayElementsV2,
+                        filterDelayElementsV3 = activeKeys[y].filterDelayElementsV3,
+                        filterDelayElementsV4 = activeKeys[y].filterDelayElementsV4
                     };
 
                     PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { 
@@ -540,8 +591,8 @@ public class AudioGenerator : MonoBehaviour
 
         ///activeKeys elemets cropped, rdy to be processed
         NativeArray<float> _JobFrequencies = new NativeArray<float>(TotalActiveKeyNumber, Allocator.TempJob);
-        ///OSC1 + OSC2 phases array
-        NativeArray<float> _JobPhases = new NativeArray<float>(TotalActiveKeyNumber*2, Allocator.TempJob);
+        ///OSC1 + OSC2 phases array * number of max unisson (4)
+        NativeArray<float> _JobPhases = new NativeArray<float>(TotalActiveKeyNumber*2*4, Allocator.TempJob);
         NativeArray<float> _JobDeltas = new NativeArray<float>(TotalActiveKeyNumber, Allocator.TempJob);
         NativeArray<SynthData> _JobSynths = new NativeArray<SynthData>(activeSynthsIdx.Length, Allocator.TempJob);
 
@@ -556,9 +607,15 @@ public class AudioGenerator : MonoBehaviour
             for (int y = 0; y < activeKeyNumber[i]; y++)
             {
                 _JobFrequencies[ActiveKeysStartIdx+y] = activeKeys[(i * 12)+y].frequency;
-                _JobPhases[ActiveKeysStartIdx + y] = activeKeys[(i * 12) + y].OCS1phase;
-                _JobPhases[TotalActiveKeyNumber + ActiveKeysStartIdx + y] = activeKeys[(i * 12) + y].OCS2phase;
                 _JobDeltas[ActiveKeysStartIdx + y] = activeKeys[(i * 12) + y].delta;
+                _JobPhases[(ActiveKeysStartIdx + y)*4] = activeKeys[(i * 12) + y].OCS1phaseV1;
+                _JobPhases[(ActiveKeysStartIdx + y) * 4 + 1] = activeKeys[(i * 12) + y].OCS1phaseV2;
+                _JobPhases[(ActiveKeysStartIdx + y) * 4 + 2] = activeKeys[(i * 12) + y].OCS1phaseV3;
+                _JobPhases[(ActiveKeysStartIdx + y) * 4 + 3] = activeKeys[(i * 12) + y].OCS1phaseV4;
+                _JobPhases[(TotalActiveKeyNumber + ActiveKeysStartIdx + y)*4] = activeKeys[(i * 12) + y].OCS2phaseV1;
+                _JobPhases[(TotalActiveKeyNumber + ActiveKeysStartIdx + y) * 4 + 1] = activeKeys[(i * 12) + y].OCS2phaseV2;
+                _JobPhases[(TotalActiveKeyNumber + ActiveKeysStartIdx + y) * 4 + 2] = activeKeys[(i * 12) + y].OCS2phaseV3;
+                _JobPhases[(TotalActiveKeyNumber + ActiveKeysStartIdx + y) * 4 + 3] = activeKeys[(i * 12) + y].OCS2phaseV4;
             }
             ActiveKeysStartIdx += activeKeyNumber[i];
         }
@@ -572,7 +629,8 @@ public class AudioGenerator : MonoBehaviour
             _JobDeltas,
             AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements,
             _audioData,
-            activeKeyNumber
+            activeKeyNumber,
+            _OCSphaseIncrements
             );
 
 
@@ -627,6 +685,7 @@ public struct AudioJob : IJob
     private NativeArray<float> _audioData;
     //[WriteOnly]
     private NativeArray<int> _activeKeynum;
+    private NativeArray<float> _OCSphaseIncrements;
 
     public AudioJob(
        float sampleRate,
@@ -639,7 +698,8 @@ public struct AudioJob : IJob
         NativeArray<float> JobDeltas,
         NativeArray<FilterDelayElements> filterDelayElements,
         NativeArray<float> audioData,
-        NativeArray<int> activeKeynum
+        NativeArray<int> activeKeynum,
+        NativeArray<float> OCSphaseIncrements
        )
     {
         _JobSynths = synthsdata;
@@ -651,6 +711,7 @@ public struct AudioJob : IJob
         _filterDelayElements = filterDelayElements;
         _audioData = audioData;
         _activeKeynum = activeKeynum;
+        _OCSphaseIncrements = OCSphaseIncrements;
     }
 
     public void Execute()
@@ -770,32 +831,7 @@ public struct AudioJob : IJob
                 case 0:
                     for (int y = 0; y < _activeKeynum[i]; y++)
                     {
-
                         BuildLowpassBiquadFilter(i, y, activeKeyStartidx,filterBlockReprocessSubdivision, deltaIncrement,ADSR, filterCoefficients);
-                        //    int cropedKeyIdx = activeKeyStartidx + y;
-                        //    float synthCutoff = Mathf.Exp(_JobSynths[i].filter.Cutoff * 5 - 5) * _JobSynths[i].filter.Cutoff;
-
-                        //    for (int z = 0; z < filterBlockReprocessSubdivision; z++)
-                        //    {
-
-                        //        if (_KeyData[(i * 12) + y].amplitudeAtRelease == 0)
-                        //        {
-
-                        //            float delta = Mathf.Min(_JobDeltas[cropedKeyIdx] + (z * (deltaIncrement * (512 / filterBlockReprocessSubdivision))), ADSR.Attack + ADSR.Decay);
-
-                        //            float cutoff = delta < ADSR.Attack ?
-                        //                synthCutoff + (_JobSynths[i].filterEnvelopeAmount * (delta / ADSR.Attack)) :
-                        //                synthCutoff + (_JobSynths[i].filterEnvelopeAmount * (((1 - (delta - ADSR.Attack) / ADSR.Decay)) * (1 - ADSR.Sustain) + ADSR.Sustain));
-                        //            filterCoefficients[(cropedKeyIdx * filterBlockReprocessSubdivision) + z] = new FilterCoefficients().BuildLowpassCoefficients(cutoff, _JobSynths[i].filter.Resonance);
-                        //        }
-                        //        else
-                        //        {
-                        //            float delta = Mathf.Max(_JobDeltas[cropedKeyIdx] - (z * (deltaIncrement * (512 / filterBlockReprocessSubdivision))), -ADSR.Release);
-                        //            float cutoff = synthCutoff + ((1 - (-delta / ADSR.Release)) * _KeyData[i * 12 + y].CutoffAmountAtRelease) * _JobSynths[i].filterEnvelopeAmount;
-                        //            filterCoefficients[(cropedKeyIdx * filterBlockReprocessSubdivision) + z] = new FilterCoefficients().BuildLowpassCoefficients(cutoff, _JobSynths[i].filter.Resonance);
-
-                        //        }
-                        //    }
                     }
                     activeKeyStartidx += _activeKeynum[i];
                     break;
@@ -818,28 +854,23 @@ public struct AudioJob : IJob
         }
 
 
-
-
-        ///phases for each key playing
-        NativeArray<float> OSC1phaseIncrement = new NativeArray<float>(_JobFrequencies.Length + 1, Allocator.Temp);
-        NativeArray<float> OSC2phaseIncrement = new NativeArray<float>(_JobFrequencies.Length + 1, Allocator.Temp);
-
-        //Debug.Log(_JobDeltas[0]);
-
         float value;
+        float leftGain = 0; // Left channel gain
+        float rightGain = 0; // Right channel gain
         activeKeyStartidx = 0;
         for (int i = 0; i < _activeKeynum.Length; i++)
         {
             ADSREnvelope ADSR = _JobSynths[i].ADSR;
 
+            //Debug.Log(_JobSynths[i].Osc2Fine);
+
             for (int y = activeKeyStartidx; y < activeKeyStartidx + _activeKeynum[i]; y++)
             {
                 int fullKeyIdx = i * 12 + (y - activeKeyStartidx);
-                _filterDelayElements[fullKeyIdx] = _KeyData[fullKeyIdx].filterDelayElements;
-
-                OSC1phaseIncrement[y] = (_JobFrequencies[y]*Mathf.Pow(2f,_JobSynths[i].Osc1Fine/ 1200f)) / _sampleRate;
-                OSC2phaseIncrement[y] = (_JobFrequencies[y]*Mathf.Pow(2f, _JobSynths[i].Osc2Fine / 1200f) * Mathf.Pow(2.0f, _JobSynths[i].Osc2Semi / 12.0f)) / _sampleRate;
-                int sampleStage = 0;
+                _filterDelayElements[fullKeyIdx] = _KeyData[fullKeyIdx].filterDelayElementsV1;
+                _filterDelayElements[fullKeyIdx+1] = _KeyData[fullKeyIdx].filterDelayElementsV2;
+                _filterDelayElements[fullKeyIdx+2] = _KeyData[fullKeyIdx].filterDelayElementsV3;
+                _filterDelayElements[fullKeyIdx+3] = _KeyData[fullKeyIdx].filterDelayElementsV4;
 
                 /// shrink the the potential iteration of opti
                 int attackFilterBlockNum = Mathf.Min(filterBlockReprocessSubdivision, KeysADSRlayouts[y].AttackSamples);
@@ -847,66 +878,130 @@ public struct AudioJob : IJob
                 int sustainFilterBlockNum = Mathf.Min(filterBlockReprocessSubdivision, KeysADSRlayouts[y].SustainSamples);
                 int releaseFilterBlockNum = Mathf.Min(filterBlockReprocessSubdivision, KeysADSRlayouts[y].ReleaseSamples);
 
+                int sampleStage = 0;
+
+                ///unisson here ?
+                ///
+
+                /// Create on start a native arrayu to store the 8 OSCphaseIncrements and assign it here for each key after detune calculation 
+                /// to fix conflicting filter and unisson
+
+                for (int v = 0; v < _JobSynths[i].UnissonVoices; v++)
+                {
+                    float voiceCenterOffset = v - (_JobSynths[i].UnissonVoices - 1) * 0.5f;
+                    //float detuneAmount = Mathf.Pow(2f, (voiceCenterOffset * _JobSynths[i].UnissonDetune) / 1200);
+                    float detune = Mathf.Pow(2f, (voiceCenterOffset * _JobSynths[i].UnissonDetune) / 1200f);
+                    _OCSphaseIncrements[v] = (_JobFrequencies[y] * Mathf.Pow(2f, _JobSynths[i].Osc1Fine / 1200f) * detune) / _sampleRate;
+                    _OCSphaseIncrements[v+4] = (_JobFrequencies[y] * Mathf.Pow(2f, _JobSynths[i].Osc2Fine / 1200f) * Mathf.Pow(2.0f, _JobSynths[i].Osc2Semi / 12.0f) * detune) / _sampleRate;
+                }
+
                 /// Filter ATTACK + ATTACK
                 for (int z = 0; z < attackFilterBlockNum; z++)
                 {
-                    ///reprocess the filter coefficients for each block
-                    //FilterCoefficients filterCoefficients = new FilterCoefficients(filterCutoffFactors[(y * filterBlockReprocessSubdivision) + 0], _JobSynths[i].filter.Resonance);
                     int attackSamples = Mathf.Min(KeysADSRlayouts[y].AttackSamples, filterBlockReprocessSize * (z + 1));
                     ///ATTACK
-                    /// VERIFY SAMPEL STAGE
                     for (; sampleStage < attackSamples; sampleStage += ChannelsNum)
                     {
-                        float OSC1phase = _JobPhases[y];
-                        float OSC2phase = _JobPhases[_JobFrequencies.Length + y];
 
                         float effectiveAmplitude = (_JobDeltas[y] / ADSR.Attack) * _JobSynths[i].amplitude;
                         _JobDeltas[y] += deltaIncrement;
 
-                        value = ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
-                        value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
-                        _JobPhases[y] = (_JobPhases[y] + OSC1phaseIncrement[y]) % 1;
-                        _JobPhases[_JobFrequencies.Length + y] = (_JobPhases[_JobFrequencies.Length + y] + OSC2phaseIncrement[y]) % 1;
+                        for (int v = 0; v < _JobSynths[i].UnissonVoices; v++)
+                        {
 
-                        (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
-                        _filterDelayElements[fullKeyIdx] = newDelayElements;
+                            float OSC1phase = _JobPhases[y * 4 + v];
+                            float OSC2phase = _JobPhases[(_JobFrequencies.Length + y) * 4 + v];
+
+                            value = 0f;
+                            value += ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
+                            value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
+                            _JobPhases[y * 4 + v] = (_JobPhases[y * 4 + v] + _OCSphaseIncrements[v]) % 1;
+                            _JobPhases[(_JobFrequencies.Length + y) * 4 + v] = (_JobPhases[(_JobFrequencies.Length + y) * 4 + v] + _OCSphaseIncrements[v+4]) % 1;
+
+                            // Calculate pan for spread effect
+                            /// Normalized Range from -1 to 1 ; 0 = no pan
+                            float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
+
+
+                            float volumeAdjustment = (1 - _JobSynths[i].UnissonSpread) + 0.25f * _JobSynths[i].UnissonSpread;
+                            // Apply stereo panning based on spread
+                            leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
+                            rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
+
+
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
+                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+
+                            /// populate all channels with the values
+                            _audioData[sampleStage] += filteredValue * leftGain;
+                            _audioData[sampleStage + 1] += filteredValue * rightGain;
+
+                        }
+
+               
+
+
+                   
 
                         /// populate all channels with the values
-                        for (int channel = 0; channel < ChannelsNum; channel++)
-                        {
-                            _audioData[sampleStage + channel] += filteredValue;
-                        }
+                        //for (int channel = 0; channel < ChannelsNum; channel++)
+                        //{
+                        //    _audioData[sampleStage + channel] += filteredValue;
+                        //}
                     }
 
                 }
                 /// Filter DECAY + DECAY
                 for (int z = 0; z < decayFilterBlockNum; z++)
                 {
-                    ///reprocess the filter coefficients for each block
-                    //FilterCoefficients filterCoefficients = new FilterCoefficients(filterCutoffFactors[(y * filterBlockReprocessSubdivision) +0], _JobSynths[i].filter.Resonance);
                     int decaySamples = Mathf.Min(KeysADSRlayouts[y].DecaySamples, filterBlockReprocessSize * (z + 1));
                     ///DECAY
                     for (; sampleStage < decaySamples; sampleStage += ChannelsNum)
                     {
-                        float OSC1phase = _JobPhases[y];
-                        float OSC2phase = _JobPhases[_JobFrequencies.Length + y];
-
                         float effectiveAmplitude = _JobSynths[i].amplitude - ((((_JobDeltas[y] - ADSR.Attack) / ADSR.Decay) * (1 - ADSR.Sustain)) * _JobSynths[i].amplitude);
                         _JobDeltas[y] += deltaIncrement;
 
-                        value = ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
-                        value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
-                        _JobPhases[y] = (_JobPhases[y] + OSC1phaseIncrement[y]) % 1;
-                        _JobPhases[_JobFrequencies.Length + y] = (_JobPhases[_JobFrequencies.Length + y] + OSC2phaseIncrement[y]) % 1;
-
-                        (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
-                        _filterDelayElements[fullKeyIdx] = newDelayElements;
-
-                        /// populate all channels with the values
-                        for (int channel = 0; channel < ChannelsNum; channel++)
+                        for (int v = 0; v < _JobSynths[i].UnissonVoices; v++)
                         {
-                            _audioData[sampleStage + channel] += filteredValue;
+
+                            float OSC1phase = _JobPhases[y * 4 + v];
+                            float OSC2phase = _JobPhases[(_JobFrequencies.Length + y) * 4 + v];
+
+                            value = 0f;
+                            value += ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
+                            value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
+                            _JobPhases[y * 4 + v] = (_JobPhases[y * 4 + v] + _OCSphaseIncrements[v]) % 1;
+                            _JobPhases[(_JobFrequencies.Length + y) * 4 + v] = (_JobPhases[(_JobFrequencies.Length + y) * 4 + v] + _OCSphaseIncrements[v + 4]) % 1;
+
+                            // Calculate pan for spread effect
+                            /// Normalized Range from -1 to 1 ; 0 = no pan
+                            float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
+
+                            float volumeAdjustment = (1 - _JobSynths[i].UnissonDetune) + 0.25f * _JobSynths[i].UnissonDetune;
+                            // Apply stereo panning based on spread
+                            leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
+                            rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
+
+
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
+                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+
+                            /// populate all channels with the values
+                            _audioData[sampleStage] += filteredValue * leftGain;
+                            _audioData[sampleStage + 1] += filteredValue * rightGain;
+
                         }
+
+
+
+                        //(float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
+                        //_filterDelayElements[fullKeyIdx] = newDelayElements;
+
+                        ///// populate all channels with the values
+                        //for (int channel = 0; channel < ChannelsNum; channel++)
+                        //{
+                        //    _audioData[sampleStage + channel] += filteredValue;
+                        //}
 
                     }
 
@@ -914,32 +1009,57 @@ public struct AudioJob : IJob
                 /// Filter SUSTAIN + SUSTAIN
                 for (int z = 0; z < sustainFilterBlockNum; z++)
                 {
-                    ///reprocess the filter coefficients for each block
-                    //FilterCoefficients filterCoefficients = new FilterCoefficients(filterCutoffFactors[(y * filterBlockReprocessSubdivision) + 0], _JobSynths[i].filter.Resonance);
                     int sustainSamples = Mathf.Min(KeysADSRlayouts[y].SustainSamples, filterBlockReprocessSize * (z + 1));
                     ///SUSTAIN
                     for (; sampleStage < sustainSamples; sampleStage += ChannelsNum)
                     {
-                        float OSC1phase = _JobPhases[y];
-                        float OSC2phase = _JobPhases[_JobFrequencies.Length + y];
 
                         float effectiveAmplitude = ADSR.Sustain * _JobSynths[i].amplitude;
                         //_JobDeltas[y] = ADSR.Attack + ADSR.Decay;
                         _JobDeltas[y] += deltaIncrement;
 
-                        value = ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
-                        value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
-                        _JobPhases[y] = (_JobPhases[y] + OSC1phaseIncrement[y]) % 1;
-                        _JobPhases[_JobFrequencies.Length + y] = (_JobPhases[_JobFrequencies.Length + y] + OSC2phaseIncrement[y]) % 1;
-
-                        (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
-                        _filterDelayElements[fullKeyIdx] = newDelayElements;
-
-                        /// populate all channels with the values
-                        for (int channel = 0; channel < ChannelsNum; channel++)
+                        for (int v = 0; v < _JobSynths[i].UnissonVoices; v++)
                         {
-                            _audioData[sampleStage + channel] += filteredValue;
+
+                            float OSC1phase = _JobPhases[y * 4 + v];
+                            float OSC2phase = _JobPhases[(_JobFrequencies.Length + y) * 4 + v];
+
+                            value = 0f;
+                            value += ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
+                            value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
+                            _JobPhases[y * 4 + v] = (_JobPhases[y * 4 + v] + _OCSphaseIncrements[v]) % 1;
+                            _JobPhases[(_JobFrequencies.Length + y) * 4 + v] = (_JobPhases[(_JobFrequencies.Length + y) * 4 + v] + _OCSphaseIncrements[v + 4]) % 1;
+
+                            // Calculate pan for spread effect
+                            /// Normalized Range from -1 to 1 ; 0 = no pan
+                            float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
+                            //Debug.Log(pan);
+
+                            float volumeAdjustment = (1 - _JobSynths[i].UnissonDetune) + 0.25f * _JobSynths[i].UnissonDetune;
+                            // Apply stereo panning based on spread
+                            leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
+                            rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
+
+
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
+                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+
+                            /// populate all channels with the values
+                            _audioData[sampleStage] += filteredValue * leftGain;
+                            _audioData[sampleStage + 1] += filteredValue * rightGain;
                         }
+
+
+
+
+                        //(float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
+                        //_filterDelayElements[fullKeyIdx] = newDelayElements;
+
+                        ///// populate all channels with the values
+                        //for (int channel = 0; channel < ChannelsNum; channel++)
+                        //{
+                        //    _audioData[sampleStage + channel] += filteredValue;
+                        //}
 
                     }
 
@@ -947,40 +1067,64 @@ public struct AudioJob : IJob
                 /// Filter RELEASE + RELEASE
                 for (int z = 0; z < releaseFilterBlockNum; z++)
                 {
-                    ///reprocess the filter coefficients for each block
-                    //FilterCoefficients filterCoefficients = new FilterCoefficients(filterCutoffFactors[(y * filterBlockReprocessSubdivision) +0], _JobSynths[i].filter.Resonance);
                     int releaseSamples = Mathf.Min(KeysADSRlayouts[y].ReleaseSamples, filterBlockReprocessSize * (z + 1));
                     ///RELEASE
                     for (; sampleStage < releaseSamples; sampleStage += ChannelsNum)
                     {
 
-                        float OSC1phase = _JobPhases[y];
-                        float OSC2phase = _JobPhases[_JobFrequencies.Length + y];
-
                         ///3.6 is an arbitrary Exponential factor for the amplitude to be as close as possible to 0 at the end 
                         float factor = -_JobDeltas[y] / ADSR.Release;
-                        float effectiveAmplitude = Mathf.Exp(-1.6f * factor)*(1- factor) * _KeyData[(i * 12) + (y - activeKeyStartidx)].amplitudeAtRelease;
+                        float effectiveAmplitude = Mathf.Exp(-1.6f * factor) * (1 - factor) * _KeyData[(i * 12) + (y - activeKeyStartidx)].amplitudeAtRelease;
                         /// the delta is counting is inverted during release
                         _JobDeltas[y] -= deltaIncrement;
 
-                        value = ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
-                        value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
-                        _JobPhases[y] = (_JobPhases[y] + OSC1phaseIncrement[y]) % 1;
-                        _JobPhases[_JobFrequencies.Length + y] = (_JobPhases[_JobFrequencies.Length + y] + OSC2phaseIncrement[y]) % 1;
-
-                        (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
-                        _filterDelayElements[fullKeyIdx] = newDelayElements;
-
-                        /// populate all channels with the values
-                        for (int channel = 0; channel < ChannelsNum; channel++)
+                        for (int v = 0; v < _JobSynths[i].UnissonVoices; v++)
                         {
-                            _audioData[sampleStage + channel] += filteredValue;
+
+                            float OSC1phase = _JobPhases[y * 4 + v];
+                            float OSC2phase = _JobPhases[(_JobFrequencies.Length + y) * 4 + v];
+
+                            value = 0f;
+                            value += ((MusicUtils.Sin(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.x) + (MusicUtils.Saw(OSC1phase) * _JobSynths[i].Osc1SinSawSquareFactor.y) + (MusicUtils.Square(OSC1phase, _JobSynths[i].Osc1PW) * _JobSynths[i].Osc1SinSawSquareFactor.z)) * effectiveAmplitude;
+                            value += ((MusicUtils.Sin(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.x) + (MusicUtils.Saw(OSC2phase) * _JobSynths[i].Osc2SinSawSquareFactor.y) + (MusicUtils.Square(OSC2phase, _JobSynths[i].Osc2PW) * _JobSynths[i].Osc2SinSawSquareFactor.z)) * effectiveAmplitude;
+                            _JobPhases[y * 4 + v] = (_JobPhases[y * 4 + v] + _OCSphaseIncrements[v]) % 1;
+                            _JobPhases[(_JobFrequencies.Length + y) * 4 + v] = (_JobPhases[(_JobFrequencies.Length + y) * 4 + v] + _OCSphaseIncrements[v + 4]) % 1;
+
+                            // Calculate pan for spread effect
+                            /// Normalized Range from -1 to 1 ; 0 = no pan
+                            float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
+
+                            float volumeAdjustment = (1 - _JobSynths[i].UnissonDetune) + 0.25f * _JobSynths[i].UnissonDetune;
+                            // Apply stereo panning based on spread
+                            leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
+                            rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
+
+
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
+                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+
+                            /// populate all channels with the values
+                            _audioData[sampleStage] += filteredValue * leftGain;
+                            _audioData[sampleStage + 1] += filteredValue * rightGain;
                         }
+
+
+
+
+                        //(float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx]);
+                        //_filterDelayElements[fullKeyIdx] = newDelayElements;
+
+                        ///// populate all channels with the values
+                        //for (int channel = 0; channel < ChannelsNum; channel++)
+                        //{
+                        //    _audioData[sampleStage + channel] += filteredValue;
+                        //}
 
                     }
 
                 }
 
+                
 
             }
 
@@ -1005,12 +1149,21 @@ public struct AudioJob : IJob
                 {
                     _KeyData[fullKeyIdx] = new KeyData { 
                         frequency = _JobFrequencies[cropedKeyIdx], 
-                        OCS1phase = _JobPhases[cropedKeyIdx], 
-                        OCS2phase = _JobPhases[_JobFrequencies.Length+ cropedKeyIdx], 
+                        OCS1phaseV1 = _JobPhases[cropedKeyIdx*4],
+                        OCS1phaseV2 = _JobPhases[cropedKeyIdx * 4+1],
+                        OCS1phaseV3 = _JobPhases[cropedKeyIdx * 4+2],
+                        OCS1phaseV4 = _JobPhases[cropedKeyIdx * 4+3],
+                        OCS2phaseV1 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4],
+                        OCS2phaseV2 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4 + 1],
+                        OCS2phaseV3 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4 + 2],
+                        OCS2phaseV4 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4 + 3],
                         delta = _JobDeltas[cropedKeyIdx], 
                         amplitudeAtRelease = _KeyData[fullKeyIdx].amplitudeAtRelease,
                         CutoffAmountAtRelease = _KeyData[fullKeyIdx].CutoffAmountAtRelease,
-                        filterDelayElements = _filterDelayElements[fullKeyIdx]
+                        filterDelayElementsV1 = _filterDelayElements[fullKeyIdx],
+                        filterDelayElementsV2 = _filterDelayElements[fullKeyIdx+1],
+                        filterDelayElementsV3 = _filterDelayElements[fullKeyIdx+2],
+                        filterDelayElementsV4 = _filterDelayElements[fullKeyIdx+3]
                     };
                     newkeysNum++;
                 }

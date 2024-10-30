@@ -254,7 +254,10 @@ public struct SynthData : IComponentData
                 Decay = 2,
                 Sustain = 0.5f,
                 Release = 1
-            }
+            },
+            UnissonVoices = 1,
+            UnissonDetune = 17f,
+            UnissonSpread = 0,
         };
     }
     public float amplitude;
@@ -273,6 +276,11 @@ public struct SynthData : IComponentData
     public short filterType;
     public float filterEnvelopeAmount;
     public ADSREnvelope filterADSR;
+
+    public short UnissonVoices;
+    /// Clamped between 2f and 50f (semitones)
+    public float UnissonDetune;
+    public float UnissonSpread;
 
 
 }

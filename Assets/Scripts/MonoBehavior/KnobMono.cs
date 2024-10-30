@@ -18,7 +18,10 @@ public enum KnobChangeType
     OCS2PW,
     FilterCutoff,
     FilterRes,
-    FilterEnv
+    FilterEnv,
+    UnissonVoices,
+    UnissonDetune,
+    UnissonSpread,
 }
 
 public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHandler,IPointerEnterHandler,IPointerExitHandler,IPointerUpHandler,IPointerDownHandler
@@ -43,6 +46,10 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
     private float knobAccumulator; 
     [HideInInspector]
     public string displayedValue;
+
+    [SerializeField]
+    private bool Centered = false;
+
     private bool mouseInKnob;
 
     private float turnSpeed;
@@ -51,8 +58,10 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
 
     void Start()
     {
-        if(knobIncrementNum!=0)
-            knobIncrementNum = knobIncrementNum % 2 == 0 ? knobIncrementNum : knobIncrementNum+1;
+        knobIncrementNum = knobIncrementNum == 1 ? knobIncrementNum + 1 : knobIncrementNum;
+        if (Centered && knobIncrementNum != 0)
+            knobIncrementNum = knobIncrementNum % 2 == 0 ? knobIncrementNum + 1 : knobIncrementNum;
+        
         turnSpeed = 2f;
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         knobControllerTarget = knobControllerComponent as IKnobController;
@@ -60,27 +69,28 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
         float iconRot = this.transform.eulerAngles.z - (180f * (Mathf.Sign(this.transform.eulerAngles.z - 180f) + 1));
         displayedValue = knobControllerTarget.UIknobChange(knobChangeType, iconRot);
 
+
     }
 
 
     public void OnDrag(PointerEventData eventData)
     {
         float iconRot = this.transform.eulerAngles.z - (180f * (Mathf.Sign(this.transform.eulerAngles.z - 180f) + 1));
+        
         float newRot = 0;
         if (knobIncrementNum != 0)
         {
-            //knobAccumulator += (PlayerSystem.mouseDelta.y * turnSpeed * 2)/ (knobIncrementNum - 1);
+            iconRot = Mathf.Abs(iconRot - 145);
             knobAccumulator += (eventData.delta.y / knobControllerTarget.uiManager.canvas.scaleFactor) * turnSpeed;
-            //Debug.Log(InputManager.mouseDelta.y * turnSpeed);
-            if (Mathf.Abs(knobAccumulator) <= 145 / (knobIncrementNum + 1))
+            if (Mathf.Abs(knobAccumulator) <= 145 / (knobIncrementNum + 1f))
             {
                 return;
             }
             while (Mathf.Abs(knobAccumulator)>145/ (knobIncrementNum + 1))
             {
-                float incrementState = Mathf.Round(iconRot/((145 / (knobIncrementNum+1)))) - Mathf.Sign(knobAccumulator);
-                newRot = Mathf.Max(-145f, Mathf.Min(145f, (145 / (knobIncrementNum + 1)) * incrementState));
-                knobAccumulator -= (145 / (knobIncrementNum + 1))* Mathf.Sign(knobAccumulator);
+                float incrementState = Mathf.Clamp(Mathf.Round(iconRot/(290/ (knobIncrementNum- 1f))) + Mathf.Sign(knobAccumulator),0, knobIncrementNum- 1f);
+                newRot = -incrementState * (290 / (knobIncrementNum- 1f)) + 145;
+                knobAccumulator -= (145 / (knobIncrementNum + 1f))* Mathf.Sign(knobAccumulator);
 
                 //Debug.Log(incrementState);
             }

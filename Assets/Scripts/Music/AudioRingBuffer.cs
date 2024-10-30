@@ -7,13 +7,34 @@ using UnityEngine;
 public struct KeyData
 {
     public float frequency;
-    public float OCS1phase;
-    public float OCS2phase;
+
+    //public float OCS1phase;
+    //public float OCS2phase;
+
+    /// <summary>
+    /// Phase storage for two oscillator * max number of possible unisson voices
+    /// </summary>
+    public float OCS1phaseV1;
+    public float OCS1phaseV2;
+    public float OCS1phaseV3;
+    public float OCS1phaseV4;
+
+    public float OCS2phaseV1;
+    public float OCS2phaseV2;
+    public float OCS2phaseV3;
+    public float OCS2phaseV4;
+
     public float delta;
     /* at 0, key is pressed. != 0, the key is released */
     public float amplitudeAtRelease;
     public float CutoffAmountAtRelease;
-    public FilterDelayElements filterDelayElements;
+    /// <summary>
+    /// FilterDelay storage * max number of possible unisson voices
+    /// </summary>
+    public FilterDelayElements filterDelayElementsV1;
+    public FilterDelayElements filterDelayElementsV2;
+    public FilterDelayElements filterDelayElementsV3;
+    public FilterDelayElements filterDelayElementsV4;
 
 }
 public struct KeysBuffer
