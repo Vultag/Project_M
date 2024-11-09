@@ -34,6 +34,8 @@ public class AudioGenerator : MonoBehaviour
     public NativeArray<int> activeKeyNumber;
     public NativeArray<int> activeSynthsIdx;
     public NativeArray<float> _OCSphaseIncrements;
+    public NativeArray<FilterDelayElements> filterDelayElements;
+    public NativeArray<float> SynthGlideBaseFz;
 
     public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
     public NativeArray<PlaybackAudioBundleContext> PlaybackAudioBundlesContext;
@@ -80,6 +82,10 @@ public class AudioGenerator : MonoBehaviour
         audioRingBuffer = new AudioRingBuffer<KeysBuffer>(ringBufferCapacity);
         audioRingBuffer.InitializeBuffer(ringBufferCapacity);
         _OCSphaseIncrements = new NativeArray<float>(8, Allocator.Persistent);
+        SynthGlideBaseFz = new NativeArray<float>(2, Allocator.Persistent);
+        /// 4 elements per key -> 12 max keys per synth = 48 elements per synth
+        /// starting active synth(48) + starting synth playback(48) = 96
+        filterDelayElements = new NativeArray<FilterDelayElements>(48, Allocator.Persistent);
 
         //activeKeys = new NativeArray<KeyData>(12, Allocator.Persistent);
         //activeKeyNumber = new NativeArray<int>(1, Allocator.Persistent);
@@ -165,21 +171,25 @@ public class AudioGenerator : MonoBehaviour
             {
                 var newSynthsData = new NativeArray<SynthData>(SynthsData.Length+1, Allocator.Persistent);
                 var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
-                /// 12 = max number of notes ; 4 = max number of unisson
-                var newfilterDelayElements = new NativeArray<FilterDelayElements>((PlaybackAudioBundles.Length + 2) * 12 * 4, Allocator.Persistent);
+                /// 12 = max number of notes ; 4 = max number of unisson -> 48
+                var newfilterDelayElements = new NativeArray<FilterDelayElements>((PlaybackAudioBundles.Length + 2) * 48, Allocator.Persistent);
+                var newSynthGlideBaseFz = new NativeArray<float>(SynthGlideBaseFz.Length+1, Allocator.Persistent);
 
                 for (int i = 0; i < SynthsData.Length; i++)
                 {
                     newSynthsData[i] = SynthsData[i];
                     newPlaybackBundle[i] = PlaybackAudioBundles[i];
+                    newSynthGlideBaseFz[i] = SynthGlideBaseFz[i];
                 }
                 newSynthsData[SynthsData.Length] = AudioLayoutStorageHolder.audioLayoutStorage.ReadAddSynth();
                 SynthsData.Dispose();
                 PlaybackAudioBundles.Dispose();
-                AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements.Dispose();
+                filterDelayElements.Dispose();
+                SynthGlideBaseFz.Dispose();
                 SynthsData = newSynthsData;
                 PlaybackAudioBundles = newPlaybackBundle;
-                AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = newfilterDelayElements;
+                filterDelayElements = newfilterDelayElements;
+                SynthGlideBaseFz = newSynthGlideBaseFz;
 
             }
             if(AudioLayoutStorageHolder.audioLayoutStorage.SelectSynthUpdateRequirement)
@@ -388,8 +398,9 @@ public class AudioGenerator : MonoBehaviour
                     ///Key already being released, check if repressed
                     if (activeKeys[y].amplitudeAtRelease != 0)
                     {
-                        activeKeys[y] = new KeyData { 
-                            frequency = activeKeys[y].frequency, 
+                        activeKeys[y] = new KeyData {
+                            frequency = activeKeys[y].frequency,
+                            GlideStartFrenquency = SynthGlideBaseFz[0],
                             delta = 0f, 
                             OCS1phaseV1 = activeKeys[y].OCS1phaseV1,
                             OCS1phaseV2 = activeKeys[y].OCS1phaseV2,
@@ -405,6 +416,7 @@ public class AudioGenerator : MonoBehaviour
                             filterDelayElementsV3 = activeKeys[y].filterDelayElementsV3,
                             filterDelayElementsV4 = activeKeys[y].filterDelayElementsV4,
                         };
+                        SynthGlideBaseFz[0] = activeKeys[y].frequency;
                     }
                 }
                 /// the buffer no longuer contains the frequency. release.
@@ -426,8 +438,9 @@ public class AudioGenerator : MonoBehaviour
                     else
                         releaseAmplitude = SynthsData[synthidx].ADSR.Sustain * SynthsData[synthidx].amplitude;
 
-                    activeKeys[y] = new KeyData { 
-                        frequency = activeKeys[y].frequency, 
+                    activeKeys[y] = new KeyData {
+                        frequency = activeKeys[y].frequency,
+                        GlideStartFrenquency = activeKeys[y].GlideStartFrenquency,
                         delta = 0,
                         OCS1phaseV1 = activeKeys[y].OCS1phaseV1,
                         OCS1phaseV2 = activeKeys[y].OCS1phaseV2,
@@ -446,6 +459,7 @@ public class AudioGenerator : MonoBehaviour
                         filterDelayElementsV3 = activeKeys[y].filterDelayElementsV3,
                         filterDelayElementsV4 = activeKeys[y].filterDelayElementsV4
                     };
+                    //SynthGlideBaseFz[0] = activeKeys[y].frequency;
 
                 }
             }
@@ -457,16 +471,17 @@ public class AudioGenerator : MonoBehaviour
                 {
                     if (activeKeyNumber[0] < 12)
                     {
-                        activeKeys[activeKeyNumber[0]] = new KeyData { frequency = keysBufferSlice[y] };
+                        activeKeys[activeKeyNumber[0]] = new KeyData { frequency = keysBufferSlice[y], GlideStartFrenquency = SynthGlideBaseFz[0] };
                         activeKeyNumber[0]++;
                     }
                     /// the number of keys played simultaneously has reached its limit : start overwriting the oldest ones.
                     else
                     {
                         Debug.Log("overwrite");
-                        activeKeys[overwriteKeysNum] = new KeyData { frequency = keysBufferSlice[y] };
+                        activeKeys[overwriteKeysNum] = new KeyData { frequency = keysBufferSlice[y] , GlideStartFrenquency = SynthGlideBaseFz[0]};
                         overwriteKeysNum++;
                     }
+                    SynthGlideBaseFz[0] = keysBufferSlice[y];
                 }
             }
             TotalActiveKeyNumber += activeKeyNumber[0];
@@ -495,7 +510,8 @@ public class AudioGenerator : MonoBehaviour
                     if (ActiveKeysSlice[y].amplitudeAtRelease != 0)
                     {
                         ActiveKeysSlice[y] = new KeyData { 
-                            frequency = ActiveKeysSlice[y].frequency, 
+                            frequency = ActiveKeysSlice[y].frequency,
+                            GlideStartFrenquency = SynthGlideBaseFz[z],
                             delta = 0f, 
                             OCS1phaseV1 = ActiveKeysSlice[y].OCS1phaseV1,
                             OCS1phaseV2 = ActiveKeysSlice[y].OCS1phaseV2,
@@ -508,6 +524,7 @@ public class AudioGenerator : MonoBehaviour
                             amplitudeAtRelease = 0,
                             CutoffAmountAtRelease = ActiveKeysSlice[y].CutoffAmountAtRelease
                         };
+                        SynthGlideBaseFz[z] = ActiveKeysSlice[y].frequency;
                     }
                 }
                 /// the buffer no longuer contains the frequency. release.
@@ -532,6 +549,7 @@ public class AudioGenerator : MonoBehaviour
 
                     ActiveKeysSlice[y] = new KeyData {
                         frequency = ActiveKeysSlice[y].frequency,
+                        GlideStartFrenquency = ActiveKeysSlice[y].GlideStartFrenquency,
                         delta = 0,
                         OCS1phaseV1 = ActiveKeysSlice[y].OCS1phaseV1,
                         OCS1phaseV2 = ActiveKeysSlice[y].OCS1phaseV2,
@@ -550,6 +568,7 @@ public class AudioGenerator : MonoBehaviour
                         filterDelayElementsV3 = activeKeys[y].filterDelayElementsV3,
                         filterDelayElementsV4 = activeKeys[y].filterDelayElementsV4
                     };
+                    //SynthGlideBaseFz[z] = ActiveKeysSlice[y].frequency;
 
                     PlaybackAudioBundlesContext[i] = new PlaybackAudioBundleContext { 
                         PlaybackKeyStartIndex = PlaybackAudioBundlesContext[i].PlaybackKeyStartIndex +1,
@@ -567,7 +586,7 @@ public class AudioGenerator : MonoBehaviour
                 {
                     if (activeKeyNumber[z] < 12)
                     {
-                        activeKeys[(z * 12)+activeKeyNumber[z]] = new KeyData { frequency = keysBufferSlice[y] };
+                        activeKeys[(z * 12)+activeKeyNumber[z]] = new KeyData { frequency = keysBufferSlice[y], GlideStartFrenquency = SynthGlideBaseFz[z] };
                         activeKeyNumber[z]++;
                     }
                     /// the number of keys played simultaneously has reached its limit : start overwriting the oldest ones.
@@ -578,6 +597,7 @@ public class AudioGenerator : MonoBehaviour
                         //activeKeys[overwriteKeysNum] = new KeyData { frequency = keysBufferSlice[y] };
                         //overwriteKeysNum++;
                     }
+                    SynthGlideBaseFz[z] = keysBufferSlice[y];
                 }
             }
             TotalActiveKeyNumber += activeKeyNumber[z];
@@ -627,10 +647,11 @@ public class AudioGenerator : MonoBehaviour
             _JobFrequencies,
             _JobPhases,
             _JobDeltas,
-            AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements,
+            filterDelayElements,
             _audioData,
             activeKeyNumber,
             _OCSphaseIncrements
+            //SynthGlideBaseFz
             );
 
 
@@ -686,6 +707,8 @@ public struct AudioJob : IJob
     //[WriteOnly]
     private NativeArray<int> _activeKeynum;
     private NativeArray<float> _OCSphaseIncrements;
+    //[ReadOnly]
+    //private NativeArray<float> _SynthGlideBaseFz;
 
     public AudioJob(
        float sampleRate,
@@ -700,6 +723,7 @@ public struct AudioJob : IJob
         NativeArray<float> audioData,
         NativeArray<int> activeKeynum,
         NativeArray<float> OCSphaseIncrements
+        //NativeArray<float> SynthGlideBaseFz
        )
     {
         _JobSynths = synthsdata;
@@ -712,6 +736,7 @@ public struct AudioJob : IJob
         _audioData = audioData;
         _activeKeynum = activeKeynum;
         _OCSphaseIncrements = OCSphaseIncrements;
+        //_SynthGlideBaseFz = SynthGlideBaseFz;
     }
 
     public void Execute()
@@ -867,10 +892,11 @@ public struct AudioJob : IJob
             for (int y = activeKeyStartidx; y < activeKeyStartidx + _activeKeynum[i]; y++)
             {
                 int fullKeyIdx = i * 12 + (y - activeKeyStartidx);
-                _filterDelayElements[fullKeyIdx] = _KeyData[fullKeyIdx].filterDelayElementsV1;
-                _filterDelayElements[fullKeyIdx+1] = _KeyData[fullKeyIdx].filterDelayElementsV2;
-                _filterDelayElements[fullKeyIdx+2] = _KeyData[fullKeyIdx].filterDelayElementsV3;
-                _filterDelayElements[fullKeyIdx+3] = _KeyData[fullKeyIdx].filterDelayElementsV4;
+                int currentKeyIdx = (int)(y - activeKeyStartidx);
+                _filterDelayElements[currentKeyIdx * 4] = _KeyData[fullKeyIdx].filterDelayElementsV1;
+                _filterDelayElements[currentKeyIdx * 4 + 1] = _KeyData[fullKeyIdx].filterDelayElementsV2;
+                _filterDelayElements[currentKeyIdx * 4 + 2] = _KeyData[fullKeyIdx].filterDelayElementsV3;
+                _filterDelayElements[currentKeyIdx * 4 + 3] = _KeyData[fullKeyIdx].filterDelayElementsV4;
 
                 /// shrink the the potential iteration of opti
                 int attackFilterBlockNum = Mathf.Min(filterBlockReprocessSubdivision, KeysADSRlayouts[y].AttackSamples);
@@ -891,8 +917,11 @@ public struct AudioJob : IJob
                     float voiceCenterOffset = v - (_JobSynths[i].UnissonVoices - 1) * 0.5f;
                     //float detuneAmount = Mathf.Pow(2f, (voiceCenterOffset * _JobSynths[i].UnissonDetune) / 1200);
                     float detune = Mathf.Pow(2f, (voiceCenterOffset * _JobSynths[i].UnissonDetune) / 1200f);
-                    _OCSphaseIncrements[v] = (_JobFrequencies[y] * Mathf.Pow(2f, _JobSynths[i].Osc1Fine / 1200f) * detune) / _sampleRate;
-                    _OCSphaseIncrements[v+4] = (_JobFrequencies[y] * Mathf.Pow(2f, _JobSynths[i].Osc2Fine / 1200f) * Mathf.Pow(2.0f, _JobSynths[i].Osc2Semi / 12.0f) * detune) / _sampleRate;
+                    float glideProgress = (Mathf.Min(Mathf.Sign(_JobDeltas[y]) *_JobDeltas[y], _JobSynths[i].Portomento)+float.Epsilon) / (_JobSynths[i].Portomento + float.Epsilon);
+                    /// frequency with glide taken into account
+                    float effectiveFrequency = _JobFrequencies[y]* glideProgress + _KeyData[fullKeyIdx].GlideStartFrenquency * (1-glideProgress);
+                    _OCSphaseIncrements[v] = (effectiveFrequency * Mathf.Pow(2f, _JobSynths[i].Osc1Fine / 1200f) * detune) / _sampleRate;
+                    _OCSphaseIncrements[v+4] = (effectiveFrequency * Mathf.Pow(2f, _JobSynths[i].Osc2Fine / 1200f) * Mathf.Pow(2.0f, _JobSynths[i].Osc2Semi / 12.0f) * detune) / _sampleRate;
                 }
 
                 /// Filter ATTACK + ATTACK
@@ -923,14 +952,13 @@ public struct AudioJob : IJob
                             float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
 
 
-                            float volumeAdjustment = (1 - _JobSynths[i].UnissonSpread) + 0.25f * _JobSynths[i].UnissonSpread;
                             // Apply stereo panning based on spread
                             leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
                             rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
 
 
-                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
-                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[currentKeyIdx * 4 + v]);
+                            _filterDelayElements[currentKeyIdx * 4 + v] = newDelayElements;
 
                             /// populate all channels with the values
                             _audioData[sampleStage] += filteredValue * leftGain;
@@ -977,14 +1005,13 @@ public struct AudioJob : IJob
                             /// Normalized Range from -1 to 1 ; 0 = no pan
                             float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
 
-                            float volumeAdjustment = (1 - _JobSynths[i].UnissonDetune) + 0.25f * _JobSynths[i].UnissonDetune;
                             // Apply stereo panning based on spread
                             leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
                             rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
 
 
-                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
-                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[currentKeyIdx * 4 + v]);
+                            _filterDelayElements[currentKeyIdx * 4 + v] = newDelayElements;
 
                             /// populate all channels with the values
                             _audioData[sampleStage] += filteredValue * leftGain;
@@ -1035,14 +1062,13 @@ public struct AudioJob : IJob
                             float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
                             //Debug.Log(pan);
 
-                            float volumeAdjustment = (1 - _JobSynths[i].UnissonDetune) + 0.25f * _JobSynths[i].UnissonDetune;
                             // Apply stereo panning based on spread
                             leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
                             rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
 
 
-                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
-                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[currentKeyIdx * 4 + v]);
+                            _filterDelayElements[currentKeyIdx * 4 + v] = newDelayElements;
 
                             /// populate all channels with the values
                             _audioData[sampleStage] += filteredValue * leftGain;
@@ -1094,14 +1120,13 @@ public struct AudioJob : IJob
                             /// Normalized Range from -1 to 1 ; 0 = no pan
                             float pan = (-(_JobSynths[i].UnissonVoices - 1) * 0.5f + v) * _JobSynths[i].UnissonSpread;
 
-                            float volumeAdjustment = (1 - _JobSynths[i].UnissonDetune) + 0.25f * _JobSynths[i].UnissonDetune;
                             // Apply stereo panning based on spread
                             leftGain = (1f / _JobSynths[i].UnissonVoices) * (pan + 1); // Left channel gain
                             rightGain = (1f / _JobSynths[i].UnissonVoices) + (1f / _JobSynths[i].UnissonVoices - leftGain); // Right channel gain
 
 
-                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[fullKeyIdx + v]);
-                            _filterDelayElements[fullKeyIdx + v] = newDelayElements;
+                            (float filteredValue, FilterDelayElements newDelayElements) = ApplyBiquadFilter(value, filterCoefficients[(y * filterBlockReprocessSubdivision) + 0], _filterDelayElements[currentKeyIdx * 4 + v]);
+                            _filterDelayElements[currentKeyIdx * 4 + v] = newDelayElements;
 
                             /// populate all channels with the values
                             _audioData[sampleStage] += filteredValue * leftGain;
@@ -1147,12 +1172,15 @@ public struct AudioJob : IJob
 
                 if (_JobDeltas[cropedKeyIdx] > -ADSR.Release)
                 {
+                    float glideProgress = (Mathf.Min(Mathf.Sign(_JobDeltas[cropedKeyIdx]) * _JobDeltas[cropedKeyIdx], _JobSynths[i].Portomento) + float.Epsilon) / (_JobSynths[i].Portomento + float.Epsilon);
+                    float effectiveFrequency = _JobFrequencies[cropedKeyIdx] * glideProgress + _KeyData[fullKeyIdx].GlideStartFrenquency * (1 - glideProgress);
                     _KeyData[fullKeyIdx] = new KeyData { 
-                        frequency = _JobFrequencies[cropedKeyIdx], 
+                        frequency = _JobFrequencies[cropedKeyIdx],
+                        GlideStartFrenquency = effectiveFrequency,
                         OCS1phaseV1 = _JobPhases[cropedKeyIdx*4],
-                        OCS1phaseV2 = _JobPhases[cropedKeyIdx * 4+1],
-                        OCS1phaseV3 = _JobPhases[cropedKeyIdx * 4+2],
-                        OCS1phaseV4 = _JobPhases[cropedKeyIdx * 4+3],
+                        OCS1phaseV2 = _JobPhases[cropedKeyIdx * 4 + 1],
+                        OCS1phaseV3 = _JobPhases[cropedKeyIdx * 4 + 2],
+                        OCS1phaseV4 = _JobPhases[cropedKeyIdx * 4 + 3],
                         OCS2phaseV1 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4],
                         OCS2phaseV2 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4 + 1],
                         OCS2phaseV3 = _JobPhases[(_JobFrequencies.Length + cropedKeyIdx) * 4 + 2],
@@ -1160,10 +1188,10 @@ public struct AudioJob : IJob
                         delta = _JobDeltas[cropedKeyIdx], 
                         amplitudeAtRelease = _KeyData[fullKeyIdx].amplitudeAtRelease,
                         CutoffAmountAtRelease = _KeyData[fullKeyIdx].CutoffAmountAtRelease,
-                        filterDelayElementsV1 = _filterDelayElements[fullKeyIdx],
-                        filterDelayElementsV2 = _filterDelayElements[fullKeyIdx+1],
-                        filterDelayElementsV3 = _filterDelayElements[fullKeyIdx+2],
-                        filterDelayElementsV4 = _filterDelayElements[fullKeyIdx+3]
+                        filterDelayElementsV1 = _filterDelayElements[y*4],
+                        filterDelayElementsV2 = _filterDelayElements[y * 4 + 1],
+                        filterDelayElementsV3 = _filterDelayElements[y * 4 + 2],
+                        filterDelayElementsV4 = _filterDelayElements[y * 4 + 3]
                     };
                     newkeysNum++;
                 }

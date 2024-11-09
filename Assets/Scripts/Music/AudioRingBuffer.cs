@@ -7,6 +7,7 @@ using UnityEngine;
 public struct KeyData
 {
     public float frequency;
+    public float GlideStartFrenquency;
 
     //public float OCS1phase;
     //public float OCS2phase;

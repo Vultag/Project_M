@@ -28,7 +28,7 @@ public class UnissonUI : MonoBehaviour, IKnobController
 
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         unissonVoices = 1;
-        Detune = 0.17f;
+        Detune = 0.26f;
         Spread = 0;
     }
 

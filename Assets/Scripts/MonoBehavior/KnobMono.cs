@@ -22,6 +22,7 @@ public enum KnobChangeType
     UnissonVoices,
     UnissonDetune,
     UnissonSpread,
+    Portamento,
 }
 
 public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHandler,IPointerEnterHandler,IPointerExitHandler,IPointerUpHandler,IPointerDownHandler

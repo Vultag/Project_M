@@ -41,8 +41,6 @@ public class AudioManager : MonoBehaviour
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0] = SynthData.CreateDefault();
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
-        /// starting active synth(12) + starting synth playback(12) = 24
-        AudioLayoutStorageHolder.audioLayoutStorage.filterDelayElements = new NativeArray<FilterDelayElements>(24, Allocator.Persistent);
     }
 
     //EntityQuery _query;

@@ -256,8 +256,9 @@ public struct SynthData : IComponentData
                 Release = 1
             },
             UnissonVoices = 1,
-            UnissonDetune = 17f,
+            UnissonDetune = 26f,
             UnissonSpread = 0,
+            Portomento = 0f,
         };
     }
     public float amplitude;
@@ -282,6 +283,8 @@ public struct SynthData : IComponentData
     public float UnissonDetune;
     public float UnissonSpread;
 
+    /// Glide in seconds
+    public float Portomento;
 
 }
 

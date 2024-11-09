@@ -38,6 +38,8 @@ public class UIManager : MonoBehaviour
     private FilterUI filterUI;
     [SerializeField]
     private UnissonUI unissonUI;
+    [SerializeField]
+    private VoicesUI voicesUI;
 
     [SerializeField]
     SliderMono simplexSlider;
@@ -194,6 +196,7 @@ public class UIManager : MonoBehaviour
         filterAdsrUI.UpdateUI(synthData);
         filterUI.UpdateUI(synthData);
         unissonUI.UpdateUI(synthData);
+        voicesUI.UpdateUI(synthData);
 
     }
 
