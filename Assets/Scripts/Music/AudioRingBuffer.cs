@@ -47,10 +47,17 @@ public struct KeysBuffer
 }
 public struct PlaybackKey
 {
-    //public float frequency;
     public Vector2 dir;
+    /// Portomento direction interpolation
+    public Vector2 startDir;
     public float time;
     public float lenght;
+    /// idx to cut a releasing key when overlaping with the sustain key in legato
+    /// by default at short.MaxValue when no key cut
+    public short keyCutIdx;
+    public bool dragged;
+    /// the delta upon Legato drag
+    //public float draggedDelta;
 
 }
 public struct PlaybackAudioBundle

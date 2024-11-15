@@ -145,6 +145,8 @@ namespace MusicNamespace
             Locrian
         }
 
+        const int NoteNumInCircle = 8;
+
         /*Could be optimized considering we are fetching an ordered list -> early exit OPTI*/
         //remove??
         public static float getNearestKey(float value)
@@ -168,7 +170,7 @@ namespace MusicNamespace
         public static int radiansToNote(float radians)
         {
             //tonic to tonic
-            return (int)Mathf.Round((radians * 8) / Mathf.PI);
+            return (int)Mathf.Round((radians * NoteNumInCircle) / Mathf.PI);
         }
         // ADD OCATVES
         public static float noteToFrequency(int localnote,MusicalMode mode)
@@ -193,6 +195,16 @@ namespace MusicNamespace
         public static float DirectionToFrequency(Vector2 dir)
         {
             return noteToFrequency(radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(dir))),WeaponSystem.mode);
+        }
+        /// Center a direction according to the key splitting of the circle
+        public static Vector2 CenterDirection(Vector2 dir)
+        {
+
+            float newRadDir = PhysicsUtilities.DirectionToRadians(dir);
+            newRadDir = (Mathf.Round(newRadDir / (Mathf.PI / NoteNumInCircle))) * (Mathf.PI / NoteNumInCircle);
+
+            return PhysicsUtilities.RadianToDirection(newRadDir);
+
         }
 
         public static float Sin(float phase)

@@ -175,6 +175,7 @@ public struct ADSRlayouts
 /// </summary>
 public struct SustainedKeyBufferData: IBufferElementData
 {
+    public Vector2 TargetDirLenght;
     public Vector2 DirLenght;
     public Vector2 EffectiveDirLenght;
     public float Delta;
@@ -201,6 +202,7 @@ public struct ReleasedKeyBufferData : IBufferElementData
 public struct PlaybackSustainedKeyBufferData : IBufferElementData
 {
     public Vector2 DirLenght;
+    public Vector2 StartDirLenght;
     public Vector2 EffectiveDirLenght;
     public float Delta;
     public float Phase;
@@ -259,6 +261,7 @@ public struct SynthData : IComponentData
             UnissonDetune = 26f,
             UnissonSpread = 0,
             Portomento = 0f,
+            Legato = false
         };
     }
     public float amplitude;
@@ -285,6 +288,7 @@ public struct SynthData : IComponentData
 
     /// Glide in seconds
     public float Portomento;
+    public bool Legato;
 
 }
 

@@ -65,6 +65,7 @@ public class UIManager : MonoBehaviour
 
     private Vector2 PreviousMousePos;
 
+    //private WeaponSystem weaponSystem;
 
     private void Awake()
     {
@@ -239,10 +240,11 @@ public class UIManager : MonoBehaviour
 
         if (!entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
         {
-            var playbackRecordingData = new PlaybackRecordingData{
+            var playbackRecordingData = new PlaybackRecordingData {
                 duration = audioManager.TEMPplaybackDuration,
                 synthIndex = activeSynthIdx,
-                time = 0
+                time = 0,
+                GideReferenceDirection = WeaponSystem.GideReferenceDirection
             };
 
             ecb.AddComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);

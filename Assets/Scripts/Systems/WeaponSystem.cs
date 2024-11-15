@@ -7,8 +7,6 @@ using UnityEngine;
 using MusicNamespace;
 using Unity.Mathematics;
 using Unity.Entities.UniversalDelegates;
-using UnityEditor.Rendering;
-using NUnit.Framework.Internal.Filters;
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateAfter(typeof(PhyResolutionSystem))]
@@ -31,8 +29,6 @@ public partial class WeaponSystem : SystemBase
 
     public static bool PlayPressed;
     public static bool PlayReleased;
-    private bool PlayActive;
-    private float PlayKey;
     private int PlayedKeyIndex;
     public Vector2 mousepos;
     private bool IsShooting;
@@ -41,6 +37,9 @@ public partial class WeaponSystem : SystemBase
     //private NativeList<PlaybackKey> PlayKeys;
 
     private NativeArray<float> Rythms;
+    public static Vector2 GideReferenceDirection;
+    /// 0 = legato inactive;
+    private float activeLegatoFz;
 
     //private MaterialPropertyBlock _propertyBlock;
 
@@ -96,14 +95,45 @@ public partial class WeaponSystem : SystemBase
             }
         }
 
+        mousepos = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
+
         /// Move to Synth system all together ?
         foreach (var (Wtrans, trans) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>>().WithAll<SynthData>())
         {
+
+            Vector2 direction = mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y);
+
+            if (activeLegatoFz!=0)
+            {
+                float currentFz = MusicUtils.DirectionToFrequency(direction);
+                if (currentFz != activeLegatoFz)
+                {
+                    /// Check if the the legato glide over a released key
+                    for (int i = 0; i < RkeyBuffer.Length; i++)
+                    {
+                        if (MusicUtils.DirectionToFrequency(RkeyBuffer[i].DirLenght)  == currentFz)
+                        {
+                            RkeyBuffer.RemoveAt(i);
+                            break;
+                        }
+                    }
+                    SkeyBuffer[SkeyBuffer.Length - 1] = new SustainedKeyBufferData
+                    {
+                        DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
+                        EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
+                        Delta = 0,
+                        Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
+                        currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude
+                    };
+                    GideReferenceDirection = direction;
+                    activeLegatoFz = currentFz;
+                }
+            }
+
             ///OPTI :
             if (!IsShooting && !UIInputSystem.MouseOverUI)
             {
 
-                mousepos = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
                 Vector2 dir = ((new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y)) - (mousepos)).normalized;
 
                 trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
@@ -114,11 +144,10 @@ public partial class WeaponSystem : SystemBase
                 /// FOR SHOOTING TIED TO BEAT
                 //if (BeatProximity < BeatProximityThreshold)
                 {
-                    Vector2 direction = mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y);
                     float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));
                     int note = MusicUtils.radiansToNote(randian);
 
-                    // 0 = not exist : 1 = in Skeybuffer
+                    // 0 = not exist : 1 = exist in Rkeybuffer
                     short noteExist = 0;
                     int i;
 
@@ -127,43 +156,66 @@ public partial class WeaponSystem : SystemBase
                         int bufferNote = MusicUtils.radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght)));
                         if (bufferNote == note)
                         {
-                            noteExist = 2;
+                            noteExist = 1;
                             break;
                         } 
                     }
                     if (noteExist==0)
                     {
+                        if (ActiveSynth.Legato)
+                        {
+                            activeLegatoFz = MusicUtils.DirectionToFrequency(direction);
+                        }
                         //add to play buffer
                         PlayedKeyIndex = SkeyBuffer.Length;
-                        SkeyBuffer.Add(new SustainedKeyBufferData { DirLenght = direction, EffectiveDirLenght = direction, Delta = 0, Phase = 0});
+                        SkeyBuffer.Add(new SustainedKeyBufferData {
+                            TargetDirLenght = direction,
+                            DirLenght = GideReferenceDirection,
+                            EffectiveDirLenght = GideReferenceDirection, 
+                            Delta = 0, 
+                            Phase = 0
+                        });
+                        
                     }
+                    /// Key exist in Rkeybuffer
                     else
                     {
-                        // can't happen ? 
-                        if (noteExist == 1)
+                        //Vector2 effectiveDirLenght = GideReferenceDirection;
+                        float newDelta = 0;
+                        //effectiveDirLenght = GideReferenceDirection;
+                        if (ActiveSynth.Legato)
                         {
-                            Debug.LogError("can't happen ?");
+                            activeLegatoFz = MusicUtils.DirectionToFrequency(direction);
+                            float deltaFactor = 1-((ActiveSynth.ADSR.Release - RkeyBuffer[i].Delta) / ActiveSynth.ADSR.Release);
+                            /// Deduce the amplitude of the releasing key
+                            float amplitude = RkeyBuffer[i].amplitudeAtRelease * (Mathf.Exp(-1.6f * deltaFactor) * (1 - deltaFactor));
+                            /// map it to the attack of the new note to keep it continuous
+                            newDelta = (amplitude * ActiveSynth.ADSR.Attack);
                         }
-                        //noteExist == 2
-                        else
-                        {
-                            //add to play buffer
-                            PlayedKeyIndex = SkeyBuffer.Length;
-                            SkeyBuffer.Add(new SustainedKeyBufferData { DirLenght = direction,EffectiveDirLenght = direction, Delta = 0 , Phase = RkeyBuffer[i].Phase, currentAmplitude = RkeyBuffer[i].currentAmplitude });
-                            /// Set its delta to fade up to the new one ? (similar to synthorial)
-                            RkeyBuffer.RemoveAt(i);
-                        }
+                        //add to play buffer
+                        PlayedKeyIndex = SkeyBuffer.Length;
+                        SkeyBuffer.Add(new SustainedKeyBufferData { 
+                            TargetDirLenght = direction,
+                            DirLenght = GideReferenceDirection,
+                            EffectiveDirLenght = GideReferenceDirection, 
+                            Delta = newDelta, 
+                            Phase = RkeyBuffer[i].Phase, 
+                            currentAmplitude = RkeyBuffer[i].currentAmplitude 
+                        });
+                        RkeyBuffer.RemoveAt(i);
+                        
                     }
-
+                    GideReferenceDirection = direction;
                     IsShooting = true;
                 }
                 PlayPressed = false;
             }
             if (PlayReleased)
             {
-
+                activeLegatoFz = 0;
                 if (ActiveSynth.ADSR.Sustain > 0 && SkeyBuffer.Length != 0)
                 {
+                    //Debug.LogError(SkeyBuffer[PlayedKeyIndex].currentAmplitude);
                     //Debug.LogError("newDeltaFactor * ActiveSynth.ADSR.Release");
                     RkeyBuffer.Add(new ReleasedKeyBufferData { 
                         DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght, 
@@ -184,18 +236,39 @@ public partial class WeaponSystem : SystemBase
             }
 
 
+
             /*remplace with generic shape*/
             ComponentLookup<CircleShapeData> ShapeComponentLookup = GetComponentLookup<CircleShapeData>(isReadOnly: true);
 
-            KeysBuffer keysBuffer = new KeysBuffer { keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), KeyNumber = new NativeArray<short>(1, Allocator.Temp) };
+            KeysBuffer keysBuffer = new KeysBuffer 
+            { 
+                keyFrenquecies = new NativeArray<float>(12,Allocator.Temp), 
+                KeyNumber = new NativeArray<short>(1, Allocator.Temp) 
+            };
             keysBuffer.KeyNumber[0] = (short)(SkeyBuffer.Length);
 
-            /// Damage processing + Delta/amplitude/filtering incrementing + audioBufferData filling
+            /// Damage processing 
+            /// + Delta/amplitude/filtering incrementing 
+            /// + audioBufferData filling
+            /// 
             for (int i = 0; i < SkeyBuffer.Length; i++)
             {
-                keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(SkeyBuffer[i].DirLenght);
+                //Vector2 direction = mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y);
+                Vector2 targetDirLenght = ActiveSynth.Legato ? direction : SkeyBuffer[i].TargetDirLenght;
+                //dirLenght = ActiveSynth.Portomento > 0 ? GideReferenceDirection : dirLenght;
+                keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(targetDirLenght);
+                //dirLenght = PhysicsUtilities.Rotatelerp(SkeyBuffer[i].DirLenght, dirLenght, -Mathf.Log(ActiveSynth.Portomento / 3) * 0.01f + 0.03f);
+                //Vector2 currentDirLenght = SkeyBuffer[i].CurrentGlideDir * SkeyBuffer[i].DirLenght.magnitude;
+                Vector2 dirLenght = PhysicsUtilities.Rotatelerp(SkeyBuffer[i].DirLenght, targetDirLenght, -Mathf.Log(ActiveSynth.Portomento / 3) * 0.01f + 0.03f);
 
-                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y),DirLength=SkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray 
+                { 
+                    Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y),
+                    DirLength=SkeyBuffer[i].DirLenght 
+                }, 
+                    PhysicsUtilities.CollisionLayer.MonsterLayer, 
+                    ShapeComponentLookup);
 
                 float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                 float newCurrentAmplitude;
@@ -215,11 +288,12 @@ public partial class WeaponSystem : SystemBase
                     //Debug.Log(Hit.distance);
                     // hit line
                     //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
-                    
+                   
                     SkeyBuffer[i] = new SustainedKeyBufferData {
-                        Delta = newDelta, 
-                        DirLenght = SkeyBuffer[i].DirLenght,
-                        EffectiveDirLenght = SkeyBuffer[i].DirLenght * (Hit.distance/ SkeyBuffer[i].DirLenght.magnitude), 
+                        Delta = newDelta,
+                        TargetDirLenght = targetDirLenght,
+                        DirLenght = dirLenght,
+                        EffectiveDirLenght = dirLenght * (Hit.distance/ dirLenght.magnitude), 
                         Phase = SkeyBuffer[i].Phase,
                         currentAmplitude = newCurrentAmplitude,
                         filter = newFilter
@@ -245,8 +319,10 @@ public partial class WeaponSystem : SystemBase
                 {
 
                     SkeyBuffer[i] = new SustainedKeyBufferData { 
-                        Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime, 
-                        DirLenght = SkeyBuffer[i].DirLenght, EffectiveDirLenght = SkeyBuffer[i].DirLenght, 
+                        Delta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime,
+                        TargetDirLenght = targetDirLenght,
+                        DirLenght = dirLenght, 
+                        EffectiveDirLenght = dirLenght, 
                         Phase = SkeyBuffer[i].Phase,
                         currentAmplitude = newCurrentAmplitude,
                         filter = newFilter
@@ -285,13 +361,14 @@ public partial class WeaponSystem : SystemBase
                     // hit line
                     //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (RkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
 
+                    float amplitudefactor = RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release;
                     RkeyBuffer[i] = new ReleasedKeyBufferData
                     {
                         Delta = newDelta,
                         DirLenght = RkeyBuffer[i].DirLenght,
                         EffectiveDirLenght = RkeyBuffer[i].DirLenght * (Hit.distance / RkeyBuffer[i].DirLenght.magnitude),
                         Phase = RkeyBuffer[i].Phase,
-                        currentAmplitude = RkeyBuffer[i].amplitudeAtRelease * Mathf.Exp(-4.6f * RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release),
+                        currentAmplitude = RkeyBuffer[i].amplitudeAtRelease * Mathf.Exp(-1.6f * amplitudefactor) * (1- amplitudefactor),
                         amplitudeAtRelease = RkeyBuffer[i].amplitudeAtRelease,
                         filter = newFilter,
                         cutoffEnvelopeAtRelease = RkeyBuffer[i].cutoffEnvelopeAtRelease,

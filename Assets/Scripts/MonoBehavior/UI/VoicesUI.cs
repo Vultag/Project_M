@@ -2,12 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class VoicesUI : MonoBehaviour, IKnobController
 {
     public UIManager uiManager;
     [SerializeField]
     private Transform PortomentoKnob;
+    [SerializeField]
+    private Image LegatoSwitch;
+    [SerializeField]
+    private Sprite SwitchUp;
+    [SerializeField]
+    private Sprite SwitchDown;
+    //Assets/Sprites/Display/switchDown.png
 
     float Portomento;
 
@@ -17,7 +25,6 @@ public class VoicesUI : MonoBehaviour, IKnobController
 
     void Start()
     {
-
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
     }
 
@@ -27,8 +34,26 @@ public class VoicesUI : MonoBehaviour, IKnobController
         Portomento = synthData.Portomento;
         PortomentoKnob.rotation = Quaternion.Euler(0, 0, ((1 - synthData.Portomento/3) - 0.5f) * 2f * 145f);
         PortomentoKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}", (Mathf.RoundToInt(synthData.Portomento * 100)).ToString(), " MS");
+        LegatoSwitch.sprite = synthData.Legato?SwitchUp:SwitchDown;
     }
 
+    public void SwitchActivation()
+    {
+
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        if (LegatoSwitch.sprite == SwitchDown)
+        {
+            newsynth.Legato = true;
+            LegatoSwitch.sprite = SwitchUp;
+        }
+        else
+        {
+            newsynth.Legato = false;
+            LegatoSwitch.sprite = SwitchDown;
+        }
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+
+    }
 
     public string UIknobChange(KnobChangeType knobChangeType, float newRot)
     {

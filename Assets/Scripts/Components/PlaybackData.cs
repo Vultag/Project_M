@@ -9,6 +9,7 @@ public struct PlaybackData : IComponentData
     public int PlaybackIndex;
     public int PlaybackKeyIndex;
     public float PlaybackTime;
+    //Vector2 GideReferenceDirection;
     //public float PlaybackDuration;
 
 }

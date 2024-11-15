@@ -149,7 +149,8 @@ public struct PhysicsUtilities
         return t * noIntersectionMask;
     }
 
-    //Move away from physics utils ?
+    /// Move away from physics utils ?
+    /// Into a MathUtils ?
     public static float DirectionToRadians(Vector2 dir)
     {
 
@@ -167,7 +168,6 @@ public struct PhysicsUtilities
 
         return (Mathf.Sign(radians) * Mathf.PI) - (radians);
     }
-    //Move away from physics utils ?
     public static float DirectionToRadians(Vector2 dir, float offset)
     {
 
@@ -186,11 +186,53 @@ public struct PhysicsUtilities
         return (Mathf.Sign(radians) * Mathf.PI) - (radians);
     }
 
-    // Converts an angle in radians to a direction vector in 2D space
-    public static Vector2 RadianToDirection2D(float radians)
+    // Converts an angle in radians to a direction vector in 2D space according to the DirectionToRadians output
+    public static Vector2 RadianToDirection(float radians)
     {
-        return new Vector2(Mathf.Cos(radians), Mathf.Sin(radians));
+        /*
+        input:
+             -pi|pi
+        -pi/2       pi/2
+              -0|0
+        */
+
+        // Adjust the angle back from the transformation in DirectionToRadians
+        float adjustedRadians = (Mathf.Sign(radians) * Mathf.PI) - radians;
+
+        // Convert the adjusted radians back to a direction vector
+        return new Vector2(Mathf.Sin(adjustedRadians), Mathf.Cos(adjustedRadians));
     }
 
+    public static Vector2 RotatedVector(Vector2 v, float degrees)
+    {
+        float radians = degrees * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(radians);
+        float sin = Mathf.Sin(radians);
+
+        float newX = v.x * cos - v.y * sin;
+        float newY = v.x * sin + v.y * cos;
+
+        return new Vector2(newX, newY);
+    }
+
+    public static Vector2 Rotatelerp(Vector2 start, Vector2 end, float t)
+    {
+        // Ensure t is within [0, 1]
+        t = Mathf.Clamp01(t);
+
+        // Calculate the angle between the two vectors
+        float angleStart = Mathf.Atan2(start.y, start.x) * Mathf.Rad2Deg;
+        float angleEnd = Mathf.Atan2(end.y, end.x) * Mathf.Rad2Deg;
+
+        // Interpolate the angles
+        float angle = Mathf.LerpAngle(angleStart, angleEnd, t);
+
+        // Calculate the length interpolation
+        float length = Mathf.Lerp(start.magnitude, end.magnitude, t);
+
+        // Apply the angle to the vector
+        float rad = angle * Mathf.Deg2Rad;
+        return new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * length;
+    }
 
 }
