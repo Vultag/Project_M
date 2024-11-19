@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WeaponRaysMat
-  m_Shader: {fileID: 4800000, guid: 542061349ae9b4a4092b7e47a053e41f, type: 3}
+  m_Name: MetronomeShaderMaterial
+  m_Shader: {fileID: 4800000, guid: 5a760ef8d430e1442a21e1b9ed48ae72, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -39,23 +39,13 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _SignalData:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Amplitude: 0
-    - _EditorCamRatio: 0.8116883
+    - _BPM: 0
+    - _BPMnormalized: 0.7
     - _EnableExternalAlpha: 0
-    - _Frequency: 8
-    - _SignalCount: 5
-    - _Time: 8.681143
+    - _test: 1.1599727
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EditorRes: {r: 988, g: 697, b: 0, a: 0}
-    - _MousePos: {r: -20.839241, g: -11.73, b: 0, a: 0}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _SinSawSquareFactor: {r: 1, g: 1, b: 1, a: 1}
-    - _WeaponPos: {r: -0.61, g: -1.97, b: 0, a: 0}
   m_BuildTextureStacks: []

@@ -18,9 +18,10 @@ public partial class WeaponSystem : SystemBase
     /// Useless ? active synth index always 0 ?
     //public static short activeSynthEntityindex;
 
-    public float BeatCooldown;
-    private float BeatProximity;
-    private float BeatProximityThreshold;
+    /// Moved to input manager
+    //public float BeatCooldown;
+    //private float BeatProximity;
+    //private float BeatProximityThreshold;
 
     EntityCommandBuffer ECB;
 
@@ -29,6 +30,7 @@ public partial class WeaponSystem : SystemBase
 
     public static bool PlayPressed;
     public static bool PlayReleased;
+    public static bool OnBeat;
     private int PlayedKeyIndex;
     public Vector2 mousepos;
     private bool IsShooting;
@@ -48,8 +50,6 @@ public partial class WeaponSystem : SystemBase
 
         WeaponEntities = new NativeArray<Entity>(1,Allocator.Persistent);
 
-        BeatCooldown = MusicUtils.BPM;
-        BeatProximityThreshold = 0.08f;
         //temp -> put on component
         mode = MusicUtils.MusicalMode.Phrygian;
 
@@ -69,12 +69,17 @@ public partial class WeaponSystem : SystemBase
     protected override void OnUpdate()
     {
 
-        BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
+        //BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
 
         ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
-        BeatProximity = 0.5f - Mathf.Abs(0.5f - (BeatCooldown / MusicUtils.BPM));
+        /// Moved to input manager
+        //BeatProximityThreshold = (0.2f * 4.1f) * Mathf.Min((1.5f*MusicUtils.BPM)/60f,1);
+        //float normalizedProximity = ((float)SystemAPI.Time.ElapsedTime % (60f / (MusicUtils.BPM*4))) / (60f / (MusicUtils.BPM * 4));
+        //BeatProximity = 1-Mathf.Abs((normalizedProximity-0.5f)*2);
 
+        //Debug.Log(BeatProximity);
+        //Debug.DrawLine(Vector3.zero,new Vector3(0, BeatProximity*10,0));
         //Debug.Log(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
@@ -97,6 +102,7 @@ public partial class WeaponSystem : SystemBase
 
         mousepos = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
 
+
         /// Move to Synth system all together ?
         foreach (var (Wtrans, trans) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<LocalTransform>>().WithAll<SynthData>())
         {
@@ -108,25 +114,54 @@ public partial class WeaponSystem : SystemBase
                 float currentFz = MusicUtils.DirectionToFrequency(direction);
                 if (currentFz != activeLegatoFz)
                 {
-                    /// Check if the the legato glide over a released key
-                    for (int i = 0; i < RkeyBuffer.Length; i++)
+                    if(OnBeat)
                     {
-                        if (MusicUtils.DirectionToFrequency(RkeyBuffer[i].DirLenght)  == currentFz)
+                        /// Check if the the legato glide over a released key
+                        for (int i = 0; i < RkeyBuffer.Length; i++)
                         {
-                            RkeyBuffer.RemoveAt(i);
-                            break;
+                            if (MusicUtils.DirectionToFrequency(RkeyBuffer[i].DirLenght) == currentFz)
+                            {
+                                RkeyBuffer.RemoveAt(i);
+                                break;
+                            }
                         }
+                        SkeyBuffer[SkeyBuffer.Length - 1] = new SustainedKeyBufferData
+                        {
+                            DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
+                            EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
+                            Delta = 0,
+                            Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
+                            currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude
+                        };
+                        GideReferenceDirection = direction;
+                        activeLegatoFz = currentFz;
                     }
-                    SkeyBuffer[SkeyBuffer.Length - 1] = new SustainedKeyBufferData
+                    else
                     {
-                        DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
-                        EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
-                        Delta = 0,
-                        Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
-                        currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude
-                    };
-                    GideReferenceDirection = direction;
-                    activeLegatoFz = currentFz;
+                        activeLegatoFz = 0;
+                        if (ActiveSynth.ADSR.Sustain > 0)
+                        {
+                            //Debug.LogError(SkeyBuffer[PlayedKeyIndex].currentAmplitude);
+                            //Debug.LogError("newDeltaFactor * ActiveSynth.ADSR.Release");
+                            RkeyBuffer.Add(new ReleasedKeyBufferData
+                            {
+                                DirLenght = SkeyBuffer[PlayedKeyIndex].DirLenght,
+                                EffectiveDirLenght = SkeyBuffer[PlayedKeyIndex].EffectiveDirLenght,
+                                //Delta = Mathf.Exp(4.6f*(newDeltaFactor-1)) * ActiveSynth.ADSR.Release, 
+                                Delta = 0,
+                                Phase = SkeyBuffer[PlayedKeyIndex].Phase,
+                                currentAmplitude = SkeyBuffer[PlayedKeyIndex].currentAmplitude,
+                                amplitudeAtRelease = SkeyBuffer[PlayedKeyIndex].currentAmplitude,
+                                filter = SkeyBuffer[PlayedKeyIndex].filter,
+                                cutoffEnvelopeAtRelease = SkeyBuffer[PlayedKeyIndex].filter.Cutoff - ActiveSynth.filter.Cutoff
+                            });
+
+                            SkeyBuffer.RemoveAt(PlayedKeyIndex);
+                        }
+                        IsShooting = false;
+                        PlayReleased = false;
+                    }
+              
                 }
             }
 
@@ -142,6 +177,7 @@ public partial class WeaponSystem : SystemBase
             if (PlayPressed && !UIInputSystem.MouseOverUI)
             {
                 /// FOR SHOOTING TIED TO BEAT
+                /// Moved to input manager
                 //if (BeatProximity < BeatProximityThreshold)
                 {
                     float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));

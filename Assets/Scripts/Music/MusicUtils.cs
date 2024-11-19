@@ -9,8 +9,8 @@ namespace MusicNamespace
     public struct MusicUtils
     {
 
-        //should not be here
-        static public int BPM = 60;
+        //should not be here?
+        static public float BPM = 60f;
 
         private readonly static int[] intervals = { 2, 2, 1, 2, 2, 2, 1, 2, 2, 1, 2, 2, 2, 1}; // Whole and half steps for Ionian mode over two octave
 

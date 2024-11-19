@@ -20,6 +20,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
     public static bool ClickPressed;
     public static bool ClickReleased;
+    public static bool OnBeat;
 
 
     protected override void OnCreate()
@@ -56,74 +57,97 @@ public partial class PlaybackRecordSystem : SystemBase
 
             if (recordData.ValueRO.activeLegatoFz != 0 && !ClickReleased)
             {
+               
                 //Vector2 currentDir = PhysicsUtilities.Rotatelerp(accumulator[accumulator.Length - 1].StartDirLenght, accumulator[accumulator.Length - 1].DirLenght, -Mathf.Log(ActiveSynth.Portomento / 3) * 0.01f + 0.03f);
                 float currentFz = MusicUtils.DirectionToFrequency(direction);
                 if (currentFz != recordData.ValueRO.activeLegatoFz)
                 {
-                    accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
+                    if (OnBeat)
                     {
-                        playbackRecordingKey = new PlaybackKey
-                        {
-                            dir = MusicUtils.CenterDirection(accumulator[accumulator.Length - 1].playbackRecordingKey.dir) * direction.magnitude,
-                            //dir = PhysicsUtilities.RadianToDirection(PhysicsUtilities.DirectionToRadians(accumulator[accumulator.Length - 1].playbackRecordingKey.dir)) * direction.magnitude,
-                            startDir = accumulator[accumulator.Length - 1].playbackRecordingKey.startDir,
-                            time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
-                            lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time,
-                            keyCutIdx = accumulator[accumulator.Length - 1].playbackRecordingKey.keyCutIdx,
-                            dragged = true,
-                        }
-                    };
 
-                    /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
-                    /*
-                    short RkeyIdxOnPlayback = short.MaxValue;
-                    /// Check if the the legato glide over a released key
-                    for (int i = 0; i < accumulator.Length-1; i++)
-                    {
-                        if (MusicUtils.DirectionToFrequency(accumulator[i].playbackRecordingKey.dir) == currentFz)
+                        accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
                         {
-                            /// check every active releasing key in the accumulator to find the keycutindex
-                            RkeyIdxOnPlayback = 0;
-                            for (int y = 0; y < i; y++)
+                            playbackRecordingKey = new PlaybackKey
                             {
-                                if ((accumulator[i].playbackRecordingKey.time+accumulator[i].playbackRecordingKey.lenght)> recordData.ValueRO.time)
-                                    RkeyIdxOnPlayback++;
+                                dir = MusicUtils.CenterDirection(accumulator[accumulator.Length - 1].playbackRecordingKey.dir) * direction.magnitude,
+                                //dir = PhysicsUtilities.RadianToDirection(PhysicsUtilities.DirectionToRadians(accumulator[accumulator.Length - 1].playbackRecordingKey.dir)) * direction.magnitude,
+                                startDir = accumulator[accumulator.Length - 1].playbackRecordingKey.startDir,
+                                time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                                lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                                keyCutIdx = accumulator[accumulator.Length - 1].playbackRecordingKey.keyCutIdx,
+                                dragged = true,
                             }
-                            //Debug.Log(RkeyIdxOnPlayback);
-                            accumulator[i] = new PlaybackRecordingKeysBuffer
-                            {
-                                playbackRecordingKey = new PlaybackKey
-                                {
-                                    dir = accumulator[i].playbackRecordingKey.dir,
-                                    startDir = accumulator[i].playbackRecordingKey.startDir,
-                                    time = accumulator[i].playbackRecordingKey.time,
-                                    lenght = accumulator[i].playbackRecordingKey.lenght,
-                                    keyCutIdx = accumulator[i].playbackRecordingKey.keyCutIdx,
-                                    dragged = true,
-                                }
-                            };
-                            break;
-                        }
-                    }
-                    */
-                    recordData.ValueRW.activeLegatoFz = currentFz;
+                        };
 
-                    accumulator.Add(new PlaybackRecordingKeysBuffer
-                    {
-                        playbackRecordingKey = new PlaybackKey
+                        /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
+                        /*
+                        short RkeyIdxOnPlayback = short.MaxValue;
+                        /// Check if the the legato glide over a released key
+                        for (int i = 0; i < accumulator.Length-1; i++)
                         {
-                            dir = MusicUtils.CenterDirection(direction)* direction.magnitude,
-                            //dir = PhysicsUtilities.RadianToDirection(PhysicsUtilities.DirectionToRadians(direction)) * direction.magnitude,
-                            //startDir = accumulator.Length==0? direction: recordData.ValueRO.GideReferenceDirection,
-                            startDir = recordData.ValueRO.GideReferenceDirection,
-                            time = recordData.ValueRO.time,
-                            /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
-                            //keyCutIdx = RkeyIdxOnPlayback,
-                            dragged = true
+                            if (MusicUtils.DirectionToFrequency(accumulator[i].playbackRecordingKey.dir) == currentFz)
+                            {
+                                /// check every active releasing key in the accumulator to find the keycutindex
+                                RkeyIdxOnPlayback = 0;
+                                for (int y = 0; y < i; y++)
+                                {
+                                    if ((accumulator[i].playbackRecordingKey.time+accumulator[i].playbackRecordingKey.lenght)> recordData.ValueRO.time)
+                                        RkeyIdxOnPlayback++;
+                                }
+                                //Debug.Log(RkeyIdxOnPlayback);
+                                accumulator[i] = new PlaybackRecordingKeysBuffer
+                                {
+                                    playbackRecordingKey = new PlaybackKey
+                                    {
+                                        dir = accumulator[i].playbackRecordingKey.dir,
+                                        startDir = accumulator[i].playbackRecordingKey.startDir,
+                                        time = accumulator[i].playbackRecordingKey.time,
+                                        lenght = accumulator[i].playbackRecordingKey.lenght,
+                                        keyCutIdx = accumulator[i].playbackRecordingKey.keyCutIdx,
+                                        dragged = true,
+                                    }
+                                };
+                                break;
+                            }
                         }
-                    });
-                    recordData.ValueRW.GideReferenceDirection = direction;
-                    //Debug.Log("df");
+                        */
+                        recordData.ValueRW.activeLegatoFz = currentFz;
+
+                        accumulator.Add(new PlaybackRecordingKeysBuffer
+                        {
+                            playbackRecordingKey = new PlaybackKey
+                            {
+                                dir = MusicUtils.CenterDirection(direction) * direction.magnitude,
+                                //dir = PhysicsUtilities.RadianToDirection(PhysicsUtilities.DirectionToRadians(direction)) * direction.magnitude,
+                                //startDir = accumulator.Length==0? direction: recordData.ValueRO.GideReferenceDirection,
+                                startDir = recordData.ValueRO.GideReferenceDirection,
+                                time = recordData.ValueRO.time,
+                                /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
+                                //keyCutIdx = RkeyIdxOnPlayback,
+                                dragged = true
+                            }
+                        });
+                        recordData.ValueRW.GideReferenceDirection = direction;
+                        //Debug.Log("df");
+                    }
+                    else
+                    {
+                        accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
+                        {
+                            playbackRecordingKey = new PlaybackKey
+                            {
+                                dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
+                                startDir = accumulator[accumulator.Length - 1].playbackRecordingKey.startDir,
+                                time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                                lenght = recordData.ValueRO.time - accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                                /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
+                                //keyCutIdx = accumulator[accumulator.Length - 1].playbackRecordingKey.keyCutIdx,
+                            }
+                        };
+                        recordData.ValueRW.activeLegatoFz = 0;
+                        keyActive = false;
+                        ClickReleased = false;
+                    }
                 }
             }
 
