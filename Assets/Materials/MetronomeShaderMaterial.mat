@@ -42,7 +42,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _BPM: 0
-    - _BPMnormalized: 0.7
+    - _BPMnormalized: 1
     - _EnableExternalAlpha: 0
     - _test: 1.1599727
     m_Colors:

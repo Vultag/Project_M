@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace MusicNamespace
@@ -145,7 +146,22 @@ namespace MusicNamespace
             Locrian
         }
 
-        const int NoteNumInCircle = 8;
+        const int NoteNumInCircle = 12;
+        readonly static float[] OctaveRadianWeights = 
+        { 
+            (4f / 43f) * Mathf.PI, 
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+        };
 
         /*Could be optimized considering we are fetching an ordered list -> early exit OPTI*/
         //remove??
@@ -169,27 +185,22 @@ namespace MusicNamespace
 
         public static int radiansToNote(float radians)
         {
-            //tonic to tonic
-            return (int)Mathf.Round((radians * NoteNumInCircle) / Mathf.PI);
+            int currentIndex = 0;
+            for (; radians > OctaveRadianWeights[currentIndex];)
+            {
+                radians -= OctaveRadianWeights[currentIndex];
+                currentIndex++;
+            }
+            return currentIndex;
+
         }
-        // ADD OCATVES
+
+        /// mode is not used in the curernt setup -> implement later
         public static float noteToFrequency(int localnote,MusicalMode mode)
         {
-            //Tonic not taken in account -> all base C
+            int tempoctave = 3 * 12;
 
-            int intervalIndex = (int)mode; // Convert mode to its integer representation
-            int note = 0;
-
-            while(localnote > 0)
-            {
-                note += intervals[intervalIndex-1 + localnote];
-                localnote--;
-            }
-            //Debug.LogError(note);
-
-            int tempoctave = 3 * 12 +1;
-
-            return keyFrequencies[note + tempoctave]; //+ ocatave
+            return keyFrequencies[localnote + tempoctave]; //+ ocatave
 
         }
         public static float DirectionToFrequency(Vector2 dir)
@@ -197,13 +208,23 @@ namespace MusicNamespace
             return noteToFrequency(radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(dir))),WeaponSystem.mode);
         }
         /// Center a direction according to the key splitting of the circle
+        /// OPTI
         public static Vector2 CenterDirection(Vector2 dir)
         {
 
-            float newRadDir = PhysicsUtilities.DirectionToRadians(dir);
-            newRadDir = (Mathf.Round(newRadDir / (Mathf.PI / NoteNumInCircle))) * (Mathf.PI / NoteNumInCircle);
+            float RadDir = PhysicsUtilities.DirectionToRadians(dir);
+            float newRadDir = OctaveRadianWeights[0] * 0.5f;
+            short idx = 0;
+            while (Mathf.Abs(RadDir) > OctaveRadianWeights[idx])
+            {
+                RadDir -= OctaveRadianWeights[idx]* Mathf.Sign(RadDir);
+                newRadDir += OctaveRadianWeights[idx]*0.5f + OctaveRadianWeights[idx+1]*0.5f;
+                idx++;
+            }
 
-            return PhysicsUtilities.RadianToDirection(newRadDir);
+            //newRadDir = (Mathf.Round(newRadDir / (Mathf.PI / NoteNumInCircle))) * (Mathf.PI / NoteNumInCircle);
+
+            return PhysicsUtilities.RadianToDirection(newRadDir * Mathf.Sign(RadDir));
 
         }
 

@@ -89,6 +89,7 @@ public class RaysToShader : MonoBehaviour
         // OPTI : 4 statementes -> 1
         for (; i < SkeyBuffer.Length; i++)
         {
+            if (SkeyBuffer[i].Delta < 0) continue;
             Signals[i].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
             Signals[i].direction = (float2)SkeyBuffer[i].EffectiveDirLenght;
             Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);

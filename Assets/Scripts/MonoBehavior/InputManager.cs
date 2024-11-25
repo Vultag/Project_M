@@ -16,7 +16,9 @@ public class InputManager : MonoBehaviour
     //public static Vector2 mouseDelta;
     public static Vector2 playerMouvement;
 
-    float BeatProximityThreshold = 0.3f;
+    float BeatProximityThreshold = 0.75f;
+    /// To detect offbeat keys
+    bool BeatNotYetPlayed = false;
 
     void Start()
     {
@@ -38,9 +40,14 @@ public class InputManager : MonoBehaviour
         float BeatProximity = 1 - Mathf.Abs((normalizedProximity - 0.5f) * 2);
         //Debug.DrawLine(Vector3.zero, new Vector3(0, BeatProximity * 10, 0));
 
-        WeaponSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true:false;
+        //WeaponSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true:false;
         PlaybackRecordSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true : false;
 
+        if(BeatProximity<0.2f && BeatNotYetPlayed)
+        {
+            BeatNotYetPlayed = false;
+            metronomeEffectSpawner.SpawnValidKeySpite();
+        }
 
 
     }
@@ -65,30 +72,42 @@ public class InputManager : MonoBehaviour
             //Debug.Log(BeatProximity);
             //Debug.DrawLine(new Vector3(5, 0, 0), new Vector3(5, BeatProximity * 10, 0), Color.red, 0.4f);
 
-            if (BeatProximity < BeatProximityThreshold)
+            //if (BeatProximity < BeatProximityThreshold)
             {
                 WeaponSystem.PlayPressed = true;
                 PlaybackRecordSystem.ClickPressed = true;
                 WeaponSystem.PlayReleased = false;
                 PlaybackRecordSystem.ClickReleased = false;
-                metronomeEffectSpawner.SpawnValidKeySpite();
             }
+
+            //Debug.Log(BeatProximity);
+            if (BeatProximity > 0.2f)
+                BeatNotYetPlayed = true;
             else
-            {
-                WeaponSystem.PlayPressed = false;
-                PlaybackRecordSystem.ClickPressed = false;
-                WeaponSystem.PlayReleased = true;
-                PlaybackRecordSystem.ClickReleased = true;
-                metronomeEffectSpawner.SpawnInvalidKeySpite();
-            }
+                metronomeEffectSpawner.SpawnValidKeySpite();
+
+            //else
+            //{
+            //    WeaponSystem.PlayPressed = false;
+            //    PlaybackRecordSystem.ClickPressed = false;
+            //    WeaponSystem.PlayReleased = true;
+            //    PlaybackRecordSystem.ClickReleased = true;
+            //    metronomeEffectSpawner.SpawnInvalidKeySpite();
+            //}
 
         }
         else
         {
+            if (BeatNotYetPlayed)
+            {
+                BeatNotYetPlayed = false;
+                metronomeEffectSpawner.SpawnInvalidKeySpite();
+            }
             WeaponSystem.PlayPressed = false;
             PlaybackRecordSystem.ClickPressed = false;
             WeaponSystem.PlayReleased = true;
             PlaybackRecordSystem.ClickReleased = true;
+       
         }
 
 
