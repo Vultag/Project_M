@@ -16,7 +16,7 @@ public class MetronomeMono : MonoBehaviour
     [SerializeField]
     private Material MetronomeMat;
 
-    float timeCount=0;
+    float localTime =0;
     float QuarterBeatTimeCount = 0;
 
     private void OnEnable()
@@ -27,9 +27,10 @@ public class MetronomeMono : MonoBehaviour
     }
     private void Update()
     {
-        timeCount += Time.deltaTime;
+        MusicUtils.time += Time.deltaTime;
+        localTime += Time.deltaTime;
         QuarterBeatTimeCount += Time.deltaTime;
-        if (timeCount> 15f/ MusicUtils.BPM)
+        if (localTime > 15f/ MusicUtils.BPM)
         {
             if (QuarterBeatTimeCount > 60f / MusicUtils.BPM)
             { 
@@ -38,9 +39,9 @@ public class MetronomeMono : MonoBehaviour
             }
             else
             {
-                audioTickQuarterBeat.Play();
+                //audioTickQuarterBeat.Play();
             }
-            timeCount = Time.time % (15f / MusicUtils.BPM);
+            localTime = (float)(MusicUtils.time) % (15f / MusicUtils.BPM);
         }
     }
 

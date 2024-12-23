@@ -65,7 +65,6 @@ public class UIManager : MonoBehaviour
 
     private Vector2 PreviousMousePos;
 
-    //private WeaponSystem weaponSystem;
 
     private void Awake()
     {
@@ -201,9 +200,17 @@ public class UIManager : MonoBehaviour
 
     }
 
-    public void _RecordPlayback()
-    {
 
+
+    public void _RecordPlayback(float excessTime)
+    {
+        
+        /// TEMP
+        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.ElementsInMesure.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.NoteElements.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.NotesSpriteIdx.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.NotesHeight.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = MusicSheetData.CreateDefault();
 
         var slider = SynthToolBar.transform.GetChild(activeSynthIdx).gameObject.GetComponentInChildren<Slider>();
         //var newColor = new Color { a = 1, r = (207 / 256), g = (207 / 256), b = (207 / 256) };
@@ -243,7 +250,7 @@ public class UIManager : MonoBehaviour
             var playbackRecordingData = new PlaybackRecordingData {
                 duration = audioManager.TEMPplaybackDuration,
                 synthIndex = activeSynthIdx,
-                time = 0,
+                time = excessTime,
                 GideReferenceDirection = WeaponSystem.GideReferenceDirection
             };
 
@@ -394,8 +401,6 @@ public class UIManager : MonoBehaviour
     }
 
 
-
-
     void ConstructUIsurface()
     {
         var UIrects = this.gameObject.GetComponentsInChildren<RectTransform>();
@@ -412,7 +417,6 @@ public class UIManager : MonoBehaviour
             };
         }
     }
-
     /// If I decide to bakes the rectangles into a polygon for opti.
     /*
     private NativeArray<Vector2> BakeUIsurface()

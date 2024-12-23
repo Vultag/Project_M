@@ -12,6 +12,8 @@ namespace MusicNamespace
 
         //should not be here?
         static public float BPM = 60f;
+        /// move away ?
+        static public float time = 0;
 
         private readonly static int[] intervals = { 2, 2, 1, 2, 2, 2, 1, 2, 2, 1, 2, 2, 2, 1}; // Whole and half steps for Ionian mode over two octave
 

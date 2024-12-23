@@ -34,6 +34,7 @@ public struct AudioLayoutStorage
     public PlaybackAudioBundle NewPlaybackAudioBundle;
     public int synthPlaybackIdx;
     public int synthActivationIdx;
+    public MusicSheetData ActiveMusicSheet;
 
     public bool UpdateRequirement;
 

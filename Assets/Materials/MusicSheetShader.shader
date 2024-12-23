@@ -4,7 +4,7 @@ Shader "Unlit/MusicSheetShader"
     {
         
         _MainTex ("Texture", 2D) = "white" {}
-        _ImageTextureDimentions ("Image AND Texture Dimentions", Vector) = (486.,80.,205.,481.)
+        _ImageTextureDimentions ("Image AND Texture Dimentions", Vector) = (486.,80.,590.,481.)
 
     }
     SubShader
@@ -38,18 +38,17 @@ Shader "Unlit/MusicSheetShader"
             };
             
 
-            // struct MusicSheetData
+            // cbuffer MusicSheetData: register(b0)
             // {
-            //     float mesureNumber;
+            //     float mesureNumber =0;
             //     /// NECESSARY ?
             //     //float[] elementIndexingStart;
-            //     int ElementsInMesure[4];
+            //     int ElementsInMesure[4] = { 2, 2, 2, 2};
             //     // needs to be of size 64 ? -> 4element/beat,4beat/mesure,4mesure/sheet
-            //     float NoteElements[9];
-            //     int NotesSpriteIdx[9];
-            //     int NotesHeight[9];
+            //     float NoteElements[9] = {4,4,4,4,4,4,4,4,4};
+            //     float NotesSpriteIdx[9];
+            //     float NotesHeight[9] = {99,99,99,99,99,99,99,99,99};
             //     //
-
             // };
 
             
@@ -59,9 +58,9 @@ Shader "Unlit/MusicSheetShader"
 
             float mesureNumber;
             float ElementsInMesure[4];
-            float NoteElements[9];
-            float NotesSpriteIdx[9];
-            float NotesHeight[9];
+            float NoteElements[48];
+            float NotesSpriteIdx[48];
+            float NotesHeight[48] ;
            
 
 
@@ -90,40 +89,78 @@ Shader "Unlit/MusicSheetShader"
                 float staffVerticalBorder = .25;
                 float staffLinesThikness = 6;
 
+
                 /// PACK THOSE INFORMATIONS
-                fixed4 _TextureInfo[2];
-                /// CLEF
+                _ImageTextureDimentions = fixed4(486.,80.,590.,481.);
+                fixed4 _TextureInfo[21];
+                
+                /// DMSOUPIR
                 /// position x/y, ElementBounds
-                _TextureInfo[0] = fixed4(67,240.5,67,240.5);
+                _TextureInfo[0] = fixed4(234.5,175,29.5,60);
+                /// SOUPIR
+                /// position x/y, ElementBounds
+                _TextureInfo[1] = fixed4(233,284,28,49);
+                ///
+                /// [4] Soupir pointe ?
+                ///
+                /// SILENCE
+                /// position x/y, ElementBounds
+                _TextureInfo[3] = fixed4(234.5,407,29.5,74);
+
+                ///...
+
+                /// DBLCROCHE
+                /// position x/y, ElementBounds
+                _TextureInfo[10] = fixed4(503.5,301,86.5,180);
+                /// CROCHE
+                /// position x/y, ElementBounds
+                _TextureInfo[11] = fixed4(340.5,305,76.5,176);
+                ///
+                /// [12] Soupir pointe ?
+                ///
                 /// NOIRE
                 /// position x/y, ElementBounds
-                _TextureInfo[1] = fixed4(169.5,300.5,35,180);
+                _TextureInfo[13] = fixed4(169.5,300.5,35,180);
+                
+                ///...
+
+                /// CLEF
+                /// position x/y, ElementBounds
+                _TextureInfo[20] = fixed4(67,240.5,67,240.5);
+
                 ///
 
+                
+                mesureNumber = 2;
+                // float ElementsInMesure[4] = { 2, 2, 2, 2};
+                // float NoteElements[9] = {4,4,4,4,4,4,4,4,4};
+                // float NotesHeight[9] = {99,99,99,99,99,99,99,99,99};
 
                 /// Data for testing in the editor
                 /// ACTIVATE FOR THE EDITOR NOT TO CRASH
                 /// DEACTIVATE IT TO SEE THE RUNTIME EFFECT
-                float testNotes[9] = {4,0.5,0.5,1,1,1,2,2,4};
-                int NotesSpriteIdx[9] = {0,1,1,1,1,1,1,1,1};
-                int NotesHeight[9] = {4,0,1,2,3,4,5,6,7};
-                for (int temp = 0; temp < 9; ++temp)
-                {
-                    NoteElements[temp] = testNotes[temp];
-                    NotesSpriteIdx[temp] = NotesSpriteIdx[temp];
-                    NotesHeight[temp] = NotesHeight[temp];
-                }
+                // float ElementsInMesure[4] = { 1, 3, 2, 1};
+                // float testNotes[9] = {4,2,1,1,2,2,4,0,0};
+                // int NotesSpriteIdx[9] = {0,1,1,1,1,1,1,1,1};
+                // int NotesHeight[9] = {4,0,1,2,3,4,5,6,7};
+                // for (int temp = 0; temp < 9; ++temp)
+                // {
+                //     NoteElements[temp] = testNotes[temp];
+                //     NotesSpriteIdx[temp] = NotesSpriteIdx[temp];
+                //     NotesHeight[temp] = NotesHeight[temp];
+                // }
 
 
 
                 // derived from ElementsInMesure
-                float _MesuresInfo[4] = {25.+ElementsInMesure[0]*25,
-                    25.+ElementsInMesure[1]*25,
-                    25.+ElementsInMesure[2]*25,
-                    25.+ElementsInMesure[3]*25};
+                float _MesuresInfo[4] = {ElementsInMesure[0]*40,
+                    ElementsInMesure[1]*40,
+                    ElementsInMesure[2]*40,
+                    ElementsInMesure[3]*40};
+                //float _MesuresInfo[4] = {50.,0,0,0};
 
                 float cumulatedNormalizedPreviousMesures = 0;
-                float cumulatedNormalizedPreviousElements = 0;
+                //float cumulatedNormalizedPreviousElements = 0;
 
                 // Staff size when all mesures and margin added
                 float staffTOTALSize = _MesuresInfo[0]+_MesuresInfo[1]+_MesuresInfo[2]+_MesuresInfo[3]; // + ; ADD HERE THE NOTE EXTENDING THE MESURE AND STAFF + the clef margin
@@ -153,15 +190,16 @@ Shader "Unlit/MusicSheetShader"
                 //int elementIndexingStart = ElementIndexAtMesures[mesureIndex];
                 int elementIndexingStart = 0;
 
-                float MesureXpos =  ((StaffXpos-cumulatedNormalizedPreviousMesures)/(_MesuresInfo[mesureIndex]/staffTOTALSize))*4;
-                MesureXpos = MesureXpos;
+                /// 0[ ... ](ElementsInMesure)
+                float MesureXpos =  ((StaffXpos-cumulatedNormalizedPreviousMesures)/(_MesuresInfo[mesureIndex]/staffTOTALSize))*ElementsInMesure[mesureIndex];
                 
                 {
-                    cumulatedNormalizedPreviousElements = NoteElements[elementIndex]+0.47;
-                    while(MesureXpos>cumulatedNormalizedPreviousElements)
+                    //cumulatedNormalizedPreviousElements = NoteElements[elementIndex];
+                    float cumulatedNormalizedPreviousElements = 1;
+                    while((MesureXpos)>cumulatedNormalizedPreviousElements)
                     {
                         elementIndex++;
-                        cumulatedNormalizedPreviousElements += NoteElements[elementIndex];
+                        cumulatedNormalizedPreviousElements += 1;
                     }
                     //cumulatedNormalizedPreviousElements -= NoteElements[elementIndex];
                 }
@@ -188,6 +226,7 @@ Shader "Unlit/MusicSheetShader"
                 
 
                 float mesureLines = LeftCutoff*smoothstep(1, 0, abs(mesureLinesXcentering-0.5)*1000-mesureLinesWidth) * smoothstep(1, 0, (abs(i.uv.y-0.5)*200-mesureLinesHeight));
+                //float mesureLines = smoothstep(1, 0, abs(mesureLinesXcentering-0.5)*1000-mesureLinesWidth) * smoothstep(1, 0, (abs(i.uv.y-0.5)*200-mesureLinesHeight));
                 
                 /// Beat placement
 
