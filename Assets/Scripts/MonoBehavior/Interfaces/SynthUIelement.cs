@@ -15,16 +15,46 @@ public class SynthUIelement : MonoBehaviour
     /// </summary>
     private short BeatBeforeRecordStart = 3;
     private float ContdownFontSize = 12;
+    private int synthIdx;
+    private bool RecordPrepairing = false;
 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
-
+        synthIdx = this.gameObject.transform.GetSiblingIndex();
     }
 
     public void _PrepairRecord()
     {
+        uiManager._ResetPlayback(synthIdx);
+        /// Deactivate Rec button GB
+        uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
+        /// Deactivate Play button GB
+        uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
+        /// Activate Stop button GB
+        uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
         StartCoroutine("RecordCountdown");
+        RecordPrepairing = true;
+    }
+
+    public void _StopRecordOrPlayback() 
+    {
+        if(RecordPrepairing)
+        {
+            StopCoroutine("RecordCountdown");
+            RecordPrepairing = false;
+            /// Deactivate Rec button GB
+            uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
+            /// Deactivate Play button GB
+            uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
+            /// Activate Stop button GB
+            uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+            startCountdown.gameObject.SetActive(false);
+        }
+        else
+        {
+            uiManager._StopPlayback(synthIdx);
+        }
     }
 
     IEnumerator RecordCountdown()
@@ -32,7 +62,8 @@ public class SynthUIelement : MonoBehaviour
         startCountdown.gameObject.SetActive(true);
         startCountdown.color = Color.red;
 
-        float remainingTime = (1 - (float)(MusicUtils.time) % (60f / MusicUtils.BPM)) + BeatBeforeRecordStart + Time.deltaTime;
+        int startingBeat = (int)(Mathf.Ceil((float)(MusicUtils.time))+ BeatBeforeRecordStart);
+        float remainingTime = (1 - (float)(MusicUtils.time) % (60f / MusicUtils.BPM)) + BeatBeforeRecordStart;
 
         while ((remainingTime - Time.deltaTime) > 0)
         {
@@ -54,8 +85,9 @@ public class SynthUIelement : MonoBehaviour
         }
         remainingTime -= Time.deltaTime;
 
-        uiManager._RecordPlayback(-remainingTime);
+        uiManager._RecordPlayback(startingBeat);
         startCountdown.gameObject.SetActive(false);
+        RecordPrepairing = false;
 
         yield return null;
     }

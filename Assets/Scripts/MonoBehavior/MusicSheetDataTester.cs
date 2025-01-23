@@ -19,20 +19,22 @@ public class MusicSheetDataTester : MonoBehaviour
     private void OnValidate()
     {
         mesureNumber = 2;
-        //ElementsInMesure = new float[4] { 1, 4, 0, 0 };
-        //NoteElements = new float[9] { 4, 1, 1, 1, 1, 4, 4, 4, 4 };
-        //NotesSpriteIdx = new float[9] { 0, 1, 2, 3, 4, 1, 1, 1, 1 };
-        //NotesHeight = new float[9] { 4, 4, 4, 4, 4, 99, 99, 99, 99 };
+        //ElementsInMesure = new float[4] { 1, 11, 0, 0 };
+        //NoteElements = new float[12] {1,1,1, 1, 1, 4, 4, 4, 4, 4, 4, 4 };
+        //NotesSpriteIdx = new float[12] { 20, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+        //NotesHeight = new float[12] { 4, 6, 4, 6, 4, 6, 6, 6, 4, 6, 6, 6 };
+
+        /// CREATES THE ARRAY FOR THE MAIN PROGRAM TOO !
         ElementsInMesure = new float[4] { 1, 0, 0, 0 };
         NoteElements = new float[48];
         NotesSpriteIdx = new float[48];
         NotesHeight = new float[48];
         NotesHeight[0] = 4;
         NotesSpriteIdx[0] = 20;
-        for (int i = 0; i < NoteElements.Length; i++)
-        {
-            NoteElements[i] = 1.0f;
-        }
+        //for (int i = 0; i < NoteElements.Length; i++)
+        //{
+        //    NoteElements[i] = 1.0f;
+        //}
         UpdateMaterialProperties();
     }
 

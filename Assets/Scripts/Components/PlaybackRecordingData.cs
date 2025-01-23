@@ -6,7 +6,7 @@ using Unity.Mathematics;
 public struct PlaybackRecordingData : IComponentData
 {
     public int synthIndex;
-    public float time;
+    public float startBeat;
     public float duration;
     public float2 GideReferenceDirection;
     public float activeLegatoFz;

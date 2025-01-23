@@ -27,11 +27,10 @@ public class MusicSheetToShader : MonoBehaviour
 
         MusicSheetMaterial.SetFloat("mesureNumber", activeSheet.mesureNumber);
         MusicSheetMaterial.SetFloatArray("ElementsInMesure", activeSheet.ElementsInMesure.ToArray());
-        MusicSheetMaterial.SetFloatArray("NoteElements", activeSheet.NoteElements.ToArray());
         MusicSheetMaterial.SetFloatArray("NotesSpriteIdx", activeSheet.NotesSpriteIdx.ToArray());
+        MusicSheetMaterial.SetFloatArray("NoteElements", activeSheet.NoteElements.ToArray());
         MusicSheetMaterial.SetFloatArray("NotesHeight", activeSheet.NotesHeight.ToArray());
 
-        //MusicSheetGB.SetActive(true);
     }
 
 }

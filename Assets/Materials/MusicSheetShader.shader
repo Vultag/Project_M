@@ -61,6 +61,7 @@ Shader "Unlit/MusicSheetShader"
             float NoteElements[48];
             float NotesSpriteIdx[48];
             float NotesHeight[48] ;
+            //uint NotesIsPointed[48] ;
            
 
 
@@ -153,10 +154,10 @@ Shader "Unlit/MusicSheetShader"
 
 
                 // derived from ElementsInMesure
-                float _MesuresInfo[4] = {ElementsInMesure[0]*40,
-                    ElementsInMesure[1]*40,
-                    ElementsInMesure[2]*40,
-                    ElementsInMesure[3]*40};
+                float _MesuresInfo[4] = {1+ElementsInMesure[0]*35,
+                    1+ElementsInMesure[1]*35,
+                    1+ElementsInMesure[2]*35,
+                    1+ElementsInMesure[3]*35};
                 //float _MesuresInfo[4] = {50.,0,0,0};
 
                 float cumulatedNormalizedPreviousMesures = 0;
@@ -230,7 +231,7 @@ Shader "Unlit/MusicSheetShader"
                 
                 /// Beat placement
 
-                float beatPerMesure = ElementsInMesure[mesureIndex];
+                //float beatPerMesure = ElementsInMesure[mesureIndex];
 
                 /// Helper beat reference
                 
@@ -276,7 +277,11 @@ Shader "Unlit/MusicSheetShader"
                 int j = 0;
                 while (j<16)
                 {
-                    float elementXstart = (0.5/beatPerMesure)*((_MesuresInfo[mesureIndex]/staffTOTALSize)*(staffTOTALSize/_ImageTextureDimentions.w));
+                    uint NoteIsDotted = ceil(frac(NotesSpriteIdx[elementIndex]));
+                    uint NoteEffectiveSpriteIdx = floor(NotesSpriteIdx[elementIndex]);
+
+                    /// 1.01 -> ARBITRARY VALUE TO BALANCE VISUAL GLITCH
+                    float elementXstart = (0.5/(ElementsInMesure[mesureIndex]*1.01))*((_MesuresInfo[mesureIndex]/staffTOTALSize)*(staffTOTALSize/_ImageTextureDimentions.w));
                     float elementX = j*(elementXstart*2);
                     float elementY = NotesHeight[elementIndex];
 
@@ -284,16 +289,23 @@ Shader "Unlit/MusicSheetShader"
 
                     float2 elementUV = i.uv*UVscallingFactor;
                     // Center note on arbitrary pivot
-                    elementUV = elementUV + float2((_TextureInfo[NotesSpriteIdx[elementIndex]].x/_ImageTextureDimentions.z),(_TextureInfo[NotesSpriteIdx[elementIndex]].y/_ImageTextureDimentions.w));
+                    elementUV = elementUV + float2((_TextureInfo[NoteEffectiveSpriteIdx].x/_ImageTextureDimentions.z),(_TextureInfo[NoteEffectiveSpriteIdx].y/_ImageTextureDimentions.w));
                     // place note at target
                     elementUV = elementUV - TranscribedPosition*UVscallingFactor;
+                    // add dot if the element is indeed dotted
+                    /// CURRENT IMPLEMENTATION REMOVES COLOR (bug)
+                    // OPTI
+                    float dotRadius = 0.035;
+                    float imageSquishFactor = _ImageTextureDimentions.x/_ImageTextureDimentions.y;
+                    float distance = length(float2(i.uv.x*imageSquishFactor,i.uv.y) - float2(0.13+TranscribedPosition.x*imageSquishFactor,TranscribedPosition.y));
+                    ElementColor += float4(-1,-1,-1,smoothstep(dotRadius, dotRadius * 0.6, distance)) * NoteIsDotted;
                 
                     // sample texture and crop element from atlas
                     ElementColor += tex2D(_MainTex, float2(elementUV.x,elementUV.y))
                     *
                     (
-                    (sign(-abs(_TextureInfo[NotesSpriteIdx[elementIndex]].x/_ImageTextureDimentions.z-elementUV.x) + _TextureInfo[NotesSpriteIdx[elementIndex]].z/_ImageTextureDimentions.z)+1)*0.5*
-                    (sign(-abs(_TextureInfo[NotesSpriteIdx[elementIndex]].y/_ImageTextureDimentions.w-elementUV.y) + _TextureInfo[NotesSpriteIdx[elementIndex]].w/_ImageTextureDimentions.w)+1)*0.5
+                    (sign(-abs(_TextureInfo[NoteEffectiveSpriteIdx].x/_ImageTextureDimentions.z-elementUV.x) + _TextureInfo[NoteEffectiveSpriteIdx].z/_ImageTextureDimentions.z)+1)*0.5*
+                    (sign(-abs(_TextureInfo[NoteEffectiveSpriteIdx].y/_ImageTextureDimentions.w-elementUV.y) + _TextureInfo[NoteEffectiveSpriteIdx].w/_ImageTextureDimentions.w)+1)*0.5
                     );
 
                     j++;
