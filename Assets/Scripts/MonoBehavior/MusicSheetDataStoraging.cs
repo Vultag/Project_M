@@ -19,7 +19,7 @@ public struct MusicSheetData
         {
             mesureNumber = 2,
             ElementsInMesure = new NativeArray<float>(4,Allocator.Persistent),
-            NoteElements = new NativeArray<float>(48, Allocator.Persistent),
+            //NoteElements = new NativeArray<float>(48, Allocator.Persistent),
             NotesSpriteIdx = new NativeArray<float>(48, Allocator.Persistent),
             NotesHeight = new NativeArray<float>(48, Allocator.Persistent),
         };
@@ -29,7 +29,7 @@ public struct MusicSheetData
         for (int i = 0; i < 48; i++)
         {
             musicSheetData.NotesHeight[i] = 99f;
-            musicSheetData.NoteElements[i] = 4;
+            //musicSheetData.NoteElements[i] = 4;
         }
         musicSheetData.NotesHeight[0] = 4f;
         musicSheetData.NotesSpriteIdx[0] = 20;

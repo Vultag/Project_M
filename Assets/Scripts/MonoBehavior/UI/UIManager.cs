@@ -331,6 +331,7 @@ public class UIManager : MonoBehaviour
         /// The playback is curently recording 
         if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
         {
+            AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, false);
             Debug.LogError("stop on record. DISABLED UNTIL REASSESSMENT");
             return;
             /*
@@ -386,7 +387,6 @@ public class UIManager : MonoBehaviour
             /// Activate Rec button GB
             SynthToolBar.transform.GetChild(activeSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
 
-            AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, false);
 
             ecb.RemoveComponent<PlaybackData>(weapon_entity);
 

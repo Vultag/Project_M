@@ -211,7 +211,7 @@ public partial class WeaponSystem : SystemBase
                     //Debug.LogError("BeatProximity");
                     //InputManager.BeatNotYetPlayed = false;
                     float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(mouseDirection));
-                    int note = MusicUtils.radiansToNote(randian);
+                    int note = MusicUtils.radiansToNoteIndex(randian);
 
                     // 0 = not exist : 1 = exist in Rkeybuffer
                     short noteExist = 0;
@@ -219,7 +219,7 @@ public partial class WeaponSystem : SystemBase
 
                     for (i = 0; i < RkeyBuffer.Length; i++)
                     {
-                        int bufferNote = MusicUtils.radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght)));
+                        int bufferNote = MusicUtils.radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght)));
                         if (bufferNote == note)
                         {
                             noteExist = 1;

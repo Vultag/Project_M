@@ -14,17 +14,14 @@ using static UnityEngine.EventSystems.EventTrigger;
 /// <summary>
 /// Currently otimized for 1 record at a time
 /// -> REVIEW AND OPTIMIZE IF NEED SYMULTANEOUS
+///  OPTI ! : Offset the subeat processing by the keypress threshold to avoid snap computation
 /// </summary>
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateBefore(typeof(WeaponSystem))]
 public partial class PlaybackRecordSystem : SystemBase
 {
 
-    //public NativeList<PlaybackKey> KeyDatasAccumulator;
     private bool AudioKeyActive;
-    //public NativeList<float> ActiveFrequencies;
-
-    //public AudioGenerator audioGenerator;
 
     public Vector2 mousepos;
     private Vector2 mouseDirection;
@@ -35,13 +32,13 @@ public partial class PlaybackRecordSystem : SystemBase
 
     float PlaybackStartBeat;
     float PlaybackTime;
-    short MesureIdx = -1;
+    /// <summary>
+    /// mesureidx needs to be 1 behind for incrementation or infinite loop in shader
+    /// </summary>
+    short MesureIdx = 1;
     short NoteIdx=1;
-    short NoteIdxInMesure = -1;
+    //short NoteIdxInMesure = -1;
     short NoteSubBeatIdx = -4;
-    /// Up to 16 per mesure (4/4)
-    /// 1 for starting Key
-    short ActivatedNoteElements = 1;
 
     /// <summary>
     /// 0 = Key not pressed
@@ -53,9 +50,6 @@ public partial class PlaybackRecordSystem : SystemBase
     /// 4beat(ronde); 2beat(blanche) ; 1beat(noire) ; 0.5beat(croche) ; 0.25beat(dblCroche)
     /// </summary>
     float CurrentBeatProcessingLevel = 0.25f;
-    /// <summary>
-    /// SubBeat excess in case of a key press -> require silences addition before adding the key to match the tempo
-    /// </summary>
 
     /// <summary>
     ///  to process the element layout and restart mesure
@@ -63,32 +57,34 @@ public partial class PlaybackRecordSystem : SystemBase
     /// </summary>
     float accumulatedBeatWeight = 0;
     float accumulatedMesureWeight = 0;
+
+
     /// To know if the key passed a subbeat process stage
     bool KeyYetToBeProcessedOnce = false;
     /// To know if the previous element is a key
     bool KeyChain = false;
     /// To determine if the mesure needs expanding
-    short currentMesureSubdivision;
+    //short currentMesureSubdivision;
+    /// keep track of the current note height to ease incrmentation
+    float currentNoteHeight;
 
+    float BeatProximityThreshold;
 
     protected override void OnCreate()
     {
-        //audioGenerator = AudioManager.AudioGenerator;
-        //KeyDatasAccumulator = new NativeList<PlaybackKey>();
         RequireForUpdate<PlaybackRecordingData>();
     }
 
     protected override void OnStartRunning()
     {
+        BeatProximityThreshold = InputManager.BeatProximityThreshold;
         //float startTimeOffset = 0;
         foreach (var recordData in SystemAPI.Query<RefRO<PlaybackRecordingData>>())
         {
             PlaybackStartBeat = recordData.ValueRO.startBeat;
         }
-        //PlaybackStartBeat = (float)MusicUtils.time - startTimeOffset;
-        NoteIdxInMesure = -1;
+        //NoteIdxInMesure = -1;
         PressedKeyIdx = 0;
-        ActivatedNoteElements=1;
 
         MusicSheetData ActiveMusicSheet = AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet;
         accumulatedMesureWeight = 0;
@@ -96,14 +92,9 @@ public partial class PlaybackRecordSystem : SystemBase
         accumulatedBeatWeight = 0f;
         NoteIdx = 1;
         NoteSubBeatIdx = 0;
-        currentMesureSubdivision = 4;
 
         /// Expand the new mesure
         ActiveMusicSheet.ElementsInMesure[0 + 1] = 4;
-        ActiveMusicSheet.NoteElements[0] = 1;
-        ActiveMusicSheet.NoteElements[0 + 1] = 1;
-        ActiveMusicSheet.NoteElements[0 + 2] = 1;
-        ActiveMusicSheet.NoteElements[0 + 3] = 1;
 
     }
 
@@ -125,14 +116,11 @@ public partial class PlaybackRecordSystem : SystemBase
         float normalizedProximity = (PlaybackTime % (60f / (MusicUtils.BPM * 4))) / (60f / (MusicUtils.BPM * 4));
         float SclicedBeatProximity = 1 - Mathf.Abs((normalizedProximity - 0.5f) * 2);
 
-        short newNoteidx = (short)(Mathf.FloorToInt(SclicedBeatTime * 0.25f));
+        short newNoteidxOffseted = (short)(Mathf.FloorToInt(Mathf.Abs(SclicedBeatTime-BeatProximityThreshold) * 0.25f));
 
-        short newNoteSubBeatIdx = (short)(newNoteidx * 4 + Mathf.FloorToInt(SclicedBeatTime % 4));
+        short newNoteSubBeatIdxOffseted = (short)(newNoteidxOffseted * 4 + Mathf.FloorToInt(Mathf.Abs(SclicedBeatTime-BeatProximityThreshold) % 4));
 
-        short SnapToStartOrEnd = (short)Mathf.RoundToInt(SclicedBeatTime % 1); /// Integer division
-
-
-        //foreach (var (recordData,keyBuffer) in SystemAPI.Query<RefRW<PlaybackRecordingData>, DynamicBuffer <SustainedKeyBufferData>> ())
+   
         foreach (var (Wtrans, recordData, entity) in SystemAPI.Query<RefRO<LocalToWorld>,RefRW<PlaybackRecordingData>>().WithEntityAccess())
         {
 
@@ -186,7 +174,7 @@ public partial class PlaybackRecordSystem : SystemBase
                     {
                         //if (OnBeat)
                         {
-
+                            /// OPTI "accumulator.Length - 1" ?
                             accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
                             {
                                 playbackRecordingKey = new PlaybackKey
@@ -255,58 +243,24 @@ public partial class PlaybackRecordSystem : SystemBase
 
                         /// SHEET
 
-                        if (SnapToStartOrEnd == 0)
+                        currentNoteHeight = MusicUtils.NoteIndexToNote(MusicUtils.radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(accumulator[accumulator.Length - 1].playbackRecordingKey.dir))));
+                      
+                        if (CurrentBeatProcessingLevel !=0)
                         {
-
-                            short offset = accumulatedBeatWeight == 0 ? (short)1 : (short)0;
-                            /// decrement previous note
-                            if (newNoteSubBeatIdx==NoteSubBeatIdx)
-                            {                 
-                                NoteIdx -= offset;
-                                /// Deduct the BeatProcessingLevel of the previous note
-                                CurrentBeatProcessingLevel = Mathf.Ceil(ActiveMusicSheet.NotesSpriteIdx[NoteIdx] - 10) * 0.25f + 0.25f;
-                                CurrentBeatProcessingLevel -= 0.25f;
-                                UpdateNote(ref ActiveMusicSheet);
-
-                                NoteIdx++;
-                                ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                            }
-                            else
-                            {
-                                //Debug.LogError("BEFORE BEAT");
-                                NoteIdx += (short)-(offset-1);
-                                ActiveMusicSheet.ElementsInMesure[MesureIdx + 1] += (short)-(offset - 1);
-                            }
-                 
-
-                            {
-                                ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                                ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                                ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                                CurrentBeatProcessingLevel = 0f;
-                            }
-                            //Debug.LogError("legato A" + accumulatedBeatWeight + ":" + (float)MusicUtils.time + ":     " + PlaybackTime);
-
+                            NoteIdx++;
+                            ActiveMusicSheet.ElementsInMesure[MesureIdx]++;
                         }
-                        else
                         {
-                            if (accumulatedBeatWeight != 0)
-                            {
-                                NoteIdx++;
-                                ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                            }
-                            {
-                                ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                                ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                                ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                                CurrentBeatProcessingLevel = 0f;
-                            }
-                            //Debug.LogError("legato B" + accumulatedBeatWeight+":" + (float)MusicUtils.time+":     "+ PlaybackTime);
-
+                            currentNoteHeight = MusicUtils.NoteIndexToNote(MusicUtils.radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(mouseDirection))));
+                            SetNoteHeight(ref ActiveMusicSheet, currentNoteHeight);
+                            /// note is linked
+                            ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = -10;
+                            CurrentBeatProcessingLevel = 0f;
                         }
+
+                        KeyChain = true;
                         PressedKeyIdx = (short)(NoteIdx);
                         KeyYetToBeProcessedOnce = true;
-                        KeyChain = true;
 
                     }
                 }
@@ -336,194 +290,20 @@ public partial class PlaybackRecordSystem : SystemBase
 
                 /// SHEET
 
-                /* 
-                 * subbeats :                       1  2  3  4  1
-                 *                                  0  |  |  |  0
-                 * PlacementSubdivisionLVL :        0  2  1  2  0
-                 */
-                //short keyPlacementSubdivisionLVL = 
-
-                /// OPTI
-                if (SnapToStartOrEnd == 0)
+                if (accumulatedBeatWeight > 0 && !KeyChain)
                 {
-
-
-                    /// VERIF ICI -> PAS SENSE ETRE UNE NOTE ?? (spriteIDX>=10)
-                    if (ActiveMusicSheet.NotesSpriteIdx[NoteIdx]>= 10)
-                    {
-                        Debug.LogError("NOT SUPPOSED TO HAPPEN?");
-                        //Debug.Break();
-                    }
-                    /*
-                    if (accumulatedBeatWeight == 0.25f)
-                    {
-                        if (ActiveMusicSheet.NotesSpriteIdx[NoteIdx] == 10)
-                            Debug.LogError("NOT SUPPOSED TO HAPPEN");
-
-                        {
-
-                            //ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                            ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                            ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                            ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                            //CurrentBeatProcessingLevel = 0.25f;
-                            //accumulatedBeatWeight += .25f;
-                            //Debug.Log("test");
-                            //PressedKeyIdx = (short)(NoteIdx);
-                        }
-                    }
-                    if (accumulatedBeatWeight == 0)
-                    {
-                        /// dont work
-
-                        //KeyYetToBeProcessedOnce = true;
-                        NoteIdx--;
-                        //ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]--;
-
-                        if (ActiveMusicSheet.NotesSpriteIdx[NoteIdx] >= 10)
-                            Debug.LogError("NOT SUPPOSED TO HAPPEN ??");
-                        Debug.LogError("HAPPEN :" + CurrentBeatProcessingLevel + ":" + ActiveMusicSheet.NotesSpriteIdx[NoteIdx]);
-                        //PressedKeyIdx = (short)(NoteIdx);
-                        //initialIndex = 0;
-                        /// recalculate if chain
-                        //isChain = CurrentBeatProcessingLevel == 0.25f;
-
-                        /// Deduct the BeatProcessingLevel at the previous note before it was discarded at the beat increment
-                        CurrentBeatProcessingLevel = Mathf.Ceil(ActiveMusicSheet.NotesSpriteIdx[NoteIdx]) * 0.25f + 0.25f;
-                        Debug.LogError(" :" + CurrentBeatProcessingLevel);
-
-                        if (CurrentBeatProcessingLevel==0.25f)
-                        {
-                            
-                            ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                            ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                            ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                            NoteIdx++;
-                            // ??
-                            //PressedKeyIdx = NoteIdx;
-                        }
-                        else
-                        {
-                            short KeySubBeatLenght = (short)((CurrentBeatProcessingLevel - 0.25f) * 4);
-                            if (KeySubBeatLenght == 3)
-                            {
-                                ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 1.5f;
-                                ActiveMusicSheet.NoteElements[NoteIdx] = 0.75f;
-                            }
-                            else
-                            {
-                                int spriteIDX = Mathf.Min(3, KeySubBeatLenght - 1);
-                                ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = spriteIDX;
-                                ActiveMusicSheet.NoteElements[NoteIdx] = spriteIDX*0.25f + 0.25f;
-                            }
-
-                            NoteIdx++;
-                            ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                            ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                            ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                            ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                            NoteIdx++;
-
-                        }
-                        CurrentBeatProcessingLevel = 0;
-
-
-                    }
-                    if (accumulatedBeatWeight > 0.25f)
-                    {
-            
-
-                        // FIX HERE ? for 0
-                        if (CurrentBeatProcessingLevel>0.25f)
-                        {
-                            short KeySubBeatLenght = (short)((CurrentBeatProcessingLevel - 0.25f) * 4);
-                            if (KeySubBeatLenght == 3)
-                            {
-                                ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 1.5f;
-                                ActiveMusicSheet.NoteElements[NoteIdx] = 0.75f;
-                            }
-                            else
-                            {
-                                int spriteIDX = Mathf.Min(3, KeySubBeatLenght - 1);
-                                ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = Mathf.Min(3, KeySubBeatLenght - 1);
-                                ActiveMusicSheet.NoteElements[NoteIdx] = spriteIDX * 0.25f + 0.25f;
-                            }
-
-                            NoteIdx++;
-                            ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                            Debug.Log("more than dblsoupir : " + CurrentBeatProcessingLevel);
-
-                        }
-                        else
-                        {
-                            Debug.Log("dblsoupir");
-                        }
-
-
-                        {
-
-                            //ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                            ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                            ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                            ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-
-                        }   
-
-                    }
-                    */
-
-
-                    if (accumulatedBeatWeight > 0 && !KeyChain)
-                    {
-                        NoteIdx++;
-                        ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                    }
-
-                    {
-                        ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                        ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                        ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                        CurrentBeatProcessingLevel = 0f;
-                    }
-
-                    //Debug.LogError(" overrite to former element : "+ accumulatedBeatWeight);
-                    //Debug.Log(" CurrentBeatProcessingLevel : " + CurrentBeatProcessingLevel);
-                    //Debug.Break();
-
+                    NoteIdx++;
+                    ActiveMusicSheet.ElementsInMesure[MesureIdx]++;
                 }
-                else
                 {
-
-                    if(accumulatedBeatWeight!=0)
-                    {
-                        if (!KeyChain)
-                        {
-                            UpdateSilence(ref ActiveMusicSheet);
-                            NoteIdx++;
-                            ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                        }
-                        else
-                        {
-                            //Debug.Log("chain");
-                        }
-                    }
-              
-
-                    {
-
-                        ActiveMusicSheet.NotesHeight[NoteIdx] = 6;
-                        ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
-                        ActiveMusicSheet.NoteElements[NoteIdx] = 0.25f;
-                        CurrentBeatProcessingLevel = 0f;
-                    }
-
-
-
+                    currentNoteHeight = MusicUtils.NoteIndexToNote(MusicUtils.radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(mouseDirection))));
+                    SetNoteHeight(ref ActiveMusicSheet, currentNoteHeight);
+                    ActiveMusicSheet.NotesSpriteIdx[NoteIdx] = 10;
+                    CurrentBeatProcessingLevel = 0f;
                 }
 
                 KeyChain = true;
                 PressedKeyIdx = (short)(NoteIdx);
-                //Debug.Log("KeyToProcessOnce");
                 KeyYetToBeProcessedOnce = true;
 
             }
@@ -572,23 +352,12 @@ public partial class PlaybackRecordSystem : SystemBase
                         /// Sheet
 
                         //Debug.Log(CurrentBeatProcessingLevel);
-                        
-                        /// Key is being released on subBeat. do this frame's subeat proccessing here
-                        if (newNoteSubBeatIdx > NoteSubBeatIdx)
-                        {
-                            IncrementNote(ref ActiveMusicSheet);
 
-                            NoteSubBeatIdx = newNoteSubBeatIdx;
-
-                            //Debug.LogWarning("test");
-                        }
-                    
-                        if(!KeyYetToBeProcessedOnce && accumulatedBeatWeight != 0f)
+                        if (!KeyYetToBeProcessedOnce && CurrentBeatProcessingLevel != 0f)
                         {
-                            ActiveMusicSheet.ElementsInMesure[MesureIdx + 1]++;
                             NoteIdx++;
                         }
-                    
+
                         CurrentBeatProcessingLevel = 0;
                         PressedKeyIdx = 0;
 
@@ -597,29 +366,51 @@ public partial class PlaybackRecordSystem : SystemBase
             }
 
 
-            if (newNoteSubBeatIdx > NoteSubBeatIdx)
+            if (newNoteSubBeatIdxOffseted > NoteSubBeatIdx)
             {
+                
                 if (PressedKeyIdx == 0)
                 {
-
-                    IncrementSilence(ref ActiveMusicSheet);
+                    if(KeyYetToBeProcessedOnce)
+                    {
+                        accumulatedBeatWeight += 0.25f;
+                        KeyYetToBeProcessedOnce = false;
+                        if (accumulatedBeatWeight>=1)
+                        {
+                            accumulatedBeatWeight = 0f;
+                            accumulatedMesureWeight += 1;
+                        }
+                        NoteIdx++;
+                    }
+                    else
+                        IncrementSilence(ref ActiveMusicSheet);
 
                 }
                 /// Expand the note with increment
                 else
                 {
                     //Debug.Log("count");
-                    KeyYetToBeProcessedOnce = false;
 
+                    KeyYetToBeProcessedOnce = false;
                     IncrementNote(ref ActiveMusicSheet);
 
                 }
+                
+
+
+      
 
                 //Debug.Log(newNoteIdx);
-                NoteSubBeatIdx = newNoteSubBeatIdx;
+                NoteSubBeatIdx = newNoteSubBeatIdxOffseted;
+
+                /// Note ideal. rework mesure expention to be more ergonomic ?
+                ActiveMusicSheet.ElementsInMesure[MesureIdx] = ActiveMusicSheet.ElementsInMesure[MesureIdx] < (NoteIdx) ?
+                               ActiveMusicSheet.ElementsInMesure[MesureIdx] + 1 : ActiveMusicSheet.ElementsInMesure[MesureIdx];
 
                 if (accumulatedMesureWeight >= 4)
                 {
+                    ActiveMusicSheet.ElementsInMesure[MesureIdx] = ActiveMusicSheet.ElementsInMesure[MesureIdx] > (NoteIdx) ?
+                                       ActiveMusicSheet.ElementsInMesure[MesureIdx] -1 : ActiveMusicSheet.ElementsInMesure[MesureIdx];
                     ///TEMP TEST 
                     //Debug.Break();
 
@@ -668,6 +459,8 @@ public partial class PlaybackRecordSystem : SystemBase
                         ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(entity);
                         ecb.RemoveComponent<PlaybackRecordingData>(entity);
 
+                        //NoteIdx = 0;
+                        //ActiveMusicSheet.ElementsInMesure[MesureIdx]--;
                     }
                 }
 
@@ -687,13 +480,11 @@ public partial class PlaybackRecordSystem : SystemBase
     private void UpdateSilence(ref MusicSheetData activeMusicSheet)
     {
     
-        //Debug.Log("incr");
         short SilenceSubBeatLenght = (short)(CurrentBeatProcessingLevel * 4);
         //Debug.Log(SilenceSubBeatLenght);
         if (SilenceSubBeatLenght == 3)
         {
             activeMusicSheet.NotesSpriteIdx[NoteIdx] = 1.5f;
-            activeMusicSheet.NoteElements[NoteIdx] = 0.75f;
         }
         else
         {
@@ -701,13 +492,12 @@ public partial class PlaybackRecordSystem : SystemBase
             /// 0+0 = dblSoupir ; 0+1 = Soupir ; 0+3 = silence
             int spriteIDX = 0 + (SilenceSubBeatLenght - 1);
             activeMusicSheet.NotesSpriteIdx[NoteIdx] = spriteIDX;
-            activeMusicSheet.NoteElements[NoteIdx] = spriteIDX * 0.25f + 0.25f;
         }
 
         activeMusicSheet.NotesHeight[NoteIdx] = 6;
     
     }
-    private void UpdateNote(ref MusicSheetData activeMusicSheet)
+    private void UpdateNote(ref MusicSheetData activeMusicSheet, float noteHeight)
     {
         
         //Debug.Break();
@@ -716,21 +506,18 @@ public partial class PlaybackRecordSystem : SystemBase
         if (KeySubBeatLenght == 3)
         {
             // Croche dotted
-            activeMusicSheet.NotesSpriteIdx[PressedKeyIdx] = 11.5f;
-            activeMusicSheet.NoteElements[PressedKeyIdx] = 0.75f;
+            activeMusicSheet.NotesSpriteIdx[PressedKeyIdx] = 11.5f * Mathf.Sign(activeMusicSheet.NotesSpriteIdx[NoteIdx]);//sign to preserve liaison
         }
         else
         {
             /// Expand the note as it is being maintained
             /// 10+0 = dblCroche ; 10+1 = Croche ; 10+3 = noire
             int spriteIDX = 10 + Mathf.Min(3, KeySubBeatLenght - 1);
-            activeMusicSheet.NotesSpriteIdx[PressedKeyIdx] = spriteIDX;
-            activeMusicSheet.NoteElements[PressedKeyIdx] = (spriteIDX - 10) * 0.25f + 0.25f;
+            activeMusicSheet.NotesSpriteIdx[PressedKeyIdx] = spriteIDX * Mathf.Sign(activeMusicSheet.NotesSpriteIdx[NoteIdx]);//sign to preserve liaison;
+
         }
 
-        //Debug.Log(KeySubBeatLenght);
-        activeMusicSheet.NotesHeight[NoteIdx] = 4;
-        
+        SetNoteHeight(ref activeMusicSheet,noteHeight);
     }
 
     private void IncrementNote(ref MusicSheetData activeMusicSheet)
@@ -738,20 +525,21 @@ public partial class PlaybackRecordSystem : SystemBase
 
         CurrentBeatProcessingLevel += .25f;
         accumulatedBeatWeight += .25f;
-        //Debug.Log("eeeeeeeeeeee   " + accumulatedBeatWeight);
-        UpdateNote(ref activeMusicSheet);
+        UpdateNote(ref activeMusicSheet, currentNoteHeight);
 
-
-        if (accumulatedBeatWeight >= 1)
+        if (CurrentBeatProcessingLevel >= 1)
         {
 
             CurrentBeatProcessingLevel = 0f;
             NoteIdx++;
+            activeMusicSheet.NotesSpriteIdx[NoteIdx] = -10;
+            SetNoteHeight(ref activeMusicSheet, currentNoteHeight);
+            PressedKeyIdx = NoteIdx;
+        }
+        if (accumulatedBeatWeight >= 1)
+        {
             accumulatedBeatWeight = 0f;
             accumulatedMesureWeight += 1;
-            PressedKeyIdx = NoteIdx;
-            //Debug.Log("ooo  " + accumulatedBeatWeight);
-            //Debug.Break();
         }
 
     }
@@ -759,44 +547,35 @@ public partial class PlaybackRecordSystem : SystemBase
     private void IncrementSilence(ref MusicSheetData activeMusicSheet)
     {
 
-        if (KeyYetToBeProcessedOnce)
-        {
-            KeyYetToBeProcessedOnce = false;
-            accumulatedBeatWeight += .25f;
-            if (accumulatedBeatWeight != 1f)
-            {
-                NoteIdx++;
-                activeMusicSheet.ElementsInMesure[MesureIdx + 1]++;
-                //Debug.Log("here");
-
-            }
-
-            //Debug.Log("KeyReleaseProcesssssss : " + accumulatedBeatWeight);
-        }
-        else
+        //Debug.Log("incr");
         {
             KeyChain = false;
             CurrentBeatProcessingLevel += .25f;
             accumulatedBeatWeight += .25f;
             UpdateSilence(ref activeMusicSheet);
-
         }
-
-        //Debug.Log("tete");
-
-        //Debug.Log("CurrentBeatProcessingLevel : " + CurrentBeatProcessingLevel);
         if (accumulatedBeatWeight >= 1)
         {
 
             /// restart from a dblSoupir
             NoteIdx += 1;
+            Debug.LogWarning(activeMusicSheet.ElementsInMesure[MesureIdx] < (NoteIdx - 1));
             CurrentBeatProcessingLevel = 0f;
-            //Debug.Log("aa");
-
             accumulatedBeatWeight = 0f;
             accumulatedMesureWeight += 1;
+            //Debug.Log("aa");
         }
 
+    }
+
+    private void SetNoteHeight(ref MusicSheetData activeMusicSheet, float height)
+    {
+        /// Calculate wether the key is considered sharp, flat or natural
+        /// height the input is either a integer of ?.5
+        /// integer = no alteration , ?.25 = sharp ?(+1).75 = flat 
+        /// natural -> not implemented yet
+        /// CURENTRLY SET TO ONLY SHARP -> TO DO
+        activeMusicSheet.NotesHeight[NoteIdx] = height- (height-Mathf.Floor(height))*0.5f;
     }
 
 

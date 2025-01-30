@@ -164,6 +164,13 @@ namespace MusicNamespace
             (3f / 43f) * Mathf.PI,
             (4f / 43f) * Mathf.PI,
         };
+        readonly static float[] NotesLayout =
+        {
+            // Octave 0
+            0,0.5f,1,1.5f,2,3,3.5f,4,4.5f,5,5.5f,6,
+            // octave 1
+            7,7.5f,8,8.5f,9,10,10.5f,11,11.5f,12,12.5f,13
+        };
 
         /*Could be optimized considering we are fetching an ordered list -> early exit OPTI*/
         //remove??
@@ -185,7 +192,7 @@ namespace MusicNamespace
             return Nearsetkey;
         }
 
-        public static int radiansToNote(float radians)
+        public static int radiansToNoteIndex(float radians)
         {
             int currentIndex = 0;
             for (; radians > OctaveRadianWeights[currentIndex];)
@@ -195,6 +202,10 @@ namespace MusicNamespace
             }
             return currentIndex;
 
+        }
+        public static float NoteIndexToNote(int noteIdx)
+        {
+            return NotesLayout[noteIdx];
         }
 
         /// mode is not used in the curernt setup -> implement later
@@ -207,7 +218,7 @@ namespace MusicNamespace
         }
         public static float DirectionToFrequency(Vector2 dir)
         {
-            return noteToFrequency(radiansToNote(Mathf.Abs(PhysicsUtilities.DirectionToRadians(dir))),WeaponSystem.mode);
+            return noteToFrequency(radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(dir))),WeaponSystem.mode);
         }
         /// Center a direction according to the key splitting of the circle
         /// OPTI
