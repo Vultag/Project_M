@@ -35,6 +35,15 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Tabulation"",
+                    ""type"": ""Button"",
+                    ""id"": ""33bd0d78-c700-4cce-a440-21ac40f81dcd"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -70,6 +79,17 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
                     ""action"": ""TEMPO"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d7536a87-96c4-4b12-8ef6-291d159036a9"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Tabulation"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -79,6 +99,7 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_TEMPO = m_UI.FindAction("TEMPO", throwIfNotFound: true);
+        m_UI_Tabulation = m_UI.FindAction("Tabulation", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -141,11 +162,13 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_UI;
     private List<IUIActions> m_UIActionsCallbackInterfaces = new List<IUIActions>();
     private readonly InputAction m_UI_TEMPO;
+    private readonly InputAction m_UI_Tabulation;
     public struct UIActions
     {
         private @UIControls m_Wrapper;
         public UIActions(@UIControls wrapper) { m_Wrapper = wrapper; }
         public InputAction @TEMPO => m_Wrapper.m_UI_TEMPO;
+        public InputAction @Tabulation => m_Wrapper.m_UI_Tabulation;
         public InputActionMap Get() { return m_Wrapper.m_UI; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -158,6 +181,9 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
             @TEMPO.started += instance.OnTEMPO;
             @TEMPO.performed += instance.OnTEMPO;
             @TEMPO.canceled += instance.OnTEMPO;
+            @Tabulation.started += instance.OnTabulation;
+            @Tabulation.performed += instance.OnTabulation;
+            @Tabulation.canceled += instance.OnTabulation;
         }
 
         private void UnregisterCallbacks(IUIActions instance)
@@ -165,6 +191,9 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
             @TEMPO.started -= instance.OnTEMPO;
             @TEMPO.performed -= instance.OnTEMPO;
             @TEMPO.canceled -= instance.OnTEMPO;
+            @Tabulation.started -= instance.OnTabulation;
+            @Tabulation.performed -= instance.OnTabulation;
+            @Tabulation.canceled -= instance.OnTabulation;
         }
 
         public void RemoveCallbacks(IUIActions instance)
@@ -185,5 +214,6 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
     public interface IUIActions
     {
         void OnTEMPO(InputAction.CallbackContext context);
+        void OnTabulation(InputAction.CallbackContext context);
     }
 }

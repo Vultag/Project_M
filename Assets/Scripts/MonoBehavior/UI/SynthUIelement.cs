@@ -15,24 +15,34 @@ public class SynthUIelement : MonoBehaviour
     /// </summary>
     private short BeatBeforeRecordStart = 3;
     private float ContdownFontSize = 12;
-    private int synthIdx;
+    [HideInInspector]
+    public int thisSynthIdx;
     private bool RecordPrepairing = false;
 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
-        synthIdx = this.gameObject.transform.GetSiblingIndex();
+        thisSynthIdx = this.gameObject.transform.GetSiblingIndex();
+    }
+
+    public void _selectThisSynth()
+    {
+        uiManager._SelectSynthUI(thisSynthIdx);
+    }
+    public void _activateThisPlayback()
+    {
+        uiManager._ActivatePlayback(thisSynthIdx);
     }
 
     public void _PrepairRecord()
     {
-        uiManager._ResetPlayback(synthIdx);
+        uiManager._ResetPlayback(thisSynthIdx);
         /// Deactivate Rec button GB
-        uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
+        uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
         /// Deactivate Play button GB
-        uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
+        uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
         /// Activate Stop button GB
-        uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
+        uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
         StartCoroutine("RecordCountdown");
         RecordPrepairing = true;
     }
@@ -44,16 +54,16 @@ public class SynthUIelement : MonoBehaviour
             StopCoroutine("RecordCountdown");
             RecordPrepairing = false;
             /// Deactivate Rec button GB
-            uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
+            uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
             /// Deactivate Play button GB
-            uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
+            uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
             /// Activate Stop button GB
-            uiManager.SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+            uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
             startCountdown.gameObject.SetActive(false);
         }
         else
         {
-            uiManager._StopPlayback(synthIdx);
+            uiManager._StopPlayback(thisSynthIdx);
         }
     }
 

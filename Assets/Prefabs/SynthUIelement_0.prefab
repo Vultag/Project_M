@@ -120,10 +120,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: _ActivatePlayback
-        m_Mode: 3
+      - m_Target: {fileID: 9001739692880858251}
+        m_TargetAssemblyTypeName: SynthUIelement, Assembly-CSharp
+        m_MethodName: _activateThisPlayback
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -404,7 +404,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Synth 1
+  m_text: Synth {x}
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -568,10 +568,10 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: UIManager, Assembly-CSharp
-        m_MethodName: _SelectSynthUI
-        m_Mode: 3
+      - m_Target: {fileID: 9001739692880858251}
+        m_TargetAssemblyTypeName: SynthUIelement, Assembly-CSharp
+        m_MethodName: _selectThisSynth
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
@@ -593,6 +593,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   startCountdown: {fileID: 8966737295921594415}
+  thisSynthIdx: 0
 --- !u!1 &2948772735584981516
 GameObject:
   m_ObjectHideFlags: 0

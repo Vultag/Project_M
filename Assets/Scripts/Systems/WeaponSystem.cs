@@ -115,7 +115,7 @@ public partial class WeaponSystem : SystemBase
             //Debug.DrawLine(new Vector3(5, 0, 0), new Vector3(5, BeatProximity * 10, 0), Color.red);
 
 
-            if (!UIInputSystem.MouseOverUI)
+            if (!UIInput.MouseOverUI)
             {
                 if (activeLegatoFz == 0)
                 {
@@ -202,7 +202,7 @@ public partial class WeaponSystem : SystemBase
 
                 
             }
-            if (PlayPressed && !UIInputSystem.MouseOverUI)
+            if (PlayPressed && !UIInput.MouseOverUI)
             {
                 /// FOR SHOOTING TIED TO BEAT
                 /// Moved to input manager

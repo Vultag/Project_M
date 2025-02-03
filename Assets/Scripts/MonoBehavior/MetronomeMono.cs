@@ -15,14 +15,16 @@ public class MetronomeMono : MonoBehaviour
     private AudioSource audioTickQuarterBeat;
     [SerializeField]
     private Material MetronomeMat;
+    [SerializeField]
+    private UIInput UIinput;
 
     float localTime =0;
     float QuarterBeatTimeCount = 0;
 
     private void OnEnable()
     {
-        var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
-        UIsystem.OnUpdateTempo += ChangeTempo;
+        //var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInput>();
+        UIinput.OnUpdateTempo += ChangeTempo;
         MetronomeMat.SetFloat("_BPMnormalized", MusicUtils.BPM / 60f);
     }
     private void Update()

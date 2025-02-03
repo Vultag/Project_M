@@ -21,7 +21,7 @@ public class MetronomeEffectSpawner : MonoBehaviour
         StartCoroutine(FadeOutAndMove(newImage, Vector2.zero, 0.5f));
     }
 
-
+    /// OPTI -> Coroutine generate garbage(state machines). remplace ?
     private IEnumerator FadeOutAndMove(GameObject image,Vector2 displacementVector, float fadeDuration)
     {
         Image img = image.GetComponent<Image>();

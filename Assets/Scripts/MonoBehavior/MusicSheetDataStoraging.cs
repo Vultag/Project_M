@@ -9,7 +9,7 @@ public struct MusicSheetData
 {
     public int mesureNumber;
     public NativeArray<float> ElementsInMesure;
-    public NativeArray<float> NoteElements;
+    //public NativeArray<float> NoteElements;
     public NativeArray<float> NotesSpriteIdx;
     public NativeArray<float> NotesHeight;
 
@@ -38,6 +38,12 @@ public struct MusicSheetData
 
     }
 
+    public void _Dispose()
+    {
+        ElementsInMesure.Dispose();
+        NotesSpriteIdx.Dispose();
+        NotesHeight.Dispose();
+    }
 }
 
 

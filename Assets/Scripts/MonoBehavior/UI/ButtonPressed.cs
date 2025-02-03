@@ -4,6 +4,11 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UIElements;
 
+
+/// <summary>
+///  REMPLACE WITH UNIVERSAL BUTTON
+/// </summary>
+
 public class ButtonPressed : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     bool b_pressed;

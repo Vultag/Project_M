@@ -32,7 +32,10 @@ public class AudioManager : MonoBehaviour
     private LineRenderer OscillatorLine;
     [SerializeField]
     private SliderMono waveformSlider;
-    //private List<GameObject> AudioSources;
+
+
+    public UIPlaybacksHolder uiPlaybacksHolder;
+
 
     public EndSimulationEntityCommandBufferSystem endSimulationECBSystem;
 
@@ -41,7 +44,7 @@ public class AudioManager : MonoBehaviour
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[0] = SynthData.CreateDefault();
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = MusicSheetData.CreateDefault();
+        //AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = MusicSheetData.CreateDefault();
     }
 
     //EntityQuery _query;
@@ -50,6 +53,8 @@ public class AudioManager : MonoBehaviour
         TEMPplaybackDuration = 4f;
 
         audioGenerator = Object.FindAnyObjectByType<AudioGenerator>();
+        uiPlaybacksHolder = Object.FindAnyObjectByType<UIPlaybacksHolder>();
+        PlaybackRecordSystem.SetAudioManager(this);
 
         var world = World.DefaultGameObjectInjectionWorld;
         entityManager = world.EntityManager;
@@ -163,7 +168,10 @@ public class AudioManager : MonoBehaviour
 
     }
 
+    #region SYNTHPLAYBACK PANEL
 
+ 
+    #endregion
 
 
 

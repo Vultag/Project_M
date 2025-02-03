@@ -17,6 +17,7 @@ using static UnityEngine.EventSystems.EventTrigger;
 using Image = UnityEngine.UI.Image;
 using Slider = UnityEngine.UI.Slider;
 using MusicNamespace;
+using UnityEngine.EventSystems;
 
 /*
  Break on window dimention change --> TO FIX
@@ -43,6 +44,10 @@ public class UIManager : MonoBehaviour
     private VoicesUI voicesUI;
 
     [SerializeField]
+    private UIPlaybacksHolder UIplaybacksHolder;
+    public GameObject MusicSheetGB;
+
+    [SerializeField]
     SliderMono simplexSlider;
 
     public Transform toolTip;
@@ -52,7 +57,7 @@ public class UIManager : MonoBehaviour
 
     [HideInInspector]
     public Canvas canvas;
-    private NativeArray<AABB> UIsurface;
+    //private NativeArray<AABB> UIsurface;
 
     [SerializeField]
     private int MaxSynthNum;
@@ -83,7 +88,8 @@ public class UIManager : MonoBehaviour
 
         canvas = this.gameObject.transform.parent.GetComponent<Canvas>();
 
-        ConstructUIsurface();
+        ///ConstructUIsurface();
+        
         //NumOfSynths = SynthToolBar.GetComponentsInChildren<Button>().Length-1;
         SynthUIadd_rect = SynthToolBar.transform.GetChild(SynthToolBar.transform.childCount-1).GetComponent<RectTransform>();
 
@@ -99,15 +105,15 @@ public class UIManager : MonoBehaviour
         //Debug.Log(mouseDelta);
         PreviousMousePos = mousePos;
 
-        UIInputSystem.MouseOverUI = false;
-        for (int i = 0;i < UIsurface.Length;i++)
-        {
-            if(PhysicsUtilities.PointInsideShape(mousePos, UIsurface[i]))
-            {
-                UIInputSystem.MouseOverUI = true;
-                break;
-            }
-        }
+        UIInput.MouseOverUI = EventSystem.current.IsPointerOverGameObject(PointerId.mousePointerId);
+        //for (int i = 0;i < UIsurface.Length;i++)
+        //{
+        //    if(PhysicsUtilities.PointInsideShape(mousePos, UIsurface[i]))
+        //    {
+        //        UIInputSystem.MouseOverUI = true;
+        //        break;
+        //    }
+        //}
         /// OPTI
         for (int i = 0; i < synthsInfo.Count; i++)
         {
@@ -136,6 +142,8 @@ public class UIManager : MonoBehaviour
 
     }
 
+    #region TOOLTIP
+
     public void UpdateDisplayToolTip(Vector2 pos, String content)
     {
         //Debug.Log(toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x);
@@ -149,6 +157,13 @@ public class UIManager : MonoBehaviour
         toolTip.position = new Vector3(pos.x + toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, pos.y);
         //Debug.Log(toolTip.GetChild(0).transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f);
     }
+    public void ForceDisableTooltip()
+    {
+        toolTip.gameObject.SetActive(false);
+    }
+
+    #endregion
+
 
     public void _SelectSynthUI(int index)
     {
@@ -178,6 +193,7 @@ public class UIManager : MonoBehaviour
     {
         var synthUI = SynthToolBar.transform.GetChild(NumOfSynths).gameObject;
         synthUI.SetActive(true);
+        synthUI.GetComponent<SynthUIelement>().thisSynthIdx = NumOfSynths;
         synthUI.GetComponentInChildren<TextMeshProUGUI>().text = "Synth " + (NumOfSynths+1);
 
         NumOfSynths++;
@@ -187,7 +203,6 @@ public class UIManager : MonoBehaviour
 
         if (NumOfSynths == MaxSynthNum) { SynthUIadd_rect.gameObject.SetActive(false); }
     }
-
     void UpdateSynthUI()
     {
         var synthData = AudioManager.audioGenerator.SynthsData[activeSynthIdx];
@@ -200,22 +215,28 @@ public class UIManager : MonoBehaviour
         voicesUI.UpdateUI(synthData);
 
     }
-
     public void _ResetPlayback(int synthIdx)
     {
-        _StopPlayback(synthIdx);
+        /// OPTI
+        /// If the the Current playback of the synth is playing, stop it
+        for (int i = 1; i < AudioManager.audioGenerator.activeSynthsIdx.Length; i++)
+        {
+            if (AudioManager.audioGenerator.activeSynthsIdx[i] == activeSynthIdx)
+            {
+                _StopPlayback(activeSynthIdx);
+            }
+        }
 
         var slider = SynthToolBar.transform.GetChild(activeSynthIdx).gameObject.GetComponentInChildren<Slider>();
         ///change slider background color
         slider.gameObject.transform.GetChild(0).GetComponent<Image>().color = Color.grey;
 
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.ElementsInMesure.Dispose();
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.NoteElements.Dispose();
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.NotesSpriteIdx.Dispose();
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet.NotesHeight.Dispose();
+        MusicSheetGB.SetActive(true);
+
+        /// dont dispose as the memory responsability is passed to the playbackContainer
+        ///AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet._Dispose();
         AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = MusicSheetData.CreateDefault();
     }
-
     public void _RecordPlayback(int startingBeat)
     {
 
@@ -240,6 +261,7 @@ public class UIManager : MonoBehaviour
         {
             if (AudioManager.audioGenerator.activeSynthsIdx[i] == activeSynthIdx)
             {
+                Debug.Log("here");
                 _StopPlayback(activeSynthIdx);
             }
         }
@@ -285,6 +307,7 @@ public class UIManager : MonoBehaviour
         {
             if (AudioManager.audioGenerator.activeSynthsIdx[i] == synthIdx)
             {
+                Debug.Log(AudioManager.audioGenerator.PlaybackAudioBundles[synthIdx].PlaybackDuration);
                 return;
             }
         }
@@ -328,10 +351,23 @@ public class UIManager : MonoBehaviour
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
+
+        /// SAFETY
+        bool isRunning = false;
+        /// If the the synthIdx is playing, stop it
+        for (int i = 1; i < AudioManager.audioGenerator.activeSynthsIdx.Length; i++)
+        {
+            if (AudioManager.audioGenerator.activeSynthsIdx[i] == synthIdx)
+            {
+                isRunning = true;
+            }
+        }
+        if (!isRunning) Debug.LogError("stoped a non runing playback");
+        ///
+
         /// The playback is curently recording 
         if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
         {
-            AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, false);
             Debug.LogError("stop on record. DISABLED UNTIL REASSESSMENT");
             return;
             /*
@@ -374,6 +410,7 @@ public class UIManager : MonoBehaviour
         else
         {
             //Debug.Log("stop on playback");
+            AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx, false);
 
             for (int i = 0; i < synthsInfo.Count; i++)
             {
@@ -412,22 +449,27 @@ public class UIManager : MonoBehaviour
     }
 
 
-    void ConstructUIsurface()
-    {
-        var UIrects = this.gameObject.GetComponentsInChildren<RectTransform>();
-        float screenRatioX = canvas.pixelRect.size.x / 800;
-        float screenRatioY = canvas.pixelRect.size.y / 450;
 
-        UIsurface = new NativeArray<AABB>(UIrects.Length, Allocator.Persistent);
-        for (int i = 0; i < UIsurface.Length; i++)
-        {
-            UIsurface[i] = new AABB
-            {
-                LowerBound = RectTransformUtility.WorldToScreenPoint(Camera.main, UIrects[i].position) - new Vector2((UIrects[i].rect.width * screenRatioX) / 2, ((UIrects[i].rect.height * screenRatioY) / 2)),
-                UpperBound = RectTransformUtility.WorldToScreenPoint(Camera.main, UIrects[i].position) + new Vector2((UIrects[i].rect.width * screenRatioX) / 2, (UIrects[i].rect.height * screenRatioY) / 2),
-            };
-        }
-    }
+
+
+
+
+    //void ConstructUIsurface()
+    //{
+    //    var UIrects = this.gameObject.GetComponentsInChildren<RectTransform>();
+    //    float screenRatioX = canvas.pixelRect.size.x / 800;
+    //    float screenRatioY = canvas.pixelRect.size.y / 450;
+
+    //    UIsurface = new NativeArray<AABB>(UIrects.Length, Allocator.Persistent);
+    //    for (int i = 0; i < UIsurface.Length; i++)
+    //    {
+    //        UIsurface[i] = new AABB
+    //        {
+    //            LowerBound = RectTransformUtility.WorldToScreenPoint(Camera.main, UIrects[i].position) - new Vector2((UIrects[i].rect.width * screenRatioX) / 2, ((UIrects[i].rect.height * screenRatioY) / 2)),
+    //            UpperBound = RectTransformUtility.WorldToScreenPoint(Camera.main, UIrects[i].position) + new Vector2((UIrects[i].rect.width * screenRatioX) / 2, (UIrects[i].rect.height * screenRatioY) / 2),
+    //        };
+    //    }
+    //}
     /// If I decide to bakes the rectangles into a polygon for opti.
     /*
     private NativeArray<Vector2> BakeUIsurface()

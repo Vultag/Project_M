@@ -14,7 +14,6 @@ using static UnityEngine.EventSystems.EventTrigger;
 /// <summary>
 /// Currently otimized for 1 record at a time
 /// -> REVIEW AND OPTIMIZE IF NEED SYMULTANEOUS
-///  OPTI ! : Offset the subeat processing by the keypress threshold to avoid snap computation
 /// </summary>
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateBefore(typeof(WeaponSystem))]
@@ -70,13 +69,25 @@ public partial class PlaybackRecordSystem : SystemBase
 
     float BeatProximityThreshold;
 
+    /// not ideal ? OPTI?
+    private static AudioManager audioManager;
+    public static void SetAudioManager(AudioManager manager)
+    {
+        audioManager = manager;
+    }
+
     protected override void OnCreate()
     {
-        RequireForUpdate<PlaybackRecordingData>();
+        RequireForUpdate<PlaybackRecordingData>();        // Find AudioManager once at the start
     }
 
     protected override void OnStartRunning()
     {
+        if (audioManager == null)
+        {
+            Debug.LogError("AudioManager is still null! Did SetAudioManager get called in time?");
+        }
+
         BeatProximityThreshold = InputManager.BeatProximityThreshold;
         //float startTimeOffset = 0;
         foreach (var recordData in SystemAPI.Query<RefRO<PlaybackRecordingData>>())
@@ -131,7 +142,7 @@ public partial class PlaybackRecordSystem : SystemBase
             /// 
             //Vector2 direction = mousepos - new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y);
 
-            if (!UIInputSystem.MouseOverUI)
+            if (!UIInput.MouseOverUI)
             {
                 if (recordData.ValueRO.activeLegatoFz == 0)
                 {
@@ -266,7 +277,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 }
             }
 
-            if (ClickPressed && !UIInputSystem.MouseOverUI)
+            if (ClickPressed && !UIInput.MouseOverUI)
             {
                 //float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));
                 //int note = MusicUtils.radiansToNote(randian);
@@ -308,7 +319,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
             }
 
-            if (UIInputSystem.MouseOverUI)
+            if (UIInput.MouseOverUI)
             {
                 if(AudioKeyActive)
                 {
@@ -448,14 +459,18 @@ public partial class PlaybackRecordSystem : SystemBase
 
                         var playbackKeys = new NativeArray<PlaybackKey>(accumulator.Length, Allocator.Persistent);
                         playbackKeys.CopyFrom(accumulator.AsNativeArray().Reinterpret<PlaybackKey>());
-                        AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
+                        PlaybackAudioBundle newPlaybackAudioBundle = new PlaybackAudioBundle
                         {
                             IsLooping = true,
                             //IsPlaying = false,
                             PlaybackDuration = recordData.ValueRO.duration,
                             PlaybackKeys = playbackKeys
-                        }, recordData.ValueRO.synthIndex);
-                        //Debug.Log(AudioManager.audioGenerator.audioLayoutStorage.NewPlaybackAudioBundles.PlaybackKeys.Length);
+                        };
+                        AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(newPlaybackAudioBundle, recordData.ValueRO.synthIndex);
+
+                        /// carefull about disposing PlaybackAudioBundle and musicSheet -> used inside holder
+                        audioManager.uiPlaybacksHolder._AddSynthPlaybackContainer(newPlaybackAudioBundle,ActiveMusicSheet,(short)recordData.ValueRO.synthIndex);
+
                         ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(entity);
                         ecb.RemoveComponent<PlaybackRecordingData>(entity);
 
@@ -559,7 +574,6 @@ public partial class PlaybackRecordSystem : SystemBase
 
             /// restart from a dblSoupir
             NoteIdx += 1;
-            Debug.LogWarning(activeMusicSheet.ElementsInMesure[MesureIdx] < (NoteIdx - 1));
             CurrentBeatProcessingLevel = 0f;
             accumulatedBeatWeight = 0f;
             accumulatedMesureWeight += 1;

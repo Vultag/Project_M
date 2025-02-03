@@ -8,9 +8,6 @@ using UnityEngine.UI;
 public class MusicSheetToShader : MonoBehaviour
 {
 
-    //not needed ?
-    [SerializeField]
-    private MusicSheetDataStoraging musicSheetStorage;
     [SerializeField]
     private Material MusicSheetMaterial;
 

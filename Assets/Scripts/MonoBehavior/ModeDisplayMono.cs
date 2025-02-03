@@ -4,6 +4,7 @@ using System.Data;
 using TMPro;
 using Unity.Entities;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class ModeDisplayMono : MonoBehaviour
@@ -23,7 +24,8 @@ public class ModeDisplayMono : MonoBehaviour
 
     private void OnEnable()
     {
-        var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
+        //var UIsystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<UIInputSystem>();
+        //var UIsystem = GetComponent(UIInput);
         var Playersystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<PlayerSystem>();
         fillSpeed = Playersystem.modeSwitchBaseCD;
         Playersystem.OnUpdateMode += ChangeMode;

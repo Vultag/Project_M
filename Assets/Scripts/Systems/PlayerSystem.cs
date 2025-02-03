@@ -53,7 +53,7 @@ public partial class PlayerSystem : SystemBase
 
         }
 
-        OnUpdateMode(WeaponSystem.mode.ToString(), "C4");
+        ///OnUpdateMode(WeaponSystem.mode.ToString(), "C4");
 
     }
 
