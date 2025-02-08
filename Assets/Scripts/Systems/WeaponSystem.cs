@@ -148,7 +148,7 @@ public partial class WeaponSystem : SystemBase
                     {
                         /// If there is a playback recording I has to update before to not block it
                         InputManager.CanPressKey = false;
-                        Debug.LogWarning("set false");
+                        //Debug.LogWarning("set false");
                         //if (OnBeat)
                         {
                             /// Check if the the legato glide over a released key

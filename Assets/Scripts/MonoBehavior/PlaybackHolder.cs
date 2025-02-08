@@ -9,9 +9,12 @@ public class PlaybackHolder : MonoBehaviour
 {
     [SerializeField]
     GameObject PBcontainerPrefab; 
-    public GameObject PBsynthItem;
+    public GameObject trackPlaybackItem;
     [HideInInspector]
     public UIManager uiManager;
+
+    [SerializeField]
+    Sprite associatedSprite;
 
     private int ContainerNumber = 0;
 
@@ -31,13 +34,11 @@ public class PlaybackHolder : MonoBehaviour
         /// arbitrary 3 -> set number of remaining playback use
         container.GetComponentInChildren<TextMeshProUGUI>().text = "3";
         container.associatedItemColor = Random.ColorHSV();
-        // do container color here
-        //container.GetComponentInChildren<SynthPBitemButton>().gameObject.transform.GetComponentInChildren<Image>().color = container.associatedItemColor;
-        container.associatedPlaybackItem = PBsynthItem;
+        container.associatedItemSprite = associatedSprite;
+        container.associatedPlaybackItem = trackPlaybackItem;
 
         ContainerNumber++;
     }
-
 
     public void _QuickQuePlaybackItem(short synthIdx)
     {

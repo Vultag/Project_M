@@ -85,7 +85,7 @@ Material:
     - _EnableExternalAlpha: 0
     - _Envelope: 0
     - _Frequency: 0.37152493
-    - _FrequencyNorm: 0
+    - _FrequencyNorm: 1
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1

@@ -16,6 +16,8 @@ public class PlaybackContainer : MonoBehaviour
     /// Remplace with unique image to distiguish recordings
     /// </summary>
     [HideInInspector]
+    public Sprite associatedItemSprite;
+    [HideInInspector]
     public Color associatedItemColor;
 
 }

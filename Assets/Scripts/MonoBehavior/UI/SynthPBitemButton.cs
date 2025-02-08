@@ -19,6 +19,7 @@ public class SynthPBitemButton : MonoBehaviour, IPointerClickHandler, IPointerEx
         playbackHolder = this.transform.parent.parent.GetComponent<PlaybackHolder>();
         playbackContainer = this.transform.parent.GetComponent<PlaybackContainer>();
         this.transform.GetChild(0).GetComponent<Image>().color = playbackContainer.associatedItemColor;
+        this.transform.GetChild(0).GetComponent<Image>().sprite = playbackContainer.associatedItemSprite;
 
     }
     public void OnPointerClick(PointerEventData pointerEventData)
@@ -45,10 +46,11 @@ public class SynthPBitemButton : MonoBehaviour, IPointerClickHandler, IPointerEx
     }
     public void _ArmPlaybackItem(short synthIdx)
     {
-        playbackHolder.PBsynthItem.GetComponent<PlaybackItemUI>().playbackIdx = synthIdx;
-        playbackHolder.PBsynthItem.GetComponent<Image>().color = playbackContainer.associatedItemColor;
+        //playbackHolder.trackPlaybackItem.GetComponent<PlaybackItemUI>().playbackIdx = synthIdx;
+        playbackHolder.trackPlaybackItem.GetComponent<Image>().color = playbackContainer.associatedItemColor;
+        playbackHolder.trackPlaybackItem.GetComponent<TrackPlaybackItem>().associatedPlaybackContainer = playbackContainer;
 
-        playbackHolder.PBsynthItem.SetActive(true);
+        playbackHolder.trackPlaybackItem.SetActive(true);
     }
 
 }
