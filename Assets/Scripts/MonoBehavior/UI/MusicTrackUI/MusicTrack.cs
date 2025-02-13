@@ -11,14 +11,17 @@ public class MusicTrack : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
     UIManager uiManager;
     [SerializeField]
     private RectTransform draggerObjectRect;
-    private int2 draggedObjectInitialCoords;
-    private Vector2 draggedObjectOriginPos;
+    [HideInInspector]
+    public int2 draggedItemInitialCoords;
+    private Vector2 draggedItemOriginPos;
     private RectTransform Rtrans;
     //public GameObject TrackPlaybackItemPrefab;
 
 
     [SerializeField]
     private Sprite[] SlotSprites;
+    //[SerializeField]
+    public PlaybackHolder[] PlaybackHolderArray;
 
     private void Start()
     {
@@ -33,13 +36,14 @@ public class MusicTrack : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
         RectTransformUtility.ScreenPointToLocalPointInRectangle(Rtrans.parent as RectTransform, eventData.position, eventData.pressEventCamera, out Vector2 localPoint);
         var Cbelt = this.GetComponent<MusicTrackConveyorBelt>();
         var pointDownCoords = Cbelt.GetCoordsOnTrack(localPoint);
+        if (pointDownCoords.y==0) return;
         //Debug.LogError(pointDownCoords);
         if (Cbelt.isSlotFree(pointDownCoords))
         {
-            draggedObjectInitialCoords = pointDownCoords;
+            draggedItemInitialCoords = pointDownCoords;
             draggerObjectRect.GetComponent<Image>().sprite = SlotSprites[pointDownCoords.x];
             draggerObjectRect.gameObject.SetActive(true);
-            draggedObjectOriginPos = draggerObjectRect.localPosition;
+            draggedItemOriginPos = draggerObjectRect.localPosition;
             draggerObjectRect.localPosition = new Vector3(localPoint.x, localPoint.y, Rtrans.localPosition.z);
         }
         //draggedObjectRect = eventData.pointerCurrentRaycast.gameObject.GetComponent<RectTransform>();
@@ -76,11 +80,17 @@ public class MusicTrack : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDr
             insertSuccess = this.GetComponent<MusicTrackConveyorBelt>()._TryMoveTrackElement(
                 localPoint,
                 //draggedObjectRect.gameObject,
-                draggedObjectInitialCoords);
+                draggedItemInitialCoords 
+                );
 
         }
 
         //draggedObjectRect.localPosition = insertSuccess? draggedObjectRect.localPosition : draggedObjectOriginPos;
+        draggerObjectRect.gameObject.SetActive(false);
+    }
+
+    public void ForceDrop()
+    {
         draggerObjectRect.gameObject.SetActive(false);
     }
 

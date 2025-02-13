@@ -33,7 +33,14 @@ public class AudioGenerator : MonoBehaviour
 
     public NativeArray<KeyData> activeKeys;
     public NativeArray<int> activeKeyNumber;
+
     public NativeArray<int> activeSynthsIdx;
+    /// <summary>
+    /// //1rst is selectedSynth 6 other for playback
+    /// exclude selectedSynth
+    /// </summary>
+    public NativeArray<int> SynthIdxTOactiveSynthsIdxMap;
+
     public NativeArray<float> _OCSphaseIncrements;
     public NativeArray<FilterDelayElements> filterDelayElements;
     public NativeArray<float> SynthGlideBaseFz;
@@ -63,6 +70,9 @@ public class AudioGenerator : MonoBehaviour
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
 
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired = new NativeQueue<int>(Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackActivationUpdateRequired = new NativeQueue<int>(Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired = new NativeQueue<int>(Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired = new NativeQueue<(int,PlaybackAudioBundle)>(Allocator.Persistent);
 
         //Debug.Log(AudioSettings.outputSampleRate);
         /// TEST
@@ -78,6 +88,11 @@ public class AudioGenerator : MonoBehaviour
     {
         _sampleRate = AudioSettings.outputSampleRate;
         _audioData = new NativeArray<float>(512, Allocator.Persistent);
+        SynthIdxTOactiveSynthsIdxMap = new NativeArray<int>(6, Allocator.Persistent);
+        //SynthIdxTOactiveSynthsIdxMap[0] = 0;
+        /// assiciate 99 to null for better debugging
+        for (int i = 1; i < SynthIdxTOactiveSynthsIdxMap.Length; i++){SynthIdxTOactiveSynthsIdxMap[i] = 99;}
+
         //_filterDelayElements = new NativeArray<FilterDelayElements>(1, Allocator.Persistent);
         //audiojobCompleted = false; 
         int ringBufferCapacity = 4;
@@ -123,30 +138,6 @@ public class AudioGenerator : MonoBehaviour
     private void Update()
     {
 
-        /*UPDATE UI DISPLAY*/
-        //if (audiojobCompleted)
-        //{
-        //    //reasign the number of points
-        //    int points = _audioData.Length / 32;
-        //    OscillatorLine.positionCount = points;
-        //    float xStart = 0;
-        //    float xFinish = 2 * Mathf.PI*2;
-
-
-        //    for (int currentPoint = 0; currentPoint < points; currentPoint++)
-        //    {
-
-        //        float progress = (float)currentPoint / (points - 1);
-        //        float x = Mathf.Lerp(xStart, xFinish, progress);
-        //        float y = ((MusicUtils.Sin(x)*SinFactor) + (MusicUtils.Saw(x)*SawFactor) + (MusicUtils.Square(x)*SquareFactor)) * amplitude * 6f;
-        //        OscillatorLine.SetPosition(currentPoint, new Vector3(x, y, 0));
-
-        //    }
-        //    audiojobCompleted = false;
-        //}
-
-
-        //Debug.Break();
     }
 
     // Callback method for audio processing
@@ -158,17 +149,111 @@ public class AudioGenerator : MonoBehaviour
         while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Count > 0)
         {
 
-            int i = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Dequeue();
-            // backward way to find the index of the playbackcontext to reset from the playback index
-            int y = 1;
-            for (; y < activeSynthsIdx.Length; y++)
-            {
-                if (activeSynthsIdx[y] == i)
-                    break;
-            }
-            PlaybackAudioBundlesContext[y-1] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = 0 };
-            activeKeyNumber[y] = 0;
+            int SynthIdx = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Dequeue();
+            int contextIndex = SynthIdxTOactiveSynthsIdxMap[SynthIdx];
+            PlaybackAudioBundlesContext[contextIndex - 1] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = 0 };
+            activeKeyNumber[contextIndex] = 0;
         }
+
+        /// 1 or more synth active playback data are being updated
+        if (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Count > 0)
+        {
+            var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+            PlaybackAudioBundles.CopyTo(newPlaybackBundle);
+
+            while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Count > 0)
+            {
+                (int, PlaybackAudioBundle) updatedPlaybackInfo = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Dequeue();
+                newPlaybackBundle[updatedPlaybackInfo.Item1] = updatedPlaybackInfo.Item2;
+            }
+            PlaybackAudioBundles.Dispose();
+            PlaybackAudioBundles = newPlaybackBundle;
+        }
+
+        /// 1 or more synth is either being stopped or activated -> adjust the context to match the new situation
+        int weight = AudioLayoutStorageHolder.audioLayoutStorage.UpdatedActivePlaybackWeight;
+        if (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired.Count>0|| weight > 0)
+        {    
+            //Debug.Log(activeKeyNumber.Length);
+            //Debug.Log(weight);
+            var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length + weight) * 12, Allocator.Persistent);
+            var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length + weight, Allocator.Persistent);
+            var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length + weight, Allocator.Persistent);
+            int numOfPops = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired.Count;
+        
+            int numOfContextsBeforeAdd = activeKeyNumber.Length - numOfPops;
+            /// keep in mind PlaybackAudioBundleContext are -1 compared to rest of context ?
+            var newActivePlaybackContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundlesContext.Length + weight, Allocator.Persistent);
+            AudioLayoutStorageHolder.audioLayoutStorage.UpdatedActivePlaybackWeight = 0;
+
+            /// 1 synth is the active one and permanent
+            newActiveKeyNumber[0] = activeKeyNumber[0];
+            newActiveSynthsIdx[0] = activeSynthsIdx[0];
+            for (int i = 0; i < 12; i++)
+            {
+                newActiveKeys[i] = activeKeys[i];
+            }
+            int PopingIndex = 1;
+            int popedItems = 0;
+            int targetIndex = PopingIndex;
+
+            /// first, copy the n+1 contexts and pop the no longer active synth ones (minus the last section)
+            while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired.Count > 0)
+            {
+                int deactivationIdx = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired.Dequeue();
+                int SynthIdxInContext = SynthIdxTOactiveSynthsIdxMap[deactivationIdx];
+                //Debug.LogError(SynthIdxTOactiveSynthsIdxMap[deactivationIdx]);
+                SynthIdxTOactiveSynthsIdxMap[deactivationIdx] = 99;
+
+                for (; (PopingIndex-1) < (SynthIdxInContext- numOfPops); PopingIndex++)
+                {
+                    targetIndex = PopingIndex + popedItems;
+                    newActiveKeyNumber[PopingIndex] = activeKeyNumber[targetIndex];
+                    newActiveSynthsIdx[PopingIndex] = activeSynthsIdx[targetIndex];
+                    SynthIdxTOactiveSynthsIdxMap[activeSynthsIdx[targetIndex]] = PopingIndex;
+                    newActivePlaybackContext[PopingIndex - 1] = PlaybackAudioBundlesContext[targetIndex - 1];
+                    for (int y = 0; y < 12; y++)
+                    {
+                        newActiveKeys[(PopingIndex * 12) + y] = activeKeys[(targetIndex * 12) + y];
+                    }
+                }
+                popedItems++;
+                /// set the index after the poped synth to copy the rest of the contexts
+                //PopingIndex = SynthIdxInContext;
+            }
+            /// Copying the rest of the contexts after le last pop (all-first if no poping)
+            for (; PopingIndex < numOfContextsBeforeAdd; PopingIndex++)
+            {
+                targetIndex = PopingIndex + popedItems;
+                newActiveKeyNumber[PopingIndex] = activeKeyNumber[targetIndex];
+                newActiveSynthsIdx[PopingIndex] = activeSynthsIdx[targetIndex];
+                SynthIdxTOactiveSynthsIdxMap[activeSynthsIdx[targetIndex]] = PopingIndex;
+                newActivePlaybackContext[PopingIndex - 1] = PlaybackAudioBundlesContext[targetIndex - 1];
+                for (int y = 0; y < 12; y++)
+                {
+                    newActiveKeys[(PopingIndex * 12) + y] = activeKeys[(targetIndex * 12) + y];
+                }
+            }
+            /// Last, assign the activationIdx to the expanded array element
+            for (int completedAddition = 0; AudioLayoutStorageHolder.audioLayoutStorage.PlaybackActivationUpdateRequired.Count>0; completedAddition++)
+            {
+                int activationIdx = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackActivationUpdateRequired.Dequeue();
+                newActiveSynthsIdx[numOfContextsBeforeAdd+completedAddition] = activationIdx;
+                //Debug.LogWarning(activationIdx);
+                SynthIdxTOactiveSynthsIdxMap[activationIdx] = numOfContextsBeforeAdd + completedAddition;
+            }
+
+            activeKeys.Dispose();
+            activeKeyNumber.Dispose();
+            activeSynthsIdx.Dispose();
+            PlaybackAudioBundlesContext.Dispose();
+            activeKeys = newActiveKeys;
+            activeKeyNumber = newActiveKeyNumber;
+            activeSynthsIdx = newActiveSynthsIdx;
+            PlaybackAudioBundlesContext = newActivePlaybackContext;
+
+        }
+        
 
         /// Jobify ?
         if (AudioLayoutStorageHolder.audioLayoutStorage.UpdateRequirement)
@@ -202,7 +287,12 @@ public class AudioGenerator : MonoBehaviour
             {
                 var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length, Allocator.Persistent);
                 activeSynthsIdx.CopyTo(newActiveSynthsIdx);
-                newActiveSynthsIdx[0] = AudioLayoutStorageHolder.audioLayoutStorage.ReadSelectSynth();
+                //Debug.Log(newActiveSynthsIdx[0]);
+                //Debug.LogError(SynthIdxTOactiveSynthsIdxMap[newActiveSynthsIdx[0]]);
+                int selectedSynth = AudioLayoutStorageHolder.audioLayoutStorage.ReadSelectSynth();
+                //SynthIdxTOactiveSynthsIdxMap[newActiveSynthsIdx[0]] = ;
+                newActiveSynthsIdx[0] = selectedSynth;
+                //SynthIdxTOactiveSynthsIdxMap[selectedSynth] = 0;
                 activeSynthsIdx.Dispose();
                 activeSynthsIdx = newActiveSynthsIdx;
             }
@@ -210,15 +300,16 @@ public class AudioGenerator : MonoBehaviour
             {
                 SynthsData[activeSynthsIdx[0]] = AudioLayoutStorageHolder.audioLayoutStorage.ReadModifySynth();
             }
-            if (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackUpdateRequirement)
-            {
+            //if (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackUpdateRequirement)
+            //{
 
-                var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
-                PlaybackAudioBundles.CopyTo(newPlaybackBundle);
-                newPlaybackBundle[AudioLayoutStorageHolder.audioLayoutStorage.synthPlaybackIdx] = AudioLayoutStorageHolder.audioLayoutStorage.ReadPlayback();
-                PlaybackAudioBundles.Dispose();
-                PlaybackAudioBundles = newPlaybackBundle;
-            }
+            //    var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+            //    PlaybackAudioBundles.CopyTo(newPlaybackBundle);
+            //    newPlaybackBundle[AudioLayoutStorageHolder.audioLayoutStorage.synthPlaybackIdx] = AudioLayoutStorageHolder.audioLayoutStorage.ReadPlayback();
+            //    PlaybackAudioBundles.Dispose();
+            //    PlaybackAudioBundles = newPlaybackBundle;
+            //}
+            /*
             if(AudioLayoutStorageHolder.audioLayoutStorage.ActivationUpdateRequirement)
             {
                 var activation = AudioLayoutStorageHolder.audioLayoutStorage.ReadActivation();
@@ -266,6 +357,7 @@ public class AudioGenerator : MonoBehaviour
                     var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length-1) * 12, Allocator.Persistent);
                     var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length-1, Allocator.Persistent);
                     var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length-1, Allocator.Persistent);
+                    //Debug.Log(PlaybackAudioBundlesContext.Length - 1);
                     var newActivePlaybackContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundlesContext.Length-1, Allocator.Persistent);
 
                     //Debug.Log("collapse");
@@ -313,7 +405,7 @@ public class AudioGenerator : MonoBehaviour
                     PlaybackAudioBundlesContext = newActivePlaybackContext;
                 }
             }
-
+            */
 
             AudioLayoutStorageHolder.audioLayoutStorage.UpdateRequirement = false;
         }

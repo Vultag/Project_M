@@ -3,21 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+
+
+
 public class PlaybackContainer : MonoBehaviour
 {
 
-    public PlaybackAudioBundle playbackAudioBundle;
-    public MusicSheetData musicSheet;
+    //public PlaybackAudioBundle playbackAudioBundle;
+    //public MusicSheetData musicSheet;
 
-    [HideInInspector]
-    public GameObject associatedPlaybackItem;
+    //[HideInInspector]
+    //public GameObject associatedPlaybackItem;
 
     /// <summary>
     /// Remplace with unique image to distiguish recordings
     /// </summary>
-    [HideInInspector]
-    public Sprite associatedItemSprite;
-    [HideInInspector]
-    public Color associatedItemColor;
+    //[HideInInspector]
+    //public Sprite associatedItemSprite;
+    //[HideInInspector]
+    //public Color associatedItemColor;
 
 }

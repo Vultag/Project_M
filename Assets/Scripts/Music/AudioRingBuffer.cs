@@ -66,7 +66,7 @@ public struct PlaybackAudioBundle
     public NativeArray<PlaybackKey> PlaybackKeys;
     //public int PlaybackKeyStartIndex;
     public float PlaybackDuration;
-    public bool IsLooping;
+    //public bool IsLooping;
     // not needed ?
     //public bool IsPlaying;
 }

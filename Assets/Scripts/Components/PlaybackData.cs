@@ -6,7 +6,7 @@ using UnityEngine;
 public struct PlaybackData : IComponentData
 {
     public int KeysPlayed;
-    public int PlaybackIndex;
+    public int SynthIndex;
     public int PlaybackKeyIndex;
     public float PlaybackTime;
     //Vector2 GideReferenceDirection;

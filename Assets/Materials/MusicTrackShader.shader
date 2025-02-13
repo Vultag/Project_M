@@ -19,8 +19,10 @@ Shader "Unlit/MusicTrackShader"
             #include "UnityCG.cginc"
 
             cbuffer TrackGridBuffer : register(b0) {
-                float2 TrackGridArray[60]; // 2D array of 6*10
+                float2 TrackGridArray[66]; // 2D array of 6*10 + 6 of top side padding
+                float3 TrackGridColorArray[66];            // 12 bytes + 4 bytes padding
                 };
+     
 
             struct appdata
             {
@@ -72,8 +74,8 @@ Shader "Unlit/MusicTrackShader"
 
                 float trackX  = clamp((i.uv.x-sideMargin)*(1./(1-sideMargin*2)),0,1);
                 /// offset the trackY with the time
-                //float trackY = fmod(i.uv.y+(_Time.y*trackFlowSpeed),1);
-                float trackY = fmod(i.uv.y,1);
+                float trackY = fmod(i.uv.y+(_Time.y*trackFlowSpeed),1);
+                //float trackY = fmod(i.uv.y,1);
 
                 float trackLineX = fmod(trackX*numOfLines,1);
                 float trackMesureY = fmod(trackY*numOfmesureOnScreen,1);
@@ -102,10 +104,14 @@ Shader "Unlit/MusicTrackShader"
                     (_ImageTextureDimentions.y/_ImageTextureDimentions.w))/atlasSpriteSize
                     ;
 
+
+
+                //float gridY = fmod(i.uv.y+(_Time.y*trackFlowSpeed),1.);
+                float gridY = i.uv.y+fmod(_Time.y*0.25,1)*0.1;
                 /// do margin here
                 float2 elementUV =  float2(
                     ((i.uv.x-(1./numOfLines)*0.5)*UVscallingFactor.x+(spritePsize/_ImageTextureDimentions.z)*0.5),
-                    ((i.uv.y-(1./numOfmesureOnScreen)*0.5)*UVscallingFactor.y+(spritePsize/_ImageTextureDimentions.w)*0.5)
+                    ((gridY-(1./numOfmesureOnScreen)*0.5)*UVscallingFactor.y+(spritePsize/_ImageTextureDimentions.w)*0.5)
                     );
 
                 /// offset tiles
@@ -167,9 +173,10 @@ Shader "Unlit/MusicTrackShader"
                     (1-ceil(unmaskedElementUV.y-(spritePsize/_ImageTextureDimentions.w)))*floor(unmaskedElementUV.x+1);
 
 
+                float4 itemColoring = float4(TrackGridColorArray[flattenedIdx],1);
                 
-                col+= float4(trackBackground,1) - float4(0,1,1,0)*itemCol.z;
-                col+= itemCol * float4(1,0,0,1);
+                col+= float4(trackBackground,1) - (float4(1,1,1,0)-itemColoring)*itemCol.z;
+                col+= itemCol * itemColoring;
 
                 return col;
             }

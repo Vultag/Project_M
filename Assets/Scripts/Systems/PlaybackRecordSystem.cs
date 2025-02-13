@@ -461,15 +461,20 @@ public partial class PlaybackRecordSystem : SystemBase
                         playbackKeys.CopyFrom(accumulator.AsNativeArray().Reinterpret<PlaybackKey>());
                         PlaybackAudioBundle newPlaybackAudioBundle = new PlaybackAudioBundle
                         {
-                            IsLooping = true,
+                            //IsLooping = true,
                             //IsPlaying = false,
                             PlaybackDuration = recordData.ValueRO.duration,
                             PlaybackKeys = playbackKeys
                         };
-                        AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(newPlaybackAudioBundle, recordData.ValueRO.synthIndex);
+                        /// CHANGEd -> STORE ELSWERE AS AUDIOLAYOUT IS FOR ACTIVE PLAY
+                        //AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(newPlaybackAudioBundle, recordData.ValueRO.synthIndex);
+
+                        //Debug.Log("test");
 
                         /// carefull about disposing PlaybackAudioBundle and musicSheet -> used inside holder
-                        audioManager.uiPlaybacksHolder._AddSynthPlaybackContainer(newPlaybackAudioBundle,ActiveMusicSheet,(short)recordData.ValueRO.synthIndex);
+                        // HERE -> make sure copy by  reference or figure out right  way to do it
+                        audioManager.uiPlaybacksHolder._AddSynthPlaybackContainer(ref newPlaybackAudioBundle,ref ActiveMusicSheet,(short)recordData.ValueRO.synthIndex);
+
 
                         ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(entity);
                         ecb.RemoveComponent<PlaybackRecordingData>(entity);
@@ -542,7 +547,12 @@ public partial class PlaybackRecordSystem : SystemBase
         accumulatedBeatWeight += .25f;
         UpdateNote(ref activeMusicSheet, currentNoteHeight);
 
-        if (CurrentBeatProcessingLevel >= 1)
+        if (accumulatedBeatWeight >= 1)
+        {
+            accumulatedBeatWeight = 0f;
+            accumulatedMesureWeight += 1;
+        }
+        if (CurrentBeatProcessingLevel >= 1 && accumulatedMesureWeight<4)
         {
 
             CurrentBeatProcessingLevel = 0f;
@@ -551,11 +561,7 @@ public partial class PlaybackRecordSystem : SystemBase
             SetNoteHeight(ref activeMusicSheet, currentNoteHeight);
             PressedKeyIdx = NoteIdx;
         }
-        if (accumulatedBeatWeight >= 1)
-        {
-            accumulatedBeatWeight = 0f;
-            accumulatedMesureWeight += 1;
-        }
+    
 
     }
 

@@ -113,7 +113,7 @@ public class RaysToShader : MonoBehaviour
             DynamicBuffer<PlaybackSustainedKeyBufferData> PlaybackSkeyBuffer = entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(PlaybackBufferEntities[z]);
             DynamicBuffer<PlaybackReleasedKeyBufferData> PlaybackRkeyBuffer = entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(PlaybackBufferEntities[z]);
             SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
-            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex];
+            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).SynthIndex];
             int a = 0;
             for (; a < PlaybackSkeyBuffer.Length; a++)
             {
