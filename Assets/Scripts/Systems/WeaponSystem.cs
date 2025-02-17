@@ -378,7 +378,7 @@ public partial class WeaponSystem : SystemBase
 
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
-                    newMonsterData.Health -= 3f* SystemAPI.Time.DeltaTime;
+                    newMonsterData.Health -= 30f* SystemAPI.Time.DeltaTime;
 
                     if (newMonsterData.Health > 0)
                     {
@@ -452,7 +452,7 @@ public partial class WeaponSystem : SystemBase
                     };
 
                     MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
-                    newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
+                    newMonsterData.Health -= 30f * SystemAPI.Time.DeltaTime;
 
                     if (newMonsterData.Health > 0)
                     {

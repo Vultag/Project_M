@@ -16,8 +16,8 @@ using UnityEngine.Scripting;
 
 public struct CollisionPair
 {
-    public Entity BodyA;
-    public Entity BodyB;
+    public Entity EntityA;
+    public Entity EntityB;
 }
 
 
@@ -50,9 +50,9 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
 
     void OnUpdate(ref SystemState state)
     {
-
+        //return;
         var AABBtree = TreeInsersionSystem.AABBtree;
-
+        if (AABBtree.nodes.Length <2) return;
 
         /*
             The 500 as Internal Capacity is arbitrary.
@@ -66,7 +66,8 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
             */
         ColPair = new NativeList<CollisionPair>(500, Allocator.TempJob);
 
-        AABBtree.GatherIntersectingNodes(ColPair, AABBtree.rootIndex);
+        /// JOB BURST THIS ? OPTI
+        AABBtree.GatherIntersectingNodes(ref ColPair, AABBtree.rootIndex);
 
         CircleCollisionResolutionJob CircleColJob = new CircleCollisionResolutionJob()
         {
@@ -102,12 +103,14 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
 
     public void Execute(int i)
     {
+        Entity entityA = ColPair[i].EntityA;
+        Entity entityB = ColPair[i].EntityB;
 
-        var newvelshapeA = CircleShapes.GetRefRW(ColPair[i].BodyA);
-        var newvelshapeB = CircleShapes.GetRefRW(ColPair[i].BodyB);
+        var newvelshapeA = CircleShapes.GetRefRW(entityA);
+        var newvelshapeB = CircleShapes.GetRefRW(entityB);
 
-        var newvelbodyA = CircleBodies.GetRefRW(ColPair[i].BodyA);
-        var newvelbodyB = CircleBodies.GetRefRW(ColPair[i].BodyB);
+        var newvelbodyA = CircleBodies.GetRefRW(entityA);
+        var newvelbodyB = CircleBodies.GetRefRW(entityB);
 
 
         var distance = math.distance(newvelshapeA.ValueRO.Position, newvelshapeB.ValueRO.Position);

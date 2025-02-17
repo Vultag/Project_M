@@ -117,7 +117,7 @@ public partial struct PlaybackSystem : ISystem
 
                     //Debug.Log("restart");
                     /// moved to belt
-                    //AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.SynthIndex);
+                    AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.SynthIndex);
                     
                     playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.SynthIndex].PlaybackDuration;
                     playback_data.ValueRW.PlaybackKeyIndex = 0;

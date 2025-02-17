@@ -40,8 +40,8 @@ public class InputManager : MonoBehaviour
     void Update()
     {
         /// testing
-        if (playerControls.ActionMap.Mouvements.ReadValue<Vector2>().x>0)
-            Debug.Break();
+        //if (playerControls.ActionMap.Mouvements.ReadValue<Vector2>().x>0)
+        //    Debug.Break();
 
 
         mousePos = playerControls.ActionMap.MousePos.ReadValue<Vector2>();
