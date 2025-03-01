@@ -6,8 +6,10 @@ using NUnit.Framework.Internal.Filters;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
+using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public partial struct PlaybackSystem : ISystem
 {
@@ -30,7 +32,7 @@ public partial struct PlaybackSystem : ISystem
 
         NativeQueue<Vector2> KeyDirQueue = new NativeQueue<Vector2>(Allocator.Temp);
 
-        foreach (var (playback_data, Wtrans, entity) in SystemAPI.Query<RefRW<PlaybackData>, RefRO<LocalToWorld>>().WithEntityAccess().WithAll<SynthData>())
+        foreach (var (playback_data, Wtrans,trans, entity) in SystemAPI.Query<RefRW<PlaybackData>, RefRO<LocalToWorld>,RefRW<LocalTransform>>().WithEntityAccess().WithAll<SynthData>())
         {
 
             var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[playback_data.ValueRO.SynthIndex];
@@ -39,6 +41,11 @@ public partial struct PlaybackSystem : ISystem
             DynamicBuffer<PlaybackReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<PlaybackReleasedKeyBufferData>(entity);
 
             int playbackKeyIndex = playback_data.ValueRW.PlaybackKeyIndex;
+
+            var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
+            var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
+            //Vector2 rotatedDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
+
 
             /// OPTI ?
             while (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.SynthIndex].PlaybackKeys.Length
@@ -55,7 +62,7 @@ public partial struct PlaybackSystem : ISystem
                             RkeyBuffer.Add(new PlaybackReleasedKeyBufferData
                             {
                                 DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
-                                EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
+                                EffectiveDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght, 0)).xy,
                                 Delta = 0,
                                 Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
                                 currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude,
@@ -118,7 +125,7 @@ public partial struct PlaybackSystem : ISystem
                     //Debug.Log("restart");
                     /// moved to belt
                     AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.SynthIndex);
-                    
+                  
                     playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.SynthIndex].PlaybackDuration;
                     playback_data.ValueRW.PlaybackKeyIndex = 0;
                     playback_data.ValueRW.KeysPlayed = 0;
@@ -135,11 +142,21 @@ public partial struct PlaybackSystem : ISystem
             /// Damage processing + Delta/amplitude incrementing
             for (int i = 0; i < SkeyBuffer.Length; i++)
             {
-
                 //Vector2 dirLenght = ActiveSynth.Legato ? direction : SkeyBuffer[i].DirLenght;
                 Vector2 dirLenght = PhysicsUtilities.Rotatelerp(SkeyBuffer[i].StartDirLenght, SkeyBuffer[i].DirLenght, -Mathf.Log(ActiveSynth.Portomento / 3) * 0.01f + 0.03f);
-              
-                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), DirLength = SkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+                //Vector2 localDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(dirLenght, 0)).xy;
+                /// set rotation of entity
+                {
+                    trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(-SkeyBuffer[i].DirLenght.y, -SkeyBuffer[i].DirLenght.x) * Mathf.Rad2Deg);
+                }
+
+                Vector2 raycastDirlenght = math.mul(parentTransform.Rotation, new float3(dirLenght.x, dirLenght.y, 0)).xy;
+
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { 
+                    Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), 
+                    DirLength = raycastDirlenght }, 
+                    PhysicsUtilities.CollisionLayer.MonsterLayer, 
+                    ShapeComponentLookup);
 
                 float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                 Filter newFilter = new Filter(0, 0);
@@ -153,7 +170,7 @@ public partial struct PlaybackSystem : ISystem
                 {
                     //Debug.Log(Hit.distance);
                     // hit line
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (SkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.white, SystemAPI.Time.DeltaTime);
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (raycastDirlenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
 
                     SkeyBuffer[i] = new PlaybackSustainedKeyBufferData
                     {
@@ -199,13 +216,17 @@ public partial struct PlaybackSystem : ISystem
                         filter = newFilter,
                     };
 
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + dirLenght, Color.white, SystemAPI.Time.DeltaTime);
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + raycastDirlenght, Color.white, SystemAPI.Time.DeltaTime);
 
                 }
 
             }
             for (int i = 0; i < RkeyBuffer.Length; i++)
             {
+
+                //Vector2 localDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(RkeyBuffer[i].DirLenght, 0)).xy;
+
+                Vector2 raycastDirlenght = math.mul(parentTransform.Rotation, new float3(RkeyBuffer[i].DirLenght.x, RkeyBuffer[i].DirLenght.y, 0)).xy;
 
                 float newDelta = RkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                 if (newDelta > ActiveSynth.ADSR.Release)
@@ -221,13 +242,17 @@ public partial struct PlaybackSystem : ISystem
                     Resonance = 0
                 };
 
-                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), DirLength = RkeyBuffer[i].DirLenght }, PhysicsUtilities.CollisionLayer.MonsterLayer, ShapeComponentLookup);
+                RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { 
+                    Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), 
+                    DirLength = raycastDirlenght}, 
+                    PhysicsUtilities.CollisionLayer.MonsterLayer, 
+                    ShapeComponentLookup);
 
                 if (Hit.entity != Entity.Null)
                 {
                     //Debug.Log(Hit.distance);
                     // hit line
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (RkeyBuffer[i].DirLenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + (raycastDirlenght.normalized * Hit.distance), Color.red, SystemAPI.Time.DeltaTime);
 
                     float amplitudefactor = RkeyBuffer[i].amplitudeAtRelease * newDelta / ActiveSynth.ADSR.Release;
                     RkeyBuffer[i] = new PlaybackReleasedKeyBufferData
@@ -272,7 +297,7 @@ public partial struct PlaybackSystem : ISystem
                         cutoffEnvelopeAtRelease = RkeyBuffer[i].cutoffEnvelopeAtRelease,
                     };
 
-                    //Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + RkeyBuffer[i].DirLenght, Color.red, SystemAPI.Time.DeltaTime);
+                    Debug.DrawLine(Wtrans.ValueRO.Position, new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y) + raycastDirlenght, Color.white, SystemAPI.Time.DeltaTime);
 
                 }
             }

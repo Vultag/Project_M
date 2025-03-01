@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: WeaponRaysMat
-  m_Shader: {fileID: 4800000, guid: 542061349ae9b4a4092b7e47a053e41f, type: 3}
+  m_Name: AnimatedSpriteMat
+  m_Shader: {fileID: 4800000, guid: 088607991d7722345bbfcf1f54d6b05f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -39,24 +39,21 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
-    - _SignalData:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Amplitude: 0
-    - _EditorCamRatio: 0.8116883
+    - PixelSnap: 0
+    - _AnimationIndex: 0
+    - _ColorMask: 15
     - _EnableExternalAlpha: 0
-    - _Frequency: 8
-    - _SignalCount: 1
-    - _Time: 8.681143
+    - _SpriteIndex: 0
+    - _Stencil: 0
+    - _StencilComp: 8
+    - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
+    - _UseUIAlphaClip: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EditorRes: {r: 988, g: 697, b: 0, a: 0}
-    - _MousePos: {r: -20.839241, g: -11.73, b: 0, a: 0}
-    - _PlayerPos: {r: 1.9176645, g: 6.9597635, b: 0, a: 0}
+    - _ImageTextureDimentions: {r: 140, g: 300, b: 384, a: 256}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _SinSawSquareFactor: {r: 1, g: 1, b: 1, a: 1}
-    - _WeaponPos: {r: -15.775897, g: -5.696669, b: 0, a: 0}
   m_BuildTextureStacks: []

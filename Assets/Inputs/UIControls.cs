@@ -44,6 +44,15 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Zoom"",
+                    ""type"": ""Value"",
+                    ""id"": ""a431805d-e1f8-48b6-82ed-eb4dc8d4a488"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -90,6 +99,17 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
                     ""action"": ""Tabulation"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9cb41958-5a22-4e68-b073-77b423d3d5d9"",
+                    ""path"": ""<Mouse>/scroll"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Zoom"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -100,6 +120,7 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_TEMPO = m_UI.FindAction("TEMPO", throwIfNotFound: true);
         m_UI_Tabulation = m_UI.FindAction("Tabulation", throwIfNotFound: true);
+        m_UI_Zoom = m_UI.FindAction("Zoom", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -163,12 +184,14 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
     private List<IUIActions> m_UIActionsCallbackInterfaces = new List<IUIActions>();
     private readonly InputAction m_UI_TEMPO;
     private readonly InputAction m_UI_Tabulation;
+    private readonly InputAction m_UI_Zoom;
     public struct UIActions
     {
         private @UIControls m_Wrapper;
         public UIActions(@UIControls wrapper) { m_Wrapper = wrapper; }
         public InputAction @TEMPO => m_Wrapper.m_UI_TEMPO;
         public InputAction @Tabulation => m_Wrapper.m_UI_Tabulation;
+        public InputAction @Zoom => m_Wrapper.m_UI_Zoom;
         public InputActionMap Get() { return m_Wrapper.m_UI; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -184,6 +207,9 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
             @Tabulation.started += instance.OnTabulation;
             @Tabulation.performed += instance.OnTabulation;
             @Tabulation.canceled += instance.OnTabulation;
+            @Zoom.started += instance.OnZoom;
+            @Zoom.performed += instance.OnZoom;
+            @Zoom.canceled += instance.OnZoom;
         }
 
         private void UnregisterCallbacks(IUIActions instance)
@@ -194,6 +220,9 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
             @Tabulation.started -= instance.OnTabulation;
             @Tabulation.performed -= instance.OnTabulation;
             @Tabulation.canceled -= instance.OnTabulation;
+            @Zoom.started -= instance.OnZoom;
+            @Zoom.performed -= instance.OnZoom;
+            @Zoom.canceled -= instance.OnZoom;
         }
 
         public void RemoveCallbacks(IUIActions instance)
@@ -215,5 +244,6 @@ public partial class @UIControls: IInputActionCollection2, IDisposable
     {
         void OnTEMPO(InputAction.CallbackContext context);
         void OnTabulation(InputAction.CallbackContext context);
+        void OnZoom(InputAction.CallbackContext context);
     }
 }

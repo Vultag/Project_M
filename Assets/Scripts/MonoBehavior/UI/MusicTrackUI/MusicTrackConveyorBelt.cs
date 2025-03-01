@@ -227,7 +227,7 @@ public class MusicTrackConveyorBelt : MonoBehaviour
                 /// Stop the thread
                 if (ActiveThread[x] == true)
                 {
-                    //Debug.Log("stop");
+                    //Debug.Log("stop : "+ x);
                     musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
                     ActiveThread[x] = false;
                 }

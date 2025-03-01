@@ -82,6 +82,8 @@ public class AudioGenerator : MonoBehaviour
         //    SynthsData[i] = entityManager.GetComponentData<SynthData>(WeaponSynthEntity);
         //}
 
+        //gameObject.SetActive(false);
+
     }
 
     private void Awake()
@@ -258,7 +260,7 @@ public class AudioGenerator : MonoBehaviour
         /// Jobify ?
         if (AudioLayoutStorageHolder.audioLayoutStorage.UpdateRequirement)
         {
-            if(AudioLayoutStorageHolder.audioLayoutStorage.AddSynthUpdateRequirement)
+            if (AudioLayoutStorageHolder.audioLayoutStorage.AddSynthUpdateRequirement)
             {
                 var newSynthsData = new NativeArray<SynthData>(SynthsData.Length+1, Allocator.Persistent);
                 var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
@@ -300,113 +302,6 @@ public class AudioGenerator : MonoBehaviour
             {
                 SynthsData[activeSynthsIdx[0]] = AudioLayoutStorageHolder.audioLayoutStorage.ReadModifySynth();
             }
-            //if (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackUpdateRequirement)
-            //{
-
-            //    var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
-            //    PlaybackAudioBundles.CopyTo(newPlaybackBundle);
-            //    newPlaybackBundle[AudioLayoutStorageHolder.audioLayoutStorage.synthPlaybackIdx] = AudioLayoutStorageHolder.audioLayoutStorage.ReadPlayback();
-            //    PlaybackAudioBundles.Dispose();
-            //    PlaybackAudioBundles = newPlaybackBundle;
-            //}
-            /*
-            if(AudioLayoutStorageHolder.audioLayoutStorage.ActivationUpdateRequirement)
-            {
-                var activation = AudioLayoutStorageHolder.audioLayoutStorage.ReadActivation();
-
-                /// expand the arrays for Playbackkeys to audio
-                if (activation.Item2 == true)
-                {
-                    //Debug.Log("play");
-
-                    /// native array of FilterDelayElements ?
-                    /// extend the array here ?
-
-                    var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length + 1) *12, Allocator.Persistent);
-                    var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length+1, Allocator.Persistent);
-                    var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length+1, Allocator.Persistent);
-                    var newActivePlaybackContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundlesContext.Length+1, Allocator.Persistent);
-                    for (int i = 0; i < activeKeyNumber.Length; i++)
-                    {
-                        for (int y = 0; y < 12; y++)
-                        {
-                            newActiveKeys[(i * 12) + y] = activeKeys[(i * 12) + y];
-                        }
-                        newActiveKeyNumber[i] = activeKeyNumber[i];
-                        newActiveSynthsIdx[i] = activeSynthsIdx[i];
-                    }
-                    for (int i = 0; i < PlaybackAudioBundlesContext.Length; i++)
-                    {
-                        newActivePlaybackContext[i] = PlaybackAudioBundlesContext[i];
-                    }
-
-                    newActiveSynthsIdx[newActiveSynthsIdx.Length-1] = activation.Item1;
-                    activeKeys.Dispose();
-                    activeKeyNumber.Dispose();
-                    activeSynthsIdx.Dispose();
-                    PlaybackAudioBundlesContext.Dispose();
-                    activeKeys = newActiveKeys;
-                    activeKeyNumber = newActiveKeyNumber;
-                    activeSynthsIdx = newActiveSynthsIdx;
-                    PlaybackAudioBundlesContext = newActivePlaybackContext;
-
-                }
-                /// Collapse the arrays for Playbackkeys to audio
-                else
-                {
-                    var newActiveKeys = new NativeArray<KeyData>((activeKeyNumber.Length-1) * 12, Allocator.Persistent);
-                    var newActiveKeyNumber = new NativeArray<int>(activeKeyNumber.Length-1, Allocator.Persistent);
-                    var newActiveSynthsIdx = new NativeArray<int>(activeSynthsIdx.Length-1, Allocator.Persistent);
-                    //Debug.Log(PlaybackAudioBundlesContext.Length - 1);
-                    var newActivePlaybackContext = new NativeArray<PlaybackAudioBundleContext>(PlaybackAudioBundlesContext.Length-1, Allocator.Persistent);
-
-                    //Debug.Log("collapse");
-
-                    /// 1 synth is the active one and permanent
-                    newActiveKeyNumber[0] = activeKeyNumber[0];
-                    newActiveSynthsIdx[0] = activeSynthsIdx[0];
-                    for (int i = 0; i < 12; i++)
-                    {
-                        newActiveKeys[i]= activeKeys[i];
-                    }
-
-                    int indexProgress = 1;
-                    for (; indexProgress < newActiveKeyNumber.Length; indexProgress++)
-                    {
-                        if (AudioLayoutStorageHolder.audioLayoutStorage.synthActivationIdx == activeSynthsIdx[indexProgress])
-                            break;
-                        newActiveKeyNumber[indexProgress] = activeKeyNumber[indexProgress];
-                        newActiveSynthsIdx[indexProgress] = activeSynthsIdx[indexProgress];
-                        newActivePlaybackContext[indexProgress-1] = PlaybackAudioBundlesContext[indexProgress-1];
-                        for (int y = 0; y < 12; y++)
-                        {
-                            newActiveKeys[(indexProgress * 12)+y] = activeKeys[(indexProgress * 12) + y];
-                        }
-                    }
-                    for (; indexProgress < newActiveKeyNumber.Length; indexProgress++)
-                    {
-                        newActiveKeyNumber[indexProgress] = activeKeyNumber[indexProgress+1];
-                        newActiveSynthsIdx[indexProgress] = activeSynthsIdx[indexProgress+1];
-                        newActivePlaybackContext[indexProgress-1] = PlaybackAudioBundlesContext[indexProgress-1 + 1];
-                        for (int y = 0; y < 12; y++)
-                        {
-                            newActiveKeys[(indexProgress * 12) + y] = activeKeys[((indexProgress+1) * 12) + y];
-                        }
-                    }
-
-
-                    activeKeys.Dispose();
-                    activeKeyNumber.Dispose();
-                    activeSynthsIdx.Dispose();
-                    PlaybackAudioBundlesContext.Dispose();
-                    activeKeys = newActiveKeys;
-                    activeKeyNumber = newActiveKeyNumber;
-                    activeSynthsIdx = newActiveSynthsIdx;
-                    PlaybackAudioBundlesContext = newActivePlaybackContext;
-                }
-            }
-            */
-
             AudioLayoutStorageHolder.audioLayoutStorage.UpdateRequirement = false;
         }
 
@@ -477,20 +372,24 @@ public class AudioGenerator : MonoBehaviour
         TotalKeysBuffer.KeyNumber = new NativeArray<short>(activeSynthsIdx.Length, Allocator.TempJob);
 
         ///fill the native array with the data
-        TotalKeysBuffer.KeyNumber[0] = PlayerkeysBuffer.KeyNumber[0];
-        for (int i = 1; i < TotalKeysBuffer.KeyNumber.Length; i++)
+        //if(TotalKeysBuffer.KeyNumber.Length>0)
         {
-            TotalKeysBuffer.KeyNumber[i] = ActiveplaybackKeysNumberList[i - 1];
-        }
+            TotalKeysBuffer.KeyNumber[0] = PlayerkeysBuffer.KeyNumber[0];
+            for (int i = 1; i < TotalKeysBuffer.KeyNumber.Length; i++)
+            {
+                TotalKeysBuffer.KeyNumber[i] = ActiveplaybackKeysNumberList[i - 1];
+            }
 
-        for (int y = 0; y < TotalKeysBuffer.KeyNumber[0]; y++)
-        {
-            TotalKeysBuffer.keyFrenquecies[y] = PlayerkeysBuffer.keyFrenquecies[y];
+            for (int y = 0; y < TotalKeysBuffer.KeyNumber[0]; y++)
+            {
+                TotalKeysBuffer.keyFrenquecies[y] = PlayerkeysBuffer.keyFrenquecies[y];
+            }
+            for (int y = 0; y < ActiveplaybackKeysFzList.Length; y++)
+            {
+                TotalKeysBuffer.keyFrenquecies[TotalKeysBuffer.KeyNumber[0] + y] = ActiveplaybackKeysFzList[y];
+            }
         }
-        for (int y = 0; y < ActiveplaybackKeysFzList.Length; y++)
-        {
-            TotalKeysBuffer.keyFrenquecies[TotalKeysBuffer.KeyNumber[0] + y] = ActiveplaybackKeysFzList[y];
-        }
+   
 
         int TotalActiveKeyNumber = 0;
 

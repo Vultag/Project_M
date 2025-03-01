@@ -8,3 +8,9 @@ public struct ActiveSynthTag : IComponentData
 {
 
 }
+
+
+public struct ControledWeaponTag : IComponentData
+{
+
+}

@@ -5,6 +5,7 @@ using static UnityEngine.InputSystem.InputAction;
 using UnityEngine.InputSystem;
 using Unity.Entities;
 using MusicNamespace;
+using System;
 
 public class InputManager : MonoBehaviour
 {
@@ -36,6 +37,8 @@ public class InputManager : MonoBehaviour
         playerControls.ActionMap.Shoot.performed += OnPlayerShoot;
         playerControls.ActionMap.Shoot.canceled += OnPlayerShoot;
     }
+
+
 
     void Update()
     {
@@ -157,6 +160,8 @@ public class InputManager : MonoBehaviour
 
 
     }
+
+
 
     private void ActivateKey()
     {

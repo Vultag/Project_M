@@ -7,14 +7,14 @@ Shader "Unlit/WeaponRaysShader"
         _Time ("Time", Float) = 0.0
         _SignalCount ("Signal Count", Float) = 0
         //_MousePos ("Mouse Position", Vector) = (0, 0, 0, 0)
-        _WeaponPos ("Weapon Position", Vector) = (0, 0, 0, 0)
+        //_PlayerPos ("Player Position", Vector) = (0, 0, 0, 0)
 
         _MainTex ("Texture", 2D) = "white" {}
         _EditorRes ("Editor Camera resolution", Vector) = (0, 0, 0, 0)
     }
     SubShader
     {
-        Tags { "RenderType"="Opaque" }
+      Tags { "Queue" = "Transparent" "RenderType"="Transparent" }
         LOD 100
 
         Pass
@@ -62,13 +62,20 @@ Shader "Unlit/WeaponRaysShader"
                 float frequency;
                 float amplitude;
                 float3 color;
+                float weaponIdx;
+            };
+            struct WeaponsData
+            {
+                float2 weaponPos;
             };
             
             //sampler2D _SignalData;
             StructuredBuffer<SignalData> _SignalBuffer;
+            StructuredBuffer<WeaponsData> _WeaponsDataBuffer;
+
             float4 _MainTex_ST;
             //float4 _RayDirLenght;
-            float4 _WeaponPos;
+            //float4 _PlayerPos;
             float4 _EditorRes;
             float _SignalCount;
 
@@ -101,8 +108,8 @@ Shader "Unlit/WeaponRaysShader"
 
                 float2 p = i.worldPos.xy;
                 fixed4 color = float4(0,0,0,0);
-
-                float2 weaponPos = _WeaponPos.xy*zoom;
+                
+                //float2 weaponPos = _PlayerPos.xy;
 
                 float slideSpeed = 1.;
                 // Zoom
@@ -111,8 +118,10 @@ Shader "Unlit/WeaponRaysShader"
                 for (int j = 0; j < int(_SignalCount); ++j)
                 {
                     SignalData sd = _SignalBuffer[j];
-                    
-                    float2 rayEndPos = (_WeaponPos.xy+sd.direction.xy)*zoom;
+
+                    float2 weaponPos = _WeaponsDataBuffer[sd.weaponIdx].weaponPos*zoom;
+
+                    float2 rayEndPos = weaponPos+sd.direction.xy*zoom;
                     //float2 rayEndPos = (0.0,0.0);
                     frequency = 8.; // Frequency of the sine wave
             

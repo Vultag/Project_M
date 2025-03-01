@@ -67,8 +67,9 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         knobControllerTarget = knobControllerComponent as IKnobController;
 
-        float iconRot = this.transform.eulerAngles.z - (180f * (Mathf.Sign(this.transform.eulerAngles.z - 180f) + 1));
-        displayedValue = knobControllerTarget.UIknobChange(knobChangeType, iconRot);
+        /// break synth data?
+        ///float iconRot = this.transform.eulerAngles.z - (180f * (Mathf.Sign(this.transform.eulerAngles.z - 180f) + 1));
+        ///displayedValue = knobControllerTarget.UIknobChange(knobChangeType, iconRot);
 
 
     }
@@ -107,7 +108,7 @@ public class KnobMono : MonoBehaviour, IInitializePotentialDragHandler, IDragHan
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-
+        //Debug.Log("test");
         mouseInKnob = true;
 
         if (knobControllerTarget.uiManager.toolTip.gameObject.activeSelf)

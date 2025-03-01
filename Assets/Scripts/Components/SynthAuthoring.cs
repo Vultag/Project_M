@@ -175,6 +175,9 @@ public struct ADSRlayouts
 /// </summary>
 public struct SustainedKeyBufferData: IBufferElementData
 {
+    /// <summary>
+    /// TURN INTO FLOAT2 ?? -> avoid a lot of cast and new stack allocation
+    /// </summary>
     public Vector2 TargetDirLenght;
     public Vector2 DirLenght;
     public Vector2 EffectiveDirLenght;
@@ -189,6 +192,9 @@ public struct SustainedKeyBufferData: IBufferElementData
 public struct ReleasedKeyBufferData : IBufferElementData
 {
     public Vector2 DirLenght;
+    /// <summary>
+    /// the dirLenght taking in account the raycast hit
+    /// </summary>
     public Vector2 EffectiveDirLenght;
     public float Delta;
     public float Phase;
@@ -294,7 +300,7 @@ public struct SynthData : IComponentData
 
 /// <summary>
 /// 
-///  Only serve as a tag for now -> cleanup
+///  not used for baking ?
 /// 
 /// </summary>
 public class SynthAuthoring : MonoBehaviour
@@ -328,6 +334,7 @@ public class SynthAuthoring : MonoBehaviour
                 //SquareFactor = 1/3f,
 
             });
+
 
         }
     }

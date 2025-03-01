@@ -16,6 +16,8 @@ public struct PhyBodyData : IComponentData
 {
     public Vector2 Velocity;
     public Vector2 Force;
+    public float AngularVelocity;
+    public float AngularForce;
     public float Mass;
 
     //ADD STATIC BOOl FOR WALLS
@@ -67,7 +69,8 @@ public class PhyBodyAuthoring : MonoBehaviour
                     AddComponent(entity, new CircleShapeData
                     {
                         radius = authoring.radius,
-                        collisionLayer = authoring.collisionLayer
+                        collisionLayer = authoring.collisionLayer,
+                        Rotation = Quaternion.identity
                     });
                     break;
                 case ShapeType.Box:

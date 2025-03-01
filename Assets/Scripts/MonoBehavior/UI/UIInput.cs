@@ -22,13 +22,32 @@ public partial class UIInput : MonoBehaviour
     //private bool IsSidePanelOpen = true;
     private bool IsEditPanelOpen = true;
 
+    private float currentZoom;
+    private float zoomTarget;
+    private float zoomDelta;
+
 
     void Start()
     {
+        zoomTarget = Camera.main.orthographicSize;
+        currentZoom = zoomTarget;
         UI_Controls = new UIControls();
         UI_Controls.Enable();
 
         UI_Controls.UI.Tabulation.performed += OnTabulationPressed;
+
+        UI_Controls.UI.Zoom.performed += OnZoomTick;
+    }
+
+    private void Update()
+    {
+        ///ZOOM
+        if (zoomTarget != currentZoom)
+        {
+            float smoothing = 3f;
+            Camera.main.orthographicSize = Mathf.Lerp(currentZoom, zoomTarget, 1f - Mathf.Exp(-smoothing * zoomDelta));
+            zoomDelta += Time.deltaTime;
+        }
     }
 
 
@@ -53,28 +72,15 @@ public partial class UIInput : MonoBehaviour
             editAnimator.Play("SidePanelActivation", 0, 1-clipTime);
             playbackAnimator.Play("SidePanelDeactivation", 0, 1-clipTime);
         }
-
-        //float clipTime = Mathf.Clamp01(editAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime);
-        //if (IsEditPanelOpen)
-        //{
-        //    editAnimator.Play("SidePanelActivation", 0, clipTime);
-        //    editAnimator.SetFloat("speed", -1f);
-        //    playbackAnimator.Play("SidePanelActivation", 0, 1-clipTime);
-        //    playbackAnimator.SetFloat("speed", 1f);
-        //}
-        //else
-        //{
-        //    editAnimator.Play("SidePanelActivation", 0, clipTime);
-        //    editAnimator.SetFloat("speed", 1f);
-        //    playbackAnimator.Play("SidePanelActivation", 0, 1-clipTime);
-        //    playbackAnimator.SetFloat("speed", -1f);
-        //}
-
-
-
         IsEditPanelOpen = !IsEditPanelOpen;
     }
 
+    private void OnZoomTick(CallbackContext context)
+    {
+        zoomDelta = 0;
+        currentZoom = Camera.main.orthographicSize;
+        zoomTarget = Mathf.Max(zoomTarget - UI_Controls.UI.Zoom.ReadValue<Vector2>().y*0.01f,0);
 
+    }
 
 }

@@ -162,7 +162,9 @@ namespace MusicNamespace
             (3f / 43f) * Mathf.PI,
             (4f / 43f) * Mathf.PI,
             (3f / 43f) * Mathf.PI,
+            /// to prevent approximation error
             (4f / 43f) * Mathf.PI,
+            //9.99f,
         };
         readonly static float[] NotesLayout =
         {
@@ -195,6 +197,7 @@ namespace MusicNamespace
         public static int radiansToNoteIndex(float radians)
         {
             int currentIndex = 0;
+            //Debug.Log(radians);
             for (; radians > OctaveRadianWeights[currentIndex];)
             {
                 radians -= OctaveRadianWeights[currentIndex];

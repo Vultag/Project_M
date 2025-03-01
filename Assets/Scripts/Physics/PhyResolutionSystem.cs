@@ -21,7 +21,7 @@ public struct CollisionPair
 }
 
 
-[UpdateInGroup(typeof(GameSimulationSystemGroup), OrderLast = true)]
+[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderLast = true)]
 [UpdateBefore(typeof(ApplyPhysicsSystem))]
 public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
 {

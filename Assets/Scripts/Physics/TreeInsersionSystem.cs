@@ -4,7 +4,7 @@ using Unity.Entities;
 using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
 
-[UpdateInGroup(typeof(GameSimulationSystemGroup), OrderLast = true)]
+[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderFirst = true)]
 [UpdateBefore(typeof(PhyResolutionSystem))]
 public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
 {
