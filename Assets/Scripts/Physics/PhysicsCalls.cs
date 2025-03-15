@@ -17,64 +17,6 @@ public struct PhysicsCalls
     {
 
         TreeInsersionSystem.AABBtree.DisableEntity(entity);
-        /*Remove the node from the tree*/
-        /*
-        for (int i = 0; i < TreeInsersionSystem.AABBtree.nodeCount; i++)
-        {
-            //try to check only leaf ? OPTI
-            if (TreeInsersionSystem.AABBtree.nodes[i].bodyIndex == entity)
-            {
-                if (TreeInsersionSystem.AABBtree.nodeCount <= 3)
-                {
-                    if (TreeInsersionSystem.AABBtree.nodeCount == 1)
-                    {
-                        //if (nodes[0].isLeaf)
-                        //{
-                        //    nodes[0] = nodes[1];
-                        //    nodes[1] = default;
-                        //}
-                        TreeInsersionSystem.AABBtree.nodes[0] = default;
-                        TreeInsersionSystem.AABBtree.nodeCount = 0;
-                        ecb.DestroyEntity(entity);
-                        return;
-                    }
-                    else
-                    {
-                        //Debug.Log("i"+i);
-                        //Debug.Log(Mathf.Abs(i-1));
-                        int idx = Mathf.Abs(i - 1);
-                        AABBTreeNode newnode = TreeInsersionSystem.AABBtree.nodes[idx];
-                        newnode.parentIndex = 0;
-                        TreeInsersionSystem.AABBtree.nodes[0] = newnode;
-                        TreeInsersionSystem.AABBtree.nodes[1] = default;
-                        TreeInsersionSystem.AABBtree.nodes[2] = default;
-                        TreeInsersionSystem.AABBtree.nodeCount -= 2;
-                        TreeInsersionSystem.AABBtree.rootIndex = 0;
-                        ecb.DestroyEntity(entity);
-                        return;
-                    }
-
-                }
-
-                TreeInsersionSystem.AABBtree.RemoveLeaf(i);
-
-                var nodes = TreeInsersionSystem.AABBtree.nodes;
-
-                int nodecount = TreeInsersionSystem.AABBtree.nodeCount;
-
-                //REWORK NODE REMOVAL TO NOT NEED IT ? OPTI
-                
-                 //Last Node permutation -> critical to preserve the tree coherency
-                 
-                if (nodes[nodecount - 2].parentIndex != nodecount - 1)
-                {
-
-                    TreeInsersionSystem.AABBtree.LastNodePermutation();
-
-                }
-            }
-        }
-        */
         ecb.DestroyEntity(entity);
 
     }
@@ -184,8 +126,8 @@ public struct PhysicsCalls
                 float AABBdistanceA = node.LeftChild != -1 ? PhysicsUtilities.Intersect(AABBtree.nodes[node.LeftChild].box, ray) : -1;
                 if (AABBdistanceA >= 0)
                 {
-                    if (AABBtree.nodes[node.LeftChild].layerMask != PhysicsUtilities.CollisionLayer.PlayerLayer && AABBtree.nodes[node.LeftChild].layerMask != PhysicsUtilities.CollisionLayer.MonsterLayer && AABBtree.nodes[node.LeftChild].isLeaf == true)
-                        Debug.Log(AABBtree.nodes[node.LeftChild].layerMask);
+                    //if (AABBtree.nodes[node.LeftChild].layerMask != PhysicsUtilities.CollisionLayer.PlayerLayer && AABBtree.nodes[node.LeftChild].layerMask != PhysicsUtilities.CollisionLayer.MonsterLayer && AABBtree.nodes[node.LeftChild].isLeaf == true)
+                    //    Debug.Log(AABBtree.nodes[node.LeftChild].layerMask);
 
                     if (AABBtree.nodes[node.LeftChild].isLeaf == true && AABBtree.nodes[node.LeftChild].layerMask == colLayer)
                     {
@@ -202,8 +144,8 @@ public struct PhysicsCalls
                 float AABBdistanceB = node.RightChild != -1 ?PhysicsUtilities.Intersect(AABBtree.nodes[node.RightChild].box, ray):-1;
                 if (AABBdistanceB >= 0)
                 {
-                    if (AABBtree.nodes[node.RightChild].layerMask != PhysicsUtilities.CollisionLayer.PlayerLayer && AABBtree.nodes[node.RightChild].layerMask != PhysicsUtilities.CollisionLayer.MonsterLayer && AABBtree.nodes[node.RightChild].isLeaf == true)
-                        Debug.Log(AABBtree.nodes[node.RightChild].layerMask);
+                    //if (AABBtree.nodes[node.RightChild].layerMask != PhysicsUtilities.CollisionLayer.PlayerLayer && AABBtree.nodes[node.RightChild].layerMask != PhysicsUtilities.CollisionLayer.MonsterLayer && AABBtree.nodes[node.RightChild].isLeaf == true)
+                    //    Debug.Log(AABBtree.nodes[node.RightChild].layerMask);
 
                     if (AABBtree.nodes[node.RightChild].isLeaf == true && AABBtree.nodes[node.RightChild].layerMask == colLayer)
                     {

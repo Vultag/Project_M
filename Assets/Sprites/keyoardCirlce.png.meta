@@ -128,7 +128,8 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      keyoardCirlce_0: 6556240296316842162
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

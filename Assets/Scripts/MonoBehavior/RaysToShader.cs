@@ -83,51 +83,60 @@ public class RaysToShader : MonoBehaviour
     }
     private void LateUpdate()
     {
-
-       
+  
         //redondant ?
         Entity player_entity = audioManager.Player_query.GetSingletonEntity();
-        Entity activeWeapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
         var playerTrans = entityManager.GetComponentData<LocalToWorld>(player_entity).Value;
 
-        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
-        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
-
-        SynthData activeSynthData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
-
-        //Debug.Log(ActivePlaybackBufferEntityQuery.CalculateEntityCount());
-
-        // Update the signal count 
-        SignalCount = SkeyBuffer.Length+RkeyBuffer.Length;
-        int i = 0;
-        // Populate the signals array with active weapon signals
-        // OPTI : 4 statementes -> 1
-        for (; i < SkeyBuffer.Length; i++)
+        SignalCount = 0;
+        int c = 0;
+        if (!audioManager.ActiveWeapon_query.IsEmpty)
         {
-            //Debug.Log(AudioLayoutStorage.activeSynthIdx);
-            if (SkeyBuffer[i].Delta < 0) continue;
-            Signals[i].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
-            var rotatedDir = math.mul(playerTrans.Rotation(), new float3(SkeyBuffer[i].EffectiveDirLenght, 0));
-            Signals[i].direction = new float2(rotatedDir.x, rotatedDir.y);
-            Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);
-            Signals[i].amplitude = SkeyBuffer[i].currentAmplitude;
-            Signals[i].color = FilterUI.GetColorFromFilter(SkeyBuffer[i].filter.Cutoff, SkeyBuffer[i].filter.Resonance, activeSynthData.filterType);
-            Signals[i].WeaponIdx = 0;
+            Entity activeWeapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+
+            if(entityManager.HasComponent<RayData>(activeWeapon_entity))
+            {
+                DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
+                DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
+
+                SynthData activeSynthData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+
+                // Update the signal count 
+                SignalCount += SkeyBuffer.Length + RkeyBuffer.Length;
+                int i = 0;
+                // Populate the signals array with active weapon signals
+                // OPTI : 4 statementes -> 1
+                for (; i < SkeyBuffer.Length; i++)
+                {
+                    //Debug.Log("test");
+                    //Debug.Log(AudioLayoutStorage.activeSynthIdx);
+                    if (SkeyBuffer[i].Delta < 0) continue;
+                    Signals[i].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
+                    var rotatedDir = math.mul(playerTrans.Rotation(), new float3(SkeyBuffer[i].EffectiveDirLenght, 0));
+                    Signals[i].direction = new float2(rotatedDir.x, rotatedDir.y);
+                    Signals[i].frequency = MusicUtils.DirectionToFrequency(SkeyBuffer[i].EffectiveDirLenght);
+                    Signals[i].amplitude = SkeyBuffer[i].currentAmplitude;
+                    Signals[i].color = FilterUI.GetColorFromFilter(SkeyBuffer[i].filter.Cutoff, SkeyBuffer[i].filter.Resonance, activeSynthData.filterType);
+                    Signals[i].WeaponIdx = 0;
+                }
+                int y = i;
+                for (; y < RkeyBuffer.Length + i; y++)
+                {
+                    Signals[y].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
+                    var rotatedDir = math.mul(playerTrans.Rotation(), new float3(RkeyBuffer[y - i].EffectiveDirLenght, 0));
+                    Signals[y].direction = new float2(rotatedDir.x, rotatedDir.y);
+                    Signals[y].frequency = MusicUtils.DirectionToFrequency(RkeyBuffer[y - i].EffectiveDirLenght);
+                    Signals[y].amplitude = RkeyBuffer[y - i].currentAmplitude;
+                    Signals[y].color = FilterUI.GetColorFromFilter(RkeyBuffer[y - i].filter.Cutoff, RkeyBuffer[y - i].filter.Resonance, activeSynthData.filterType);
+                    Signals[y].WeaponIdx = 0;
+                }
+                c = y;
+            }
+         
         }
-        int y = i;
-        for (; y < RkeyBuffer.Length+i; y++)
-        {
-            Signals[y].SinSawSquareFactor = activeSynthData.Osc1SinSawSquareFactor + activeSynthData.Osc2SinSawSquareFactor;
-            var rotatedDir = math.mul(playerTrans.Rotation(), new float3(RkeyBuffer[y - i].EffectiveDirLenght, 0));
-            Signals[y].direction = new float2(rotatedDir.x, rotatedDir.y);
-            Signals[y].frequency = MusicUtils.DirectionToFrequency(RkeyBuffer[y-i].EffectiveDirLenght);
-            Signals[y].amplitude = RkeyBuffer[y-i].currentAmplitude;
-            Signals[y].color = FilterUI.GetColorFromFilter(RkeyBuffer[y - i].filter.Cutoff, RkeyBuffer[y - i].filter.Resonance, activeSynthData.filterType);
-            Signals[y].WeaponIdx = 0;
-        }
+      
         // Populate the signals array with playback weapon signals
         NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackBufferEntityQuery.ToEntityArray(Allocator.Temp);
-        int c = y;
         for (int z = 0; z < PlaybackBufferEntities.Length; z++)
         {
             DynamicBuffer<PlaybackSustainedKeyBufferData> PlaybackSkeyBuffer = entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(PlaybackBufferEntities[z]);

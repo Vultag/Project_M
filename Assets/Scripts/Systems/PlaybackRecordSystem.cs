@@ -71,13 +71,6 @@ public partial class PlaybackRecordSystem : SystemBase
 
     float BeatProximityThreshold;
 
-    /// not ideal ? OPTI?
-    private static AudioManager audioManager;
-    public static void SetAudioManager(AudioManager manager)
-    {
-        audioManager = manager;
-    }
-
     protected override void OnCreate()
     {
         RequireForUpdate<PlaybackRecordingData>();        // Find AudioManager once at the start
@@ -85,7 +78,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
     protected override void OnStartRunning()
     {
-        if (audioManager == null)
+        if (AudioManager.Instance == null)
         {
             Debug.LogError("AudioManager is still null! Did SetAudioManager get called in time?");
         }
@@ -484,7 +477,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
                         /// carefull about disposing PlaybackAudioBundle and musicSheet -> used inside holder
                         // HERE -> make sure copy by  reference or figure out right  way to do it
-                        audioManager.uiPlaybacksHolder._AddSynthPlaybackContainer(ref newPlaybackAudioBundle,ref ActiveMusicSheet,(short)recordData.ValueRO.synthIndex);
+                        AudioManager.Instance.uiPlaybacksHolder._AddSynthPlaybackContainer(ref newPlaybackAudioBundle,ref ActiveMusicSheet,(short)recordData.ValueRO.synthIndex);
 
 
                         ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(entity);

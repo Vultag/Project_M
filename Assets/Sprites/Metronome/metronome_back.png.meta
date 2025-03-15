@@ -128,7 +128,8 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      metronome_back_0: 1005198889279504563
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

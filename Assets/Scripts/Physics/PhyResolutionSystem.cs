@@ -21,12 +21,13 @@ public struct CollisionPair
 }
 
 
-[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderLast = true)]
+[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
 [UpdateBefore(typeof(ApplyPhysicsSystem))]
 public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
 {
 
     public NativeList<CollisionPair> ColPair;
+    //public NativeList<CollisionPair> TriggerPair;
 
 
     void OnCreate(ref SystemState state)
@@ -58,13 +59,19 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
             The 500 as Internal Capacity is arbitrary.
             It will need to realocate memory if the collisions are < 500
             tweak it ?
-        OPTI
-        Check with this :
-        Debug.Log(ColPair.Length);
-        Debug.Log(AABBtree.GatherIntersectingNodes(AABBtree.rootIndex));
-        var test = AABBtree.GatherIntersectingNodes(AABBtree.rootIndex);
             */
+        /*
+         * for triggers :
+         * make TriggerPair it's own native list and pass it to GatherIntersectingNodes for filling ?
+        */
+
+
+        Entity triggerEventEntity = SystemAPI.GetSingletonEntity<TriggerEvent>();
+        DynamicBuffer<TriggerEvent> triggerBuffer = SystemAPI.GetBuffer<TriggerEvent>(triggerEventEntity);
+
         ColPair = new NativeList<CollisionPair>(500, Allocator.TempJob);
+        /// Arbirary maximum of 60 trigger per FixedFrames !
+        var triggerEvents = new NativeList<TriggerEvent>(60,Allocator.TempJob);
 
         /// JOB BURST THIS ? OPTI
         AABBtree.GatherIntersectingNodes(ref ColPair, AABBtree.rootIndex);
@@ -74,12 +81,17 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
             CircleShapes = SystemAPI.GetComponentLookup<CircleShapeData>(false),
             CircleBodies = SystemAPI.GetComponentLookup<PhyBodyData>(false),
             ColPair = ColPair,
+            triggerEvents = triggerEvents.AsParallelWriter()
         };
         //change batch size ? OPTI
         JobHandle ColJobHandle = CircleColJob.Schedule(ColPair.Length, 64);
         ColJobHandle.Complete();
 
+        // Batch write to buffer (avoids multiple buffer resizes)
+        triggerBuffer.AddRange(triggerEvents.AsArray());
+
         ColPair.Dispose();
+        triggerEvents.Dispose();
 
 
     }
@@ -94,6 +106,8 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
 {
     [ReadOnly]
     public NativeList<CollisionPair> ColPair;
+    [WriteOnly]
+    public NativeList<TriggerEvent>.ParallelWriter triggerEvents;
 
     [NativeDisableParallelForRestriction]
     public ComponentLookup<PhyBodyData> CircleBodies;
@@ -109,48 +123,67 @@ public partial struct CircleCollisionResolutionJob : IJobParallelFor//IJob //ijo
         var newvelshapeA = CircleShapes.GetRefRW(entityA);
         var newvelshapeB = CircleShapes.GetRefRW(entityB);
 
-        var newvelbodyA = CircleBodies.GetRefRW(entityA);
-        var newvelbodyB = CircleBodies.GetRefRW(entityB);
-
-
         var distance = math.distance(newvelshapeA.ValueRO.Position, newvelshapeB.ValueRO.Position);
         var radii = newvelshapeA.ValueRO.radius + newvelshapeB.ValueRO.radius;
         if (distance < radii)
         {
+            //bool TriggerEvent = newvelshapeA.ValueRO.IsTrigger | newvelshapeB.ValueRO.IsTrigger;
+            bool Dynamics = newvelshapeA.ValueRO.HasDynamics & newvelshapeB.ValueRO.HasDynamics;
 
-            //do mass balance
-            if (newvelbodyA.ValueRO.Mass > newvelbodyB.ValueRO.Mass)
+            /// Trigger event collecting
+            /// SOME UNINTENDED EVENT MIGHT BE ADDED WHEN TWO TRIGGER -> FIX
+            if(newvelshapeA.ValueRO.IsTrigger)
             {
-                float massdif = newvelbodyB.ValueRO.Mass / newvelbodyA.ValueRO.Mass;
-
-                newvelshapeA.ValueRW.Position += (-(newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (0.5f * massdif);
-                newvelshapeB.ValueRW.Position += ((newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (1f - (0.5f * massdif)); 
-
+                triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityA, ReciverEntity = entityB });
             }
-            else
+            if (newvelshapeB.ValueRO.IsTrigger)
             {
-                float massdif = newvelbodyA.ValueRO.Mass / newvelbodyB.ValueRO.Mass;
-
-                newvelshapeA.ValueRW.Position += (-(newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (1f - (0.5f * massdif));
-                newvelshapeB.ValueRW.Position += ((newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (0.5f * massdif);
+                triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityB, ReciverEntity = entityA });
             }
+            /// Both entities are Dynamic, do physics calculation
+            if (Dynamics)
+            {
+                var newvelbodyA = CircleBodies.GetRefRW(entityA);
+                var newvelbodyB = CircleBodies.GetRefRW(entityB);
+
+                //do mass balance
+                if (newvelbodyA.ValueRO.Mass > newvelbodyB.ValueRO.Mass)
+                {
+                    float massdif = newvelbodyB.ValueRO.Mass / newvelbodyA.ValueRO.Mass;
+
+                    newvelshapeA.ValueRW.Position += (-(newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (0.5f * massdif);
+                    newvelshapeB.ValueRW.Position += ((newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (1f - (0.5f * massdif));
+
+                }
+                else
+                {
+                    float massdif = newvelbodyA.ValueRO.Mass / newvelbodyB.ValueRO.Mass;
+
+                    newvelshapeA.ValueRW.Position += (-(newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (1f - (0.5f * massdif));
+                    newvelshapeB.ValueRW.Position += ((newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized * (radii - distance)) * (0.5f * massdif);
+                }
 
 
-            ///restitution response :
-            ///boncyness
-            float boncy = 1;
+                ///restitution response :
+                ///boncyness
+                float boncy = 1;
 
-            Vector2 relativeVel = (newvelbodyA.ValueRO.Velocity+ newvelbodyA.ValueRO.Force) - (newvelbodyB.ValueRO.Velocity+ newvelbodyB.ValueRO.Force);
-            Vector2 normal = (newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized;
+                Vector2 relativeVel = (newvelbodyA.ValueRO.Velocity + newvelbodyA.ValueRO.Force) - (newvelbodyB.ValueRO.Velocity + newvelbodyB.ValueRO.Force);
+                Vector2 normal = (newvelshapeB.ValueRO.Position - newvelshapeA.ValueRO.Position).normalized;
 
-            ///ref video :
-            ///https://youtu.be/vQO_hPOE-1Y?list=PLSlpr6o9vURwq3oxVZSimY8iC-cdd3kIs&t=790
+                ///ref video :
+                ///https://youtu.be/vQO_hPOE-1Y?list=PLSlpr6o9vURwq3oxVZSimY8iC-cdd3kIs&t=790
 
-            float j = -(1f + boncy) * math.dot(relativeVel, normal);
-            j /= (1f / newvelbodyA.ValueRO.Mass) + (1f / newvelbodyB.ValueRO.Mass);
+                float j = -(1f + boncy) * math.dot(relativeVel, normal);
+                j /= (1f / newvelbodyA.ValueRO.Mass) + (1f / newvelbodyB.ValueRO.Mass);
 
-            newvelbodyA.ValueRW.Velocity += j/newvelbodyA.ValueRO.Mass * normal;
-            newvelbodyB.ValueRW.Velocity -= j / newvelbodyB.ValueRO.Mass * normal;
+                newvelbodyA.ValueRW.Velocity += j / newvelbodyA.ValueRO.Mass * normal;
+                newvelbodyB.ValueRW.Velocity -= j / newvelbodyB.ValueRO.Mass * normal;
+            }
+            //else
+            //{
+            //    Debug.LogError("rere");
+            //}
 
         }
 

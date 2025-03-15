@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
@@ -12,5 +13,7 @@ public struct CircleShapeData : IComponentData
     public Quaternion PreviousRotation;
     public float radius;
     public PhysicsUtilities.CollisionLayer collisionLayer;
+    public bool HasDynamics;
+    public bool IsTrigger;
 
 }

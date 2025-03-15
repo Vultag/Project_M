@@ -55,7 +55,7 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
 
 
         #region insert at start AABB body
-        foreach (var (circlesShapes, entity) in SystemAPI.Query<RefRO<CircleShapeData>>().WithAll<PhyBodyData>().WithEntityAccess().WithAll<TreeInsersionTag>())
+        foreach (var (circlesShapes, entity) in SystemAPI.Query<RefRO<CircleShapeData>>().WithEntityAccess().WithAll<TreeInsersionTag>())
         {
             //Debug.LogError("node");
 

@@ -42,8 +42,8 @@ public partial struct ApplyPhysicsSystem : ISystem
             ///specify linear dampening in physics component
             //float dampingFactor = math.exp(-0.05f);
             //body.ValueRW.Velocity *= dampingFactor;
-            body.ValueRW.Velocity -= (body.ValueRO.Velocity * 0.015f);
-            body.ValueRW.AngularVelocity -= (body.ValueRO.AngularVelocity * 0.05f);
+            body.ValueRW.Velocity -= (body.ValueRO.Velocity * body.ValueRO.LinearDamp);
+            body.ValueRW.AngularVelocity -= (body.ValueRO.AngularVelocity * body.ValueRO.AngularDamp);
 
             shape.ValueRW.PreviousPosition = shape.ValueRO.Position;
             shape.ValueRW.PreviousRotation = shape.ValueRO.Rotation;

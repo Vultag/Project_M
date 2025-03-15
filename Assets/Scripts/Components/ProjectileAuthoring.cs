@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
-//UNUSED FOR NOW
-public struct ProjectileData : IComponentData
+public struct ProjectileInstanceData : IComponentData
 {
-    
-    /// add physics shape for col
-    
-    public Vector2 Velocity;
+    public float damage;
+    public int penetrationCapacity;
+    public float remainingLifeTime;
 
 }

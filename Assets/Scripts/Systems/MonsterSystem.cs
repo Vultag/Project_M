@@ -8,6 +8,7 @@ using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup), OrderFirst = true)]
 public partial struct MonsterSystem : ISystem
@@ -22,6 +23,7 @@ public partial struct MonsterSystem : ISystem
 
     void OnUpdate(ref SystemState state)
     {
+        EntityCommandBuffer ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         //MOUVEMENT
         var player_trans = SystemAPI.GetComponent<LocalTransform>(SystemAPI.GetSingletonEntity<PlayerData>());
 

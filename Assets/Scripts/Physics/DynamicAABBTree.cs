@@ -335,7 +335,7 @@ public unsafe struct DynamicAABBTree
         var nodeA = nodes[nodeAidx];
         var nodeB = nodes[nodeBidx];
         // Early exit for both leaves
-        if (nodeA.isLeaf == true && nodeB.isLeaf == true)
+        if (nodeA.isLeaf == true && nodeB.isLeaf == true && PhysicsUtilities.ShouldCollide(nodeA.layerMask, nodeB.layerMask))
         {
             ColPair.Add(new CollisionPair { EntityA = nodeA.entity, EntityB = nodeB.entity });
             return;

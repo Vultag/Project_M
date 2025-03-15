@@ -17,9 +17,22 @@ public partial struct PlaybackSystem : ISystem
     /// Used to test keys upon removal to see if they had time to be addded;
     float PreviousFrameDelta;
 
+    private Entity damageEventEntity;
+
     void OnCreate(ref SystemState state)
     {
-
+        // Check if the GlobalDamageEvent entity already exists
+        if (SystemAPI.HasSingleton<GlobalDamageEvent>())
+        {
+            // If it exists, get the singleton entity
+            damageEventEntity = SystemAPI.GetSingletonEntity<GlobalDamageEvent>();
+        }
+        else
+        {
+            // If not, create the entity and add the GlobalDamageEvent buffer
+            damageEventEntity = state.EntityManager.CreateEntity();
+            state.EntityManager.AddBuffer<GlobalDamageEvent>(damageEventEntity); // Add the buffer to the new entity
+        }
     }
 
 
@@ -185,19 +198,24 @@ public partial struct PlaybackSystem : ISystem
                         filter = newFilter,
                     };
 
-                    MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
-                    newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
+                    SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
+                    {
+                        Target = Hit.entity,
+                        DamageValue = 3f * SystemAPI.Time.DeltaTime
+                    });
+                    //MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
+                    //newMonsterData.hp -= 3f * SystemAPI.Time.DeltaTime;
 
-                    if (newMonsterData.Health > 0)
-                    {
-                        //Debug.Log(newMonsterData.Health);
-                        SystemAPI.SetComponent<MonsterData>(Hit.entity, newMonsterData);
-                    }
-                    else
-                    {
-                        //Debug.Log("ded");
-                        PhysicsCalls.DestroyPhysicsEntity(ecb, Hit.entity);
-                    }
+                    //if (newMonsterData.Health > 0)
+                    //{
+                    //    //Debug.Log(newMonsterData.Health);
+                    //    SystemAPI.SetComponent<MonsterData>(Hit.entity, newMonsterData);
+                    //}
+                    //else
+                    //{
+                    //    //Debug.Log("ded");
+                    //    PhysicsCalls.DestroyPhysicsEntity(ecb, Hit.entity);
+                    //}
 
                 }
                 else
@@ -267,19 +285,24 @@ public partial struct PlaybackSystem : ISystem
                         cutoffEnvelopeAtRelease = RkeyBuffer[i].cutoffEnvelopeAtRelease,
                     };
 
-                    MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
-                    newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
+                    SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
+                    {
+                        Target = Hit.entity,
+                        DamageValue = 3f * SystemAPI.Time.DeltaTime
+                    });
+                    //MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
+                    //newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;
 
-                    if (newMonsterData.Health > 0)
-                    {
-                        //Debug.Log(newMonsterData.Health);
-                        SystemAPI.SetComponent<MonsterData>(Hit.entity, newMonsterData);
-                    }
-                    else
-                    {
-                        //Debug.Log("ded");
-                        PhysicsCalls.DestroyPhysicsEntity(ecb, Hit.entity);
-                    }
+                    //if (newMonsterData.Health > 0)
+                    //{
+                    //    //Debug.Log(newMonsterData.Health);
+                    //    SystemAPI.SetComponent<MonsterData>(Hit.entity, newMonsterData);
+                    //}
+                    //else
+                    //{
+                    //    //Debug.Log("ded");
+                    //    PhysicsCalls.DestroyPhysicsEntity(ecb, Hit.entity);
+                    //}
 
                 }
                 else

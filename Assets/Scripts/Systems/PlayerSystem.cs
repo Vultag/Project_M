@@ -1,17 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
-using NUnit.Framework.Internal;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using UnityEngine.UIElements;
-using static UnityEngine.GraphicsBuffer;
-using static UnityEngine.InputSystem.InputAction;
 using MusicNamespace;
-using UnityEngine.Animations;
 using System;
 
 

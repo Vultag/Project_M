@@ -22,7 +22,7 @@ public partial struct MonsterSpawnerSystem : ISystem
 
         EntityCommandBuffer ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (spawner, ltw) in SystemAPI.Query<RefRW<MonsterSpawnerData>, RefRO<LocalToWorld>>())
+        foreach (var (spawner, ltw,entity) in SystemAPI.Query<RefRW<MonsterSpawnerData>, RefRO<LocalToWorld>>().WithEntityAccess())
         {
 
             if (spawner.ValueRO.active == true)
@@ -43,7 +43,9 @@ public partial struct MonsterSpawnerSystem : ISystem
 
                     ecb.SetComponent<LocalTransform>(monster, new LocalTransform { Position = new_pos, Rotation = Quaternion.identity, Scale = 1f });
 
-                    ecb.SetComponent<CircleShapeData>(monster, new CircleShapeData { Position = new Vector2(new_pos.x,new_pos.y), radius = 0.5f, collisionLayer = PhysicsUtilities.CollisionLayer.MonsterLayer});
+                    var newCircleShapeData = state.EntityManager.GetComponentData<CircleShapeData>(spawner.ValueRO.MonsterPrefab);
+                    newCircleShapeData.Position = new_pos.xy;
+                    ecb.SetComponent<CircleShapeData>(monster, newCircleShapeData);
                 
 
                     spawner.ValueRW.RespawnTimer = spawner.ValueRO.SpawnRate;

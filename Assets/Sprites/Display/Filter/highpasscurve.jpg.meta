@@ -128,7 +128,8 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      highpasscurve_0: 6963157372853761134
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

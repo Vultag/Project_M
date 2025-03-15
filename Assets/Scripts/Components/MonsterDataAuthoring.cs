@@ -6,14 +6,11 @@ using UnityEngine;
 
 public struct MonsterData : IComponentData
 {
-    public float Health;
     public float Speed;
     public float Attack;
 }
 public class MonsterDataAuthoring : MonoBehaviour
 {
-    //set to private for now
-    private float Health = 10;
     private float Speed = 0.5f;
     private float Attack = 1;
 
@@ -26,12 +23,11 @@ public class MonsterDataAuthoring : MonoBehaviour
 
             AddComponent(entity, new MonsterData
             {
-
-                Health = authoring.Health,
                 Speed = authoring.Speed,
                 Attack = authoring.Attack
 
             });
+            AddComponent(entity, new HealthData { HP = 10});
         }
     }
 }

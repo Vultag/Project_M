@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
@@ -24,15 +25,35 @@ public struct PhysicsUtilities
     [Flags]
     public enum CollisionLayer
     {
-        //None = 0,
-        //All = ~0,         // Represents all layers (1111...)
-        PlayerLayer = (1 << 0),    // 0001
-        MonsterLayer = (1 << 1),    // 0010
-        Unassigned = (1 << 2),    // 0100
-                                // Add more layers as needed
+        None = (1 << 0),
+        //All = ~0, 
+        PlayerLayer = (1 << 1), 
+        MonsterLayer = (1 << 2),  
+        CollectibleLayer = (1 << 3),
+        ProjectileLayer = (1 << 4),
+    }
+    /// MOVE AWAY
+    // Precomputed collision masks
+    private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[5]
+    {
+        CollisionLayer.None,
+        CollisionLayer.MonsterLayer | CollisionLayer.CollectibleLayer,
+        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer |  CollisionLayer.ProjectileLayer,
+        CollisionLayer.PlayerLayer,
+        CollisionLayer.MonsterLayer,
+    };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static CollisionLayer GetMask(CollisionLayer layer)
+    {
+        return CollisionMasks[(int)math.log2((uint)layer)];
+    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool ShouldCollide(CollisionLayer layerA, CollisionLayer layerB)
+    {
+        return (GetMask(layerA) & layerB) != 0;
     }
 
-    
 
     public static float Proximity(AABB A, AABB B)
     {

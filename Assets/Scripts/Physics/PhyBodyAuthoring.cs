@@ -4,6 +4,10 @@ using Unity.Entities;
 using UnityEngine;
 using Unity.VisualScripting;
 using System;
+using Unity.Transforms;
+using Unity.Mathematics;
+
+
 
 
 
@@ -18,6 +22,9 @@ public struct PhyBodyData : IComponentData
     public Vector2 Force;
     public float AngularVelocity;
     public float AngularForce;
+    public float LinearDamp;
+    public float AngularDamp;
+
     public float Mass;
 
     //ADD STATIC BOOl FOR WALLS
@@ -40,6 +47,13 @@ public class PhyBodyAuthoring : MonoBehaviour
     [SerializeField,HideInInspector]
     public float radius;
 
+    public bool HasDynamics = true;
+
+    public bool IsTrigger = false;
+    [SerializeField, HideInInspector]
+    public TriggerType triggerType;
+
+
     public PhysicsUtilities.CollisionLayer collisionLayer;
 
     private void OnDrawGizmos()
@@ -56,12 +70,33 @@ public class PhyBodyAuthoring : MonoBehaviour
         public override void Bake(PhyBodyAuthoring authoring)
         {
 
-            Entity entity = GetEntity(TransformUsageFlags.None);
-
-            AddComponent(entity, new PhyBodyData
+            Entity entity = GetEntity(TransformUsageFlags.Dynamic);
+            //Entity entityManualOverride = GetEntity(TransformUsageFlags.ManualOverride);
+            AddComponent(entity, new LocalTransform
             {
-                Mass = authoring.Mass,
+                Position = new float3(0, 0, 0),  // Set the initial position
+                Rotation = quaternion.identity,  // Set the initial rotation
+                Scale = 1      // Set the initial scale
             });
+
+            if (authoring.HasDynamics)
+            {
+                AddComponent(entity, new PhyBodyData
+                {
+                    Mass = authoring.Mass,
+                    LinearDamp = 0.015f,
+                    AngularDamp = 0.05f
+                });
+            }
+            if(authoring.IsTrigger)
+            {
+                AddComponent(entity, new TriggerData
+                {
+                    triggerType = authoring.triggerType
+                });
+            }
+     
+            AddComponent(entity, new TreeInsersionTag{});
 
             switch (authoring.shapeType) 
             { 
@@ -70,7 +105,9 @@ public class PhyBodyAuthoring : MonoBehaviour
                     {
                         radius = authoring.radius,
                         collisionLayer = authoring.collisionLayer,
-                        Rotation = Quaternion.identity
+                        Rotation = Quaternion.identity,
+                        HasDynamics = authoring.HasDynamics,
+                        IsTrigger = authoring.IsTrigger
                     });
                     break;
                 case ShapeType.Box:
@@ -95,11 +132,13 @@ public class PhyBodyAuthoring : MonoBehaviour
     {
         SerializedProperty radius;
         SerializedProperty dimentions;
+        SerializedProperty triggerType;
 
         private void OnEnable()
         {
             radius = serializedObject.FindProperty("radius");
             dimentions = serializedObject.FindProperty("dimentions");
+            triggerType = serializedObject.FindProperty("triggerType");
         }
 
         public override void OnInspectorGUI()
@@ -118,6 +157,11 @@ public class PhyBodyAuthoring : MonoBehaviour
             {
                 EditorGUILayout.PropertyField(dimentions);
             }
+            if(phyBody.IsTrigger)
+            {
+                EditorGUILayout.PropertyField(triggerType);
+            }
+
 
             serializedObject.ApplyModifiedProperties();
         }

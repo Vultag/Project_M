@@ -13,9 +13,11 @@ public struct PlayerData : IComponentData
     public Entity WeaponPrefab;
     public Entity Propeller;
 }
+
 public class PlayerDataAuthoring : MonoBehaviour
 {
 
+    public int HP;
     public float propellerMaxStrenght;
     public float propellerBackpedalRelativeStrenght;
     public float rotate_speed;
@@ -41,6 +43,7 @@ public class PlayerDataAuthoring : MonoBehaviour
                 Propeller = GetEntity(authoring.PropellerGB, TransformUsageFlags.None),
 
             });
+            AddComponent(playerEntity, new HealthData{ HP = authoring.HP});
         }
     }
 }

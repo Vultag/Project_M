@@ -21,6 +21,7 @@ using Unity.Transforms;
 public class UIManager : MonoBehaviour
 {
 
+    public static UIManager Instance { get; private set; }
 
     [SerializeField]
     private AudioManager audioManager;
@@ -63,7 +64,9 @@ public class UIManager : MonoBehaviour
     private int MaxSynthNum;
     //[SerializeField]
     public GameObject SynthToolBar;
-    int NumOfSynths = 0;
+
+    [HideInInspector]
+    public int NumOfSynths = 0;
     /// Need local activeSynthIdx to change previous activeSynth upon change
     int activeUISynthIdx = -1;
     RectTransform SynthUIadd_rect;
@@ -76,7 +79,17 @@ public class UIManager : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject); // Ensure only one instance exists
+            return;
+        }
 
+        DontDestroyOnLoad(gameObject); // Keep it across scenes
     }
 
     void Start()
@@ -171,11 +184,14 @@ public class UIManager : MonoBehaviour
 
     public void _SelectSynthUI(int index)
     {
-
-        /// prevent synth select if already selected or curently recording
-        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
-        if (index == activeUISynthIdx|| entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
-            return;
+        if(!audioManager.ActiveWeapon_query.IsEmpty)
+        {
+            Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+            /// prevent synth select if already selected or curently recording
+            if (index == activeUISynthIdx || entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
+                return;
+        }
+  
     
         SynthToolBar.transform.GetChild(AudioLayoutStorage.activeSynthIdx).GetComponent<SynthUIelement>()._CancelRecord();
         //if(SynthToolBar.transform.GetChild(index).GetComponent<SynthUIelement>().coro)
@@ -203,7 +219,7 @@ public class UIManager : MonoBehaviour
 
         UpdateSynthUI();
     }
-    public void _AddSynthUI()
+    public void _AddSynthUI(WeaponClass weaponClass, WeaponType weaponType)
     {
         var synthUI = SynthToolBar.transform.GetChild(NumOfSynths).gameObject;
         synthUI.SetActive(true);
@@ -213,10 +229,12 @@ public class UIManager : MonoBehaviour
         NumOfSynths++;
         SynthUIadd_rect.position = SynthToolBar.transform.GetChild(NumOfSynths).GetComponent<RectTransform>().position;
 
-        audioManager.AddSynth(NumOfSynths+1);
+        audioManager.AddSynth(NumOfSynths+1, weaponClass,weaponType);
         if (NumOfSynths == 1)
-        { 
+        {
             _SelectSynthUI(0);
+            //activeUISynthIdx = 0;
+            //audioManager.activeWeaponIDX = 0;
             SynthEditPanel.SetActive(true);
         }
 
