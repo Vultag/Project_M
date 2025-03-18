@@ -190,9 +190,17 @@ public class UIManager : MonoBehaviour
             /// prevent synth select if already selected or curently recording
             if (index == activeUISynthIdx || entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
                 return;
+
+            //Debug.Log(index);
+            SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[index];
+            UpdateSynthUI(
+                in selectedSynthData,
+                entityManager.GetComponentData<WeaponData>(WeaponSystem.WeaponEntities[index + 1]).weaponType
+                );
+
         }
-  
-    
+
+
         SynthToolBar.transform.GetChild(AudioLayoutStorage.activeSynthIdx).GetComponent<SynthUIelement>()._CancelRecord();
         //if(SynthToolBar.transform.GetChild(index).GetComponent<SynthUIelement>().coro)
         //{
@@ -217,7 +225,6 @@ public class UIManager : MonoBehaviour
 
         audioManager.SelectSynth(index);
 
-        UpdateSynthUI();
     }
     public void _AddSynthUI(WeaponClass weaponClass, WeaponType weaponType)
     {
@@ -229,10 +236,15 @@ public class UIManager : MonoBehaviour
         NumOfSynths++;
         SynthUIadd_rect.position = SynthToolBar.transform.GetChild(NumOfSynths).GetComponent<RectTransform>().position;
 
-        audioManager.AddSynth(NumOfSynths+1, weaponClass,weaponType);
+        SynthData newSynthData = SynthData.CreateDefault(weaponType);
+
+        audioManager.AddSynth(NumOfSynths+1,newSynthData, weaponClass,weaponType);
         if (NumOfSynths == 1)
         {
             _SelectSynthUI(0);
+            //Debug.Log(weaponType);
+            UpdateSynthUI(in newSynthData, weaponType);
+
             //activeUISynthIdx = 0;
             //audioManager.activeWeaponIDX = 0;
             SynthEditPanel.SetActive(true);
@@ -240,13 +252,13 @@ public class UIManager : MonoBehaviour
 
         if (NumOfSynths == MaxSynthNum) { SynthUIadd_rect.gameObject.SetActive(false); }
     }
-    void UpdateSynthUI()
+    void UpdateSynthUI(in SynthData synthData, WeaponType weaponType)
     {
-        var synthData = AudioManager.audioGenerator.SynthsData[activeUISynthIdx];
-        //Debug.Log(synthData.ADSR.Sustain);
+        //var synthData = AudioManager.audioGenerator.SynthsData[activeUISynthIdx];
+        //Debug.Log(adsrLimits.Sustainimits);
         oscillatorUI.UpdateUI(synthData);
-        volumeAdsrUI.UpdateUI(synthData);
-        filterAdsrUI.UpdateUI(synthData);
+        volumeAdsrUI.UpdateUI(synthData, weaponType);
+        filterAdsrUI.UpdateUI(synthData, WeaponType.Null);
         filterUI.UpdateUI(synthData);
         unissonUI.UpdateUI(synthData);
         voicesUI.UpdateUI(synthData);
@@ -352,9 +364,6 @@ public class UIManager : MonoBehaviour
         //if (AudioManager.audioGenerator.PlaybackAudioBundles[synthIdx].PlaybackDuration == 0)
         //    return;
 
-     
-
-
         AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(
             UIplaybacksHolder.synthFullBundleLists[PBidx.x][PBidx.y].playbackAudioBundle,
             PBidx.x);
@@ -404,10 +413,18 @@ public class UIManager : MonoBehaviour
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
-        PlaybackData playbackData = new PlaybackData { SynthIndex = PBidx.x };
+        PlaybackData playbackData = new PlaybackData { SynthIndex = PBidx.x};
 
         ecb.AddComponent<PlaybackData>(weapon_entity, playbackData);
-        //Debug.LogWarning(0);
+        //switch (entityManager.GetComponentData<WeaponData>(weapon_entity).weaponClass)
+        //{
+        //    case WeaponClass.Ray:
+        //        ecb.AddComponent<RayData>(weapon_entity, entityManager.GetComponentData<RayData>(WeaponSystem.WeaponEntities[0]));
+        //        break;
+        //    case WeaponClass.Projectile:
+        //        ecb.AddComponent<ProjectileData>(weapon_entity, entityManager.GetComponentData<ProjectileData>(WeaponSystem.WeaponEntities[0]));
+        //        break;
+        //}
 
         if (!entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
         {

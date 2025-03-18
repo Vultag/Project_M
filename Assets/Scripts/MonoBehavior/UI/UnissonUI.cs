@@ -49,7 +49,7 @@ public class UnissonUI : MonoBehaviour, IKnobController
 
     public string UIknobChange(KnobChangeType knobChangeType, float newRot)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         float factor = (newRot + 145) / 290;
         string displayedValue = "";
 

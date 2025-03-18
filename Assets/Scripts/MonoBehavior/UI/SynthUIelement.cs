@@ -24,6 +24,7 @@ public class SynthUIelement : MonoBehaviour
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
         thisSynthIdx = this.gameObject.transform.GetSiblingIndex();
+        //Debug.Log(thisSynthIdx);
     }
 
     public void _selectThisSynth()

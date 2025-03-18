@@ -113,7 +113,8 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
 
 
         /// activeWeaponSynth in audio manager ?
-        SynthData newsynth = entityManager.GetComponentData<SynthData>(WeaponSystem.WeaponEntities[0]);
+        //SynthData newsynth = entityManager.GetComponentData<SynthData>(WeaponSystem.WeaponEntities[0]);
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[0];
 
         //newsynth.SinFactor = A;
         //newsynth.SquareFactor = B;
@@ -122,7 +123,7 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
 
         //entityManager.SetComponentData<SynthData>(WeaponSystem.WeaponEntities[WeaponSystem.activeSynthEntityindex], newsynth);
-        //Debug.Log(WeaponSystem.activeSynthEntityindex);
+        Debug.Log("not used ?");
         //audioGenerator.SynthsData[0] = newsynth;
     }
 

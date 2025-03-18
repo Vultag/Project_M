@@ -424,7 +424,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: weaponType
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: weaponClass
@@ -494,6 +494,10 @@ PrefabInstance:
     - target: {fileID: 2750655830506624220, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: m_Name
       value: WeaponCollectible_2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
+      propertyPath: weaponType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: collectibleType
@@ -668,7 +672,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: weaponType
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: weaponClass
@@ -741,7 +745,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: weaponType
-      value: 1
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: weaponClass
@@ -811,6 +815,10 @@ PrefabInstance:
     - target: {fileID: 2750655830506624220, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: m_Name
       value: WeaponCollectible_1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
+      propertyPath: weaponType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: collectibleType
@@ -1083,7 +1091,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1748953737}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66141101dab740f479dd8fbd37f40b47, type: 3}
   m_Name: 
@@ -1238,6 +1246,10 @@ PrefabInstance:
     - target: {fileID: 2750655830506624220, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: m_Name
       value: WeaponCollectible
+      objectReference: {fileID: 0}
+    - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
+      propertyPath: weaponType
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 2964110471878805834, guid: 9e5b6bb2efdb34543b882240dfae56eb, type: 3}
       propertyPath: collectibleType

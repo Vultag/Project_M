@@ -14,6 +14,7 @@ public enum WeaponType
     /// <summary>
     ///  Rifle, Shotgun, Raygun
     /// </summary>
+    Null,
     Raygun,
     Canon,
 }

@@ -172,7 +172,7 @@ public partial class PlaybackRecordSystem : SystemBase
             Vector2 weaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
             //Vector2 localWeaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
-            SynthData ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[recordData.ValueRO.synthIndex];
+            SynthData ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[recordData.ValueRO.synthIndex];
 
             var accumulator = SystemAPI.GetBuffer<PlaybackRecordingKeysBuffer>(entity);
         

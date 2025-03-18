@@ -28,7 +28,7 @@ public struct AudioLayoutStorage
 
     // PRIVATize SOME STUFF !
     ///change synthdata component to index value here?
-    public NativeArray<SynthData> SynthsData;
+    public NativeArray<SynthData> AuxillarySynthsData;
     public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
     public static int activeSynthIdx;
 
@@ -66,18 +66,20 @@ public struct AudioLayoutStorage
     public void WriteAddSynth(SynthData newSynthData)
     {
         NewSynthData = newSynthData;
-        var newSynthsData = new NativeArray<SynthData>(SynthsData.Length + 1, Allocator.Persistent);
+        var newSynthsData = new NativeArray<SynthData>(AuxillarySynthsData.Length + 1, Allocator.Persistent);
         var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length + 1, Allocator.Persistent);
-        for (int i = 0; i < SynthsData.Length; i++)
+        for (int i = 0; i < AuxillarySynthsData.Length; i++)
         {
-            newSynthsData[i] = SynthsData[i];
+            newSynthsData[i] = AuxillarySynthsData[i];
             newPlaybackAudioBundles[i] = PlaybackAudioBundles[i];
             //PlaybackAudioBundles[i].PlaybackKeys.Dispose();
         }
         newSynthsData[newSynthsData.Length-1] = NewSynthData;
-        SynthsData.Dispose();
+        //Debug.LogWarning(newSynthsData.Length - 1);
+        //Debug.LogWarning(newSynthData.ADSR.Sustain);
+        AuxillarySynthsData.Dispose();
         PlaybackAudioBundles.Dispose();
-        SynthsData = newSynthsData;
+        AuxillarySynthsData = newSynthsData;
         PlaybackAudioBundles = newPlaybackAudioBundles;
 
         UpdateRequirement = true;
@@ -86,16 +88,19 @@ public struct AudioLayoutStorage
     public void WriteSelectSynth(int synthIdx)
     {
         synthSelectionIdx = synthIdx;
+        //Debug.Log(synthIdx);
+        //Debug.Log(AuxillarySynthsData[synthIdx].ADSR.Sustain);
         UpdateRequirement = true;
         SelectSynthUpdateRequirement = true;
     }
     public void WriteModifySynth(SynthData newSynthData)
     {
-        var newSynthsData = new NativeArray<SynthData>(SynthsData.Length, Allocator.Persistent);
-        SynthsData.CopyTo(newSynthsData);
+        var newSynthsData = new NativeArray<SynthData>(AuxillarySynthsData.Length, Allocator.Persistent);
+        AuxillarySynthsData.CopyTo(newSynthsData);
+        //Debug.Log(activeSynthIdx);
         newSynthsData[activeSynthIdx] = newSynthData;
-        SynthsData.Dispose();
-        SynthsData = newSynthsData;
+        AuxillarySynthsData.Dispose();
+        AuxillarySynthsData = newSynthsData;
 
         NewSynthData = newSynthData;
         UpdateRequirement = true;

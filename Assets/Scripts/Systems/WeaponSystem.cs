@@ -90,13 +90,13 @@ public partial class WeaponSystem : SystemBase
         //Debug.Log(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         //Debug.Break();
-        var activeWeaponIdx = AudioLayoutStorage.activeSynthIdx + 1;
-        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[activeWeaponIdx]);
-        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[activeWeaponIdx]);
+        var activeWeaponIdx = AudioLayoutStorage.activeSynthIdx;
+        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[activeWeaponIdx+1]);
+        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[activeWeaponIdx+1]);
 
         //TO MODIFY
         //var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
-        var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[activeWeaponIdx];
 
         var MainWeapon = SystemAPI.GetSingletonEntity<ControledWeaponTag>();
         var Wtrans = EntityManager.GetComponentData<LocalToWorld>(MainWeapon);

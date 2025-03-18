@@ -59,7 +59,7 @@ public class FilterUI : MonoBehaviour,IKnobController
 
     public void ChangeFilterTypeUI(TMP_Dropdown dropdown)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         switch (dropdown.value)
         {
             case 0:
@@ -95,7 +95,7 @@ public class FilterUI : MonoBehaviour,IKnobController
 
     public String UIknobChange(KnobChangeType knobChangeType, float newRot)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         float factor = (newRot + 145) / 290;
         float displayedValue=0;
 

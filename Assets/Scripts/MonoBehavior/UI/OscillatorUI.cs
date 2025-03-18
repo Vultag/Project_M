@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -49,8 +50,8 @@ public class OscillatorUI : MonoBehaviour, IKnobController
     public void UpdateUI(SynthData synthData)
     {
         float OCS1mixValue = synthData.Osc1SinSawSquareFactor.x + synthData.Osc1SinSawSquareFactor.y + synthData.Osc1SinSawSquareFactor.z;
-        OCS1wavetable.value = Mathf.CeilToInt(synthData.Osc1SinSawSquareFactor.y) + Mathf.CeilToInt(synthData.Osc1SinSawSquareFactor.z)*2;
-        OCS2wavetable.value = Mathf.CeilToInt(synthData.Osc2SinSawSquareFactor.y) + Mathf.CeilToInt(synthData.Osc2SinSawSquareFactor.z) * 2;
+        OCS1wavetable.SetValueWithoutNotify(Mathf.CeilToInt(synthData.Osc1SinSawSquareFactor.y) + Mathf.CeilToInt(synthData.Osc1SinSawSquareFactor.z)*2);
+        OCS2wavetable.SetValueWithoutNotify(Mathf.CeilToInt(synthData.Osc2SinSawSquareFactor.y) + Mathf.CeilToInt(synthData.Osc2SinSawSquareFactor.z) * 2);
         MixKnob.rotation = Quaternion.Euler(0, 0, (OCS1mixValue-0.5f)*2f*145f);
         OCS1fineKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc1Fine/30)* 145f);
         OCS2fineKnob.rotation = Quaternion.Euler(0, 0, (synthData.Osc2Fine / 30) * 145f);
@@ -91,9 +92,8 @@ public class OscillatorUI : MonoBehaviour, IKnobController
     /// </summary>
     public void UIocs1WavetableChange(TMP_Dropdown dropdown)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         float dropdownItemValue = newsynth.Osc1SinSawSquareFactor.x + newsynth.Osc1SinSawSquareFactor.y + newsynth.Osc1SinSawSquareFactor.z;
-
         switch (dropdown.value)
         {
             case 0:
@@ -123,7 +123,7 @@ public class OscillatorUI : MonoBehaviour, IKnobController
     }
     public void UIocs2WavetableChange(TMP_Dropdown dropdown)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         float dropdownItemValue = newsynth.Osc2SinSawSquareFactor.x + newsynth.Osc2SinSawSquareFactor.y + newsynth.Osc2SinSawSquareFactor.z;
 
         switch (dropdown.value)
@@ -156,7 +156,7 @@ public class OscillatorUI : MonoBehaviour, IKnobController
 
     public String UIknobChange(KnobChangeType knobChangeType, float newRot)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         float factor = (newRot + 145) / 290;
         float increment = 0;
         String displayedValue = "";

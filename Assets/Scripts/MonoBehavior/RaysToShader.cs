@@ -99,7 +99,7 @@ public class RaysToShader : MonoBehaviour
                 DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
                 DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
 
-                SynthData activeSynthData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+                SynthData activeSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
 
                 // Update the signal count 
                 SignalCount += SkeyBuffer.Length + RkeyBuffer.Length;
@@ -139,13 +139,15 @@ public class RaysToShader : MonoBehaviour
         NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackBufferEntityQuery.ToEntityArray(Allocator.Temp);
         for (int z = 0; z < PlaybackBufferEntities.Length; z++)
         {
+            if (!entityManager.HasComponent<RayData>(PlaybackBufferEntities[z]))
+                continue;
             DynamicBuffer<PlaybackSustainedKeyBufferData> PlaybackSkeyBuffer = entityManager.GetBuffer<PlaybackSustainedKeyBufferData>(PlaybackBufferEntities[z]);
             DynamicBuffer<PlaybackReleasedKeyBufferData> PlaybackRkeyBuffer = entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(PlaybackBufferEntities[z]);
 
             int weaponIdx = entityManager.GetComponentData<WeaponData>(PlaybackBufferEntities[z]).WeaponIdx;
 
             SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
-            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).SynthIndex];
+            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).SynthIndex];
             int a = 0;
             for (; a < PlaybackSkeyBuffer.Length; a++)
             {

@@ -26,6 +26,8 @@ public partial class UIInput : MonoBehaviour
     private float zoomTarget;
     private float zoomDelta;
 
+    [SerializeField]
+    Vector2 MinMaxZoom;
 
     void Start()
     {
@@ -79,7 +81,7 @@ public partial class UIInput : MonoBehaviour
     {
         zoomDelta = 0;
         currentZoom = Camera.main.orthographicSize;
-        zoomTarget = Mathf.Max(zoomTarget - UI_Controls.UI.Zoom.ReadValue<Vector2>().y*0.01f,0);
+        zoomTarget = Mathf.Clamp(Mathf.Max(zoomTarget - UI_Controls.UI.Zoom.ReadValue<Vector2>().y*0.01f,0),MinMaxZoom.x,MinMaxZoom.y);
 
     }
 

@@ -40,7 +40,7 @@ public class VoicesUI : MonoBehaviour, IKnobController
     public void SwitchActivation()
     {
 
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         if (LegatoSwitch.sprite == SwitchDown)
         {
             newsynth.Legato = true;
@@ -57,7 +57,7 @@ public class VoicesUI : MonoBehaviour, IKnobController
 
     public string UIknobChange(KnobChangeType knobChangeType, float newRot)
     {
-        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.SynthsData[AudioLayoutStorage.activeSynthIdx];
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
         float factor = (newRot + 145) / 290;
         string displayedValue = "";
 

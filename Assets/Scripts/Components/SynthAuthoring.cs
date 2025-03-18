@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -22,6 +23,57 @@ public struct ADSREnvelope
         Decay = decay;
         Sustain = sustain;
         Release = release;
+    }
+}
+public struct ADSRlimits
+{
+    public float2 AttackLimits;
+    public float2 DecayLimits;
+    public float2 Sustainimits;
+    public float2 ReleaseLimits;
+    public static ADSRlimits NoLimits()
+    {
+        return new ADSRlimits
+        {
+            AttackLimits = new float2(0, 1),
+            DecayLimits = new float2(0, 1),
+            Sustainimits = new float2(0, 1),
+            ReleaseLimits = new float2(0, 1)
+        };
+    }
+    public static ADSRlimits RaygunLimits()
+    {
+        return new ADSRlimits
+        {
+            AttackLimits = new float2(0, 0.4f),
+            DecayLimits = new float2(0.15f, 0.5f),
+            Sustainimits = new float2(0.25f, 1f),
+            ReleaseLimits = new float2(0.1f, 0.6f),
+        };
+    }
+    public static ADSRlimits CanonLimits()
+    {
+        return new ADSRlimits
+        {
+            AttackLimits = new float2(0, 0.05f),
+            DecayLimits = new float2(0.05f, 0.2f),
+            Sustainimits = new float2(0f, 0f),
+            ReleaseLimits = new float2(0f, 0.3f),
+        };
+    }
+    public static ADSRlimits GetWeaponADSRlimits(WeaponType weaponType)
+    {
+        ADSRlimits newADSRlimits = new ADSRlimits();
+        switch (weaponType)
+        {
+            case WeaponType.Raygun:
+                newADSRlimits = RaygunLimits();
+                break;
+            case WeaponType.Canon:
+                newADSRlimits = CanonLimits();
+                break;
+        }
+        return newADSRlimits;
     }
 }
 public struct Filter
@@ -231,25 +283,26 @@ public struct PlaybackReleasedKeyBufferData : IBufferElementData
 
 }
 
-unsafe
-public struct SynthData : IComponentData
+//unsafe
+public struct SynthData
 {
     // Default values initializer
-    public static SynthData CreateDefault()
+    public static SynthData CreateDefault(WeaponType weaponType)
     {
+        ADSRlimits limits = ADSRlimits.GetWeaponADSRlimits(weaponType);
+        ADSREnvelope adsr = new ADSREnvelope { 
+            Attack = (limits.AttackLimits.x + limits.AttackLimits.y) * 0.5f *4f,
+            Decay = (limits.DecayLimits.x + limits.DecayLimits.y) * 0.5f * 4f,
+            Sustain = (limits.Sustainimits.x + limits.Sustainimits.y) * 0.5f,
+            Release = (limits.ReleaseLimits.x + limits.ReleaseLimits.y) * 0.5f * 4f,
+        };
         return new SynthData {
             amplitude = 0.2f,
             Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
             Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
             Osc1PW = 0.25f,
             Osc2PW = 0.25f,
-            ADSR = new ADSREnvelope
-            {
-                Attack = 0.1f,
-                Decay = 2,
-                Sustain = 0.5f,
-                Release = 1
-            },
+            ADSR = adsr,
             filter = new Filter
             {
                 Cutoff = 1.0f,
@@ -296,46 +349,4 @@ public struct SynthData : IComponentData
     public float Portomento;
     public bool Legato;
 
-}
-
-/// <summary>
-/// 
-///  not used for baking ?
-/// 
-/// </summary>
-public class SynthAuthoring : MonoBehaviour
-{
-
-    //public float amplitude;
-    //public float frequency;
-
-    //public ADSREnvelope ADSR;
-
-    class SynthBaker : Baker<SynthAuthoring>
-    {
-
-        public override void Bake(SynthAuthoring authoring)
-        {
-
-            Entity entity = GetEntity(TransformUsageFlags.None);
-
-            //AddBuffer<SustainedKeyBufferData>(entity);
-            //AddBuffer<ReleasedKeyBufferData>(entity);
-
-
-            AddComponent(entity, new SynthData
-            {
-                //amplitude = authoring.amplitude,
-                //ADSR = authoring.ADSR,
-                //Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
-                //Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
-                //SinFactor = 1 / 3f,
-                //SawFactor = 1 / 3f,
-                //SquareFactor = 1/3f,
-
-            });
-
-
-        }
-    }
 }

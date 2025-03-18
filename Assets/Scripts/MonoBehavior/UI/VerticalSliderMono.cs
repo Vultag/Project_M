@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using static UnityEngine.Rendering.DebugUI;
@@ -14,9 +15,10 @@ public class VerticalSliderMono : MonoBehaviour, IInitializePotentialDragHandler
     /// </summary>
     [SerializeField]
     short SliderIdx;
+    float BackgroundSliderSize;
 
     private RectTransform Rtrans;
-    float limit;
+    //float2 limit;
     float target;
 
     [HideInInspector]
@@ -26,9 +28,9 @@ public class VerticalSliderMono : MonoBehaviour, IInitializePotentialDragHandler
 
     void Start()
     {
-        ADSRui = this.transform.parent.parent.parent.GetComponent<ADSRUI>();
+        ADSRui = this.transform.parent.parent.GetComponent<ADSRUI>();
         Rtrans = this.GetComponent<RectTransform>();
-        limit = transform.parent.GetComponent<RectTransform>().rect.height/2 -2;
+        BackgroundSliderSize = 46f;
         target = Rtrans.localPosition.y;
     }
     public void OnDrag(PointerEventData eventData)
@@ -36,15 +38,20 @@ public class VerticalSliderMono : MonoBehaviour, IInitializePotentialDragHandler
         //Rtrans.anchoredPosition += eventData.delta;
         Vector3 pos = Rtrans.localPosition;
         target += (eventData.delta.y / ADSRui.uiManager.canvas.scaleFactor);
+        float lowerLim = (ADSRui.ThisADSRLimits[SliderIdx].x-0.5f)*BackgroundSliderSize;
+        float upperLim = (ADSRui.ThisADSRLimits[SliderIdx].y-0.5f)*BackgroundSliderSize;
         //Debug.Log(eventData.position- eventData.pressPosition);
         //pos.y+ (eventData.delta.y/ADSRui.uiManager.canvas.scaleFactor)
-        Rtrans.localPosition = new Vector3(pos.x, Mathf.Max(-limit, Mathf.Min(limit, target)), pos.z);
+        Rtrans.localPosition = new Vector3(pos.x, Mathf.Max(lowerLim, Mathf.Min(upperLim, target)), pos.z);
 
-        /// Gives (-1 to 1)
-        displayedValue = ADSRui.UIADSRchange(SliderIdx, Rtrans.localPosition.y/limit);
+        /// Gives (0 to 1)
+        var noramlizedSmiderPosY = (Rtrans.localPosition.y / BackgroundSliderSize) + 0.5f;
+        displayedValue = ADSRui.UIADSRchange(SliderIdx, noramlizedSmiderPosY);
 
 
-        ADSRui.uiManager.UpdateDisplayToolTip(new Vector2(transform.position.x + transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, transform.position.y + transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f), displayedValue);
+        ADSRui.uiManager.UpdateDisplayToolTip(new Vector2(
+            transform.position.x + transform.GetComponent<RectTransform>().sizeDelta.x * 0.025f, transform.position.y + transform.GetComponent<RectTransform>().sizeDelta.y * 0.025f), 
+            displayedValue);
     }
 
     public void OnPointerDown(PointerEventData eventData)
