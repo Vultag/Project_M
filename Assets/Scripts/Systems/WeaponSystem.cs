@@ -30,8 +30,8 @@ public partial class WeaponSystem : SystemBase
     //temp -> put on component
     public static MusicUtils.MusicalMode mode;
 
-    public static bool PlayPressed;
-    public static bool PlayReleased;
+    public static bool KeyJustPressed;
+    public static bool KeyJustReleased;
     private int PlayedKeyIndex;
     public Vector2 mousepos;
     private bool IsShooting;
@@ -40,7 +40,6 @@ public partial class WeaponSystem : SystemBase
     //private NativeList<PlaybackKey> PlayKeys;
 
     private Vector2 mouseDirection;
-    private NativeArray<float> Rythms;
     public static Vector2 GideReferenceDirection;
     /// 0 = legato inactive;
     private float activeLegatoFz;
@@ -53,19 +52,6 @@ public partial class WeaponSystem : SystemBase
     {
 
         WeaponEntities = new NativeArray<Entity>(1,Allocator.Persistent);
-
-        //temp -> put on component
-        mode = MusicUtils.MusicalMode.Phrygian;
-
-        ///todo
-        ///remplace beatcooldown by note cooldown and make randomly 60 for noir ; 30 for croche ; 15 for double croche .... upon played
-        Rythms = new NativeArray<float>(3, Allocator.Persistent)
-        {
-            [0] = 60,
-            [1] = 30,
-            [2] = 15,
-            ///do more ...
-        };
 
         RequireForUpdate<ControledWeaponTag>();
 
@@ -122,6 +108,8 @@ public partial class WeaponSystem : SystemBase
         float BeatProximity = 1 - Mathf.Abs((normalizedProximity - 0.5f) * 2);
         //Debug.LogWarning(BeatProximity);
 
+        bool CanPlayKey = (BeatProximity < InputManager.BeatProximityThreshold && InputManager.CanPressKey);
+
         /// Move to Synth system all together ?
         /// foreach not necessary as 1 weapon controlled at a time ?
         /// Ray class weapon logic
@@ -136,7 +124,12 @@ public partial class WeaponSystem : SystemBase
 
             mouseDirection = mousepos - new Vector2(Wtrans.Position.x, Wtrans.Position.y);
 
-            if (!UIInput.MouseOverUI)
+            var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
+            float localCurrentFz = MusicUtils.DirectionToFrequency(localMouseDirection);
+
+            //Debug.LogError(localCurrentFz);
+
+            if (!UIInput.MouseOverUI && localCurrentFz > 0)
             {
                 if (activeLegatoFz == 0)
                 {
@@ -149,29 +142,30 @@ public partial class WeaponSystem : SystemBase
                 }
                 else
                 {
+
                     Vector2 worldMouseDir = mousepos - new Vector2(Wtrans.Position.x, Wtrans.Position.y);
              
                     var LocalRot = Quaternion.Euler(0, 0, Mathf.Atan2(-worldMouseDir.y, -worldMouseDir.x) * Mathf.Rad2Deg);
-                    var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
+                    //var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
                     ///local to world set
-                    trans.Rotation = math.mul(math.inverse(parentTransform.Rotation), LocalRot);
+                    //trans.Rotation = math.mul(math.inverse(parentTransform.Rotation), LocalRot);
       
-                    float currentFz = MusicUtils.DirectionToFrequency(localMouseDirection);
-                    if (currentFz != activeLegatoFz)
-                    { 
-                        if (BeatProximity < InputManager.BeatProximityThreshold)
-                        { mouseDirection = worldMouseDir; }
-                    }
-                    else
-                    {
-                        mouseDirection = worldMouseDir;
-                    }
+                    //if (localCurrentFz != activeLegatoFz)
+                    //{ 
+                    //    //if (BeatProximity < InputManager.BeatProximityThreshold)
+                    //    //{ mouseDirection = worldMouseDir; }
+                    //}
+                    //else
+                    //{
+                    //    mouseDirection = worldMouseDir;
+                    //}
                 }
                 ECB.SetComponent<LocalTransform>(MainWeapon, trans);
             }
 
 
             Vector2 weaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
+            float weaponFz = MusicUtils.DirectionToFrequency(weaponDirLenght);
 
             //weaponDirLenght = math.mul(trans.ValueRO.Rotation, new float3(mouseDirection.x, 0, mouseDirection.y)).xz;
             //weaponDirLenght = mouseDirection;
@@ -180,53 +174,53 @@ public partial class WeaponSystem : SystemBase
 
             //Debug.LogError(weaponDirLenght);
 
-            if (BeatProximity< InputManager.BeatProximityThreshold && InputManager.CanPressKey)
-            {    ///OPTI :
-            
-                if (activeLegatoFz != 0)
-                {
-                    var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
-                    float currentFz = MusicUtils.DirectionToFrequency(localMouseDirection);
-                    if (currentFz != activeLegatoFz)
-                    {
-                        /// If there is a playback recording I has to update before to not block it
-                        InputManager.CanPressKey = false;
-                        //Debug.LogWarning("set false");
-                        //if (OnBeat)
-                        {
-                            /// Check if the the legato glide over a released key
-                            for (int i = 0; i < RkeyBuffer.Length; i++)
-                            {
-                                if (MusicUtils.DirectionToFrequency(RkeyBuffer[i].DirLenght) == currentFz)
-                                {
-                                    RkeyBuffer.RemoveAt(i);
-                                    break;
-                                }
-                            }
-                            SkeyBuffer[SkeyBuffer.Length - 1] = new SustainedKeyBufferData
-                            {
-                                DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
-                                EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
-                                Delta = 0,
-                                Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
-                                currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude
-                            };
-                            GideReferenceDirection = mouseDirection;
-                            activeLegatoFz = currentFz;
-                        }
+            //if (CanPlayKey && localCurrentFz > 0)
+            //{    ///OPTI :
 
-                    }
-                }
+            //    if (activeLegatoFz != 0)
+            //    {
+            //        if (localCurrentFz != activeLegatoFz)
+            //        {
+            //            /// If there is a playback recording I has to update before to not block it
+            //            InputManager.CanPressKey = false;
+            //            Debug.LogWarning("set false");
+            //            //if (OnBeat)
+            //            {
+            //                /// Check if the the legato glide over a released key
+            //                for (int i = 0; i < RkeyBuffer.Length; i++)
+            //                {
+            //                    if (MusicUtils.DirectionToFrequency(RkeyBuffer[i].DirLenght) == localCurrentFz)
+            //                    {
+            //                        //Debug.LogWarning("remove");
+            //                        RkeyBuffer.RemoveAt(i);
+            //                        break;
+            //                    }
+            //                }
+            //                SkeyBuffer[SkeyBuffer.Length - 1] = new SustainedKeyBufferData
+            //                {
+            //                    DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
+            //                    EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
+            //                    Delta = 0,
+            //                    Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
+            //                    currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude
+            //                };
+            //                GideReferenceDirection = mouseDirection;
+            //                activeLegatoFz = localCurrentFz;
+            //            }
 
-                
-            }
-            if (PlayPressed && !UIInput.MouseOverUI)
+            //        }
+            //    }
+
+
+            //}
+
+            if (KeyJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
             {
                 //Debug.LogError("test");
                 //InputManager.BeatNotYetPlayed = false;
                 //var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
-                float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(weaponDirLenght));
-                int note = MusicUtils.radiansToNoteIndex(randian);
+                float radian = PhysicsUtilities.DirectionToRadians(weaponDirLenght);
+                int note = MusicUtils.radiansToNoteIndex(radian);
                    
                 // 0 = not exist : 1 = exist in Rkeybuffer
                 short noteExist = 0;
@@ -234,7 +228,7 @@ public partial class WeaponSystem : SystemBase
 
                 for (i = 0; i < RkeyBuffer.Length; i++)
                 {
-                    int bufferNote = MusicUtils.radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght)));
+                    int bufferNote = MusicUtils.radiansToNoteIndex(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght));
                     if (bufferNote == note)
                     {
                         noteExist = 1;
@@ -269,7 +263,7 @@ public partial class WeaponSystem : SystemBase
                     //effectiveDirLenght = GideReferenceDirection;
                     if (ActiveSynth.Legato)
                     {
-                        activeLegatoFz = MusicUtils.DirectionToFrequency(weaponDirLenght);
+                        activeLegatoFz = weaponFz;
                         float deltaFactor = 1 - ((ActiveSynth.ADSR.Release - RkeyBuffer[i].Delta) / ActiveSynth.ADSR.Release);
                         /// Deduce the amplitude of the releasing key
                         float amplitude = RkeyBuffer[i].amplitudeAtRelease * (Mathf.Exp(-1.6f * deltaFactor) * (1 - deltaFactor));
@@ -293,16 +287,17 @@ public partial class WeaponSystem : SystemBase
                 GideReferenceDirection = weaponDirLenght;
                 IsShooting = true;
                
-                PlayPressed = false;
+                KeyJustPressed = false;
             }
 
-            if (PlayReleased)
+
+            if (KeyJustReleased)
             {
                 //if (weaponData.ValueRO.weaponClass == WeaponClass.Ray)
                 {
                     if (SkeyBuffer.Length != 0)
                     {
-                        //Debug.LogError(SkeyBuffer[PlayedKeyIndex].currentAmplitude);
+                        //Debug.Log("rere");
                         //Debug.LogError("newDeltaFactor * ActiveSynth.ADSR.Release");
                         RkeyBuffer.Add(new ReleasedKeyBufferData
                         {
@@ -322,10 +317,10 @@ public partial class WeaponSystem : SystemBase
                 }
                 activeLegatoFz = 0;
                 IsShooting = false;
-                PlayReleased = false;
+                KeyJustReleased = false;
             }
 
-
+    
 
             /*remplace with generic shape*/
             ComponentLookup<CircleShapeData> ShapeComponentLookup = GetComponentLookup<CircleShapeData>(isReadOnly: true);
@@ -345,13 +340,36 @@ public partial class WeaponSystem : SystemBase
                 for (int i = 0; i < SkeyBuffer.Length; i++)
                 {
                     Vector2 targetDirLenght = SkeyBuffer[i].TargetDirLenght;
-                    if (activeLegatoFz > 0)
+                    float dirFrequency = MusicUtils.DirectionToFrequency(targetDirLenght);
+                    if (activeLegatoFz > 0 && localCurrentFz>0)
                     {
-                        targetDirLenght = weaponDirLenght;
-                        keysBuffer.keyFrenquecies[i] = activeLegatoFz;
+                        //Debug.Log(activeLegatoFz);
+                        //Debug.Log("test");
+                        if (activeLegatoFz == weaponFz)
+                        {
+                            targetDirLenght = weaponDirLenght;
+                            keysBuffer.keyFrenquecies[i] = weaponFz;
+                        }
+                        else if(CanPlayKey)
+                        {
+                            targetDirLenght = weaponDirLenght;
+                            keysBuffer.keyFrenquecies[i] = weaponFz;
+                            //Debug.Log("test");
+                            InputManager.CanPressKey = false;
+                            activeLegatoFz = weaponFz;
+                            GideReferenceDirection = weaponDirLenght;
+                        }
+                        else
+                        {
+                            keysBuffer.keyFrenquecies[i] = dirFrequency;
+                            //activeLegatoFz = dirFrequency;
+                        }
                     }
                     else
-                        keysBuffer.keyFrenquecies[i] = MusicUtils.DirectionToFrequency(targetDirLenght);
+                    {
+                        keysBuffer.keyFrenquecies[i] = dirFrequency;
+                        //activeLegatoFz = dirFrequency;
+                    }
 
                     Vector2 dirLenght = PhysicsUtilities.Rotatelerp(SkeyBuffer[i].DirLenght, targetDirLenght, -Mathf.Log(ActiveSynth.Portomento / 3) * 0.01f + 0.03f);
 
@@ -512,7 +530,6 @@ public partial class WeaponSystem : SystemBase
 
             //Debug.LogError(AudioGenerator.audioRingBuffer.Read().KeyNumber[0]);
 
-
         }
 
         /// Projectile class weapon logic
@@ -522,6 +539,8 @@ public partial class WeaponSystem : SystemBase
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
 
             mouseDirection = mousepos - new Vector2(Wtrans.Position.x, Wtrans.Position.y);
+            var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
+            float localCurrentFz = MusicUtils.DirectionToFrequency(localMouseDirection);
 
             Vector2 weaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
@@ -532,7 +551,7 @@ public partial class WeaponSystem : SystemBase
                 trans.Rotation = math.mul(math.inverse(parentTransform.Rotation), newLocalRot);
                 ECB.SetComponent<LocalTransform>(MainWeapon, trans);
             }
-            if (PlayPressed && !UIInput.MouseOverUI)
+            if (KeyJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
             {
                 /// Projectile instanciate
                 { 
@@ -574,7 +593,7 @@ public partial class WeaponSystem : SystemBase
 
                 for (i = 0; i < RkeyBuffer.Length; i++)
                 {
-                    int bufferNote = MusicUtils.radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght)));
+                    int bufferNote = MusicUtils.radiansToNoteIndex(PhysicsUtilities.DirectionToRadians(RkeyBuffer[i].DirLenght));
                     if (bufferNote == note)
                     {
                         noteExist = 1;
@@ -631,9 +650,9 @@ public partial class WeaponSystem : SystemBase
                 GideReferenceDirection = weaponDirLenght;
                 IsShooting = true;
 
-                PlayPressed = false;
+                KeyJustPressed = false;
             }
-            if (PlayReleased)
+            if (KeyJustReleased)
             {
                 if (SkeyBuffer.Length != 0)
                 {
@@ -653,7 +672,7 @@ public partial class WeaponSystem : SystemBase
                 }
                 activeLegatoFz = 0;
                 IsShooting = false;
-                PlayReleased = false;
+                KeyJustReleased = false;
             }
 
             KeysBuffer keysBuffer = new KeysBuffer

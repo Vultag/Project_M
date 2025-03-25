@@ -106,49 +106,109 @@ namespace MusicNamespace
         };
 
         #region MODES
-        //counting from the steps from the Tonic
-        static readonly int[] Ionian =
-        {
-            2,4,5,7,9,11,12
-        };
-        static readonly int[] Dorian =
-        {
-            2,3,5,7,9,10,12
-        };
-        static readonly int[] Phrygian =
-        {
-            1,3,5,7,8,10,12
-        };
-        static readonly int[] Lydian =
-        {
-            2,4,6,7,9,11,12
-        };
-        static readonly int[] Myxolidian =
-        {
-            2,4,5,7,9,10,12
-        };
-        static readonly int[] Aeolian =
-        {
-            2,3,5,7,8,10,12
-        };
-        static readonly int[] Locrian =
-        {
-            1,3,5,6,8,10,12
-        };
+        /// <summary>
+        /// counting from the steps from the Tonic
+        /// </summary>
+        // Array of all mode intervals, indexed by position
+        public static readonly bool[][] Modes =
+       {
+        new[] { true, false, true, false, true, true, false, true, false, true, false, true }, // Ionian
+        new[] { true, false, true, true, false, true, false, true, false, true, true, false }, // Dorian
+        new[] { true, true, false, true, false, true, false, true, true, false, true, false }, // Phrygian
+        new[] { true, false, true, false, true, false, true, true, false, true, false, true }, // Lydian
+        new[] { true, false, true, false, true, true, false, true, false, true, true, false }, // Mixolydian
+        new[] { true, false, true, true, false, true, false, true, true, false, true, false }, // Aeolian
+        new[] { true, true, false, true, false, true, true, false, true, false, true, false }, // Locrian
+
+        // Melodic Minor Modes
+        new[] { true, false, true, true, false, true, false, true, false, true, false, true }, // Melodic Minor
+        new[] { true, true, false, true, false, true, false, true, false, true, true, false }, // Dorian Flat 2
+        new[] { true, false, true, false, true, false, true, false, true, true, false, true }, // Lydian Augmented
+        new[] { true, false, true, false, true, false, true, true, false, true, true, false }, // Lydian Dominant
+        new[] { true, false, true, false, true, true, false, true, true, false, true, false }, // Mixolydian Flat 6
+        new[] { true, false, true, true, false, true, true, false, true, false, true, false }, // Locrian Natural 2
+        new[] { true, true, false, true, true, false, true, false, true, false, true, false }, // Super Locrian
+
+        // Harmonic Minor Modes
+        new[] { true, false, true, true, false, true, false, true, true, false, false, true }, // Harmonic Minor
+        new[] { true, true, false, true, false, true, true, false, false, true, true, false }, // Locrian Natural 6
+        new[] { true, false, true, false, true, true, false, false, true, true, false, true }, // Ionian Sharp 5
+        new[] { true, false, true, true, false, false, true, true, false, true, true, false }, // Dorian Sharp 4
+        new[] { true, true, false, false, true, true, false, true, true, false, true, false }, // Phrygian Dominant
+        new[] { true, false, false, true, true, false, true, true, false, true, false, true }, // Lydian Sharp 2
+        new[] { true, true, false, true, true, false, true, false, true, true, false, false }, // Super Locrian Double Flat 7
+
+        // Harmonic Major Modes
+        new[] { true, false, true, false, true, true, false, true, true, false, false, true }, // Harmonic Major
+        new[] { true, false, true, true, false, true, true, false, false, true, true, false }, // Dorian Flat 5
+        new[] { true, true, false, true, true, false, false, true, true, false, true, false }, // Phrygian Flat 4
+        new[] { true, false, true, true, false, false, true, true, false, true, false, true }, // Lydian Flat 3
+        new[] { true, true, false, false, true, true, false, true, false, true, true, false }, // Mixolydian Flat 2
+        new[] { true, false, false, true, true, false, true, false, true, true, false, true }, // Lydian Augmented Sharp 2
+        new[] { true, true, false, true, false, true, true, false, true, true, false, false }, // Locrian Double Flat 7
+
+        // Other Common Scales
+        new[] { true, false, true, false, true, false, true, false, true, false, true, false }, // Whole Tone
+        new[] { true, true, false, true, true, false, true, true, false, true, true, false }, // Diminished Half-Whole
+        new[] { true, false, true, true, false, true, true, false, true, true, false, true }, // Diminished Whole-Half
+        new[] { true, false, true, false, true, false, false, true, false, true, false, false }, // Pentatonic Major
+        new[] { true, false, false, true, false, true, false, true, false, false, true, false }, // Pentatonic Minor
+        new[] { true, false, false, true, false, true, true, true, false, false, true, false }, // Blues Scale
+        new[] { true, true, false, false, true, true, false, true, true, false, false, true }  // Byzantine Scale
+    };
+
+
         #endregion
 
         public enum MusicalMode
         {
+            // Diatonic Modes (Major Scale Modes)
             Ionian,
             Dorian,
             Phrygian,
             Lydian,
             Mixolydian,
             Aeolian,
-            Locrian
+            Locrian,
+
+            // Melodic Minor Modes
+            MelodicMinor,
+            DorianFlat2,
+            LydianAugmented,
+            LydianDominant,
+            MixolydianFlat6,
+            LocrianNatural2,
+            SuperLocrian, // Aka Altered Scale
+
+            // Harmonic Minor Modes
+            HarmonicMinor,
+            LocrianNatural6,
+            IonianSharp5,
+            DorianSharp4,
+            PhrygianDominant,
+            LydianSharp2,
+            SuperLocrianDoubleFlat7,
+
+            // Harmonic Major Modes
+            HarmonicMajor,
+            DorianFlat5,
+            PhrygianFlat4,
+            LydianFlat3,
+            MixolydianFlat2,
+            LydianAugmentedSharp2,
+            LocrianDoubleFlat7,
+
+            // Other Common Modes/Scales
+            WholeTone,       // Used in jazz & impressionism
+            DiminishedHalfWhole,
+            DiminishedWholeHalf,
+            PentatonicMajor,
+            PentatonicMinor,
+            BluesScale,
+            ByzantineScale // Aka Double Harmonic Major
         }
 
-        const int NoteNumInCircle = 12;
+        //const int NoteNumInCircle = 12;
         readonly static float[] OctaveRadianWeights = 
         { 
             (4f / 43f) * Mathf.PI, 
@@ -162,9 +222,21 @@ namespace MusicNamespace
             (3f / 43f) * Mathf.PI,
             (4f / 43f) * Mathf.PI,
             (3f / 43f) * Mathf.PI,
-            /// to prevent approximation error
             (4f / 43f) * Mathf.PI,
-            //9.99f,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            (4f / 43f) * Mathf.PI,
+            (3f / 43f) * Mathf.PI,
+            /// to prevent approximation error
+            (4.00001f / 43f) * Mathf.PI,
+            //(4f / 43f) * Mathf.PI,
         };
         readonly static float[] NotesLayout =
         {
@@ -197,7 +269,10 @@ namespace MusicNamespace
         public static int radiansToNoteIndex(float radians)
         {
             int currentIndex = 0;
+            float side = Mathf.Sign(radians);
+            radians = radians*side + (side*0.5f+0.5f)*Mathf.PI;
             //Debug.Log(radians);
+            /// OPTI
             for (; radians > OctaveRadianWeights[currentIndex];)
             {
                 radians -= OctaveRadianWeights[currentIndex];
@@ -214,33 +289,46 @@ namespace MusicNamespace
         /// mode is not used in the curernt setup -> implement later
         public static float noteToFrequency(int localnote,MusicalMode mode)
         {
-            int tempoctave = 3 * 12;
+            int octaveUp = localnote >=12 ? 1 : 0;
+            int tempoctave = (3+octaveUp)* 12;
+            localnote = localnote - octaveUp * 12;
+            //Debug.Log((int)mode);
+            //Debug.Log(localnote);
+            //Debug.Log(octaveUp);
 
-            return keyFrequencies[localnote + tempoctave]; //+ ocatave
+            return Modes[(int)mode][localnote] ?keyFrequencies[localnote + tempoctave]:-1; //+ ocatave
 
         }
         public static float DirectionToFrequency(Vector2 dir)
         {
-            return noteToFrequency(radiansToNoteIndex(Mathf.Abs(PhysicsUtilities.DirectionToRadians(dir))),WeaponSystem.mode);
+            return noteToFrequency(radiansToNoteIndex(PhysicsUtilities.DirectionToRadians(dir)),WeaponSystem.mode);
         }
         /// Center a direction according to the key splitting of the circle
-        /// OPTI
+        /// OPTI direction->radian->direction
         public static Vector2 CenterDirection(Vector2 dir)
         {
-
             float RadDir = PhysicsUtilities.DirectionToRadians(dir);
+            float side = Mathf.Sign(RadDir);
+            RadDir = RadDir * side + (Mathf.PI* (side*0.5f+0.5f));
+            /*
+            RadDir:
+                 -pi|pi
+            -pi/2       1.5pi
+                  -0|2pi
+             */
+
             float newRadDir = OctaveRadianWeights[0] * 0.5f;
             short idx = 0;
-            while (Mathf.Abs(RadDir) > OctaveRadianWeights[idx])
+            while (RadDir > OctaveRadianWeights[idx])
             {
-                RadDir -= OctaveRadianWeights[idx]* Mathf.Sign(RadDir);
+                RadDir -= OctaveRadianWeights[idx];
                 newRadDir += OctaveRadianWeights[idx]*0.5f + OctaveRadianWeights[idx+1]*0.5f;
                 idx++;
             }
+            Debug.Log(idx);
 
             //newRadDir = (Mathf.Round(newRadDir / (Mathf.PI / NoteNumInCircle))) * (Mathf.PI / NoteNumInCircle);
-
-            return PhysicsUtilities.RadianToDirection(newRadDir * Mathf.Sign(RadDir));
+            return PhysicsUtilities.RadianToDirection(newRadDir);
 
         }
 

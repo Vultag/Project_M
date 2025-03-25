@@ -1,15 +1,8 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using NUnit.Framework.Internal.Filters;
-using Unity.Collections;
+
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public partial struct PlaybackSystem : ISystem
 {

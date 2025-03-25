@@ -346,9 +346,9 @@ public class UIManager : MonoBehaviour
 
             ecb.AddComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
             ecb.AddBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
-          
-            PlaybackRecordSystem.ClickPressed = false;
-            PlaybackRecordSystem.ClickReleased = false;
+
+            PlaybackRecordSystem.KeyJustPressed = false;
+            PlaybackRecordSystem.KeyJustReleased = false;
         }
         if (entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
         {

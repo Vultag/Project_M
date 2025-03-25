@@ -492,6 +492,7 @@ public class AudioGenerator : MonoBehaviour
                 {
                     if (activeKeyNumber[0] < 12)
                     {
+                        //Debug.LogError(keysBufferSlice[y]);
                         activeKeys[activeKeyNumber[0]] = new KeyData {
                             frequency = keysBufferSlice[y],
                             GlideStartFrenquency = SynthGlideBaseFz[0],
@@ -566,6 +567,7 @@ public class AudioGenerator : MonoBehaviour
                             filterDelayElementsV4 = ActiveKeysSlice[y].filterDelayElementsV4
                         };
                         SynthGlideBaseFz[z] = ActiveKeysSlice[y].frequency;
+                        //Debug.LogWarning(ActiveKeysSlice[y].frequency);
                     }
                 }
                 /// the buffer no longuer contains the frequency. release.

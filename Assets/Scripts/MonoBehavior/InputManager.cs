@@ -26,7 +26,10 @@ public class InputManager : MonoBehaviour
 
     int CanPressKeySwitchState = 0;
     public static bool CanPressKey = true;
-    bool KeyPressed = false;
+    private static bool _M1Pressed = false;
+    public static bool KeyPressed => _M1Pressed; // Read-only
+    private static bool _M1Released = false;
+    public static bool KeyReleased => _M1Released; // Read-only
 
 
     void Start()
@@ -37,7 +40,14 @@ public class InputManager : MonoBehaviour
         playerControls.ActionMap.Shoot.performed += OnPlayerShoot;
         playerControls.ActionMap.Shoot.canceled += OnPlayerShoot;
     }
-
+    //void OnEnable()
+    //{
+    //    Application.onBeforeRender += FrameInputsCleanup;
+    //}
+    //void OnDisable()
+    //{
+    //    Application.onBeforeRender -= FrameInputsCleanup;
+    //}
 
 
     void Update()
@@ -56,11 +66,13 @@ public class InputManager : MonoBehaviour
         //Debug.DrawLine(Vector3.zero, new Vector3(0, normalizedProximity * 10, 0));
 
         //WeaponSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true:false;
-        PlaybackRecordSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true : false;
+        //PlaybackRecordSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true : false;
 
         if(BeatProximity<BeatProximityThreshold && BeatNotYetPlayed)
         {
             ActivateKey();
+            _M1Pressed = true;
+            CanPressKey = false;
             BeatNotYetPlayed = false;
             metronomeEffectSpawner.SpawnValidKeySpite();
         }
@@ -94,52 +106,21 @@ public class InputManager : MonoBehaviour
         //Debug.Log(IsShooting);
         if (IsShooting)
         {
-
-            //if(!KeyPressedThisSubBeat)
+            if(CanPressKey)
             {
-
-                //Debug.LogError("BeatProximity : " + BeatProximity);
-                //Debug.DrawLine(new Vector3(5, 0, 0), new Vector3(5, BeatProximity * 10, 0), Color.red, 0.4f);
-
-                //if(!CanPressKey)
-                //{
-                //    Debug.Log("key denied");
-                //}
-
-                if(CanPressKey)
+                if (BeatProximity <= BeatProximityThreshold)
                 {
-                    if (BeatProximity <= BeatProximityThreshold)
-                    {
-                        ActivateKey();
-                        metronomeEffectSpawner.SpawnValidKeySpite();
-                    }
-                    else
-                    {
-                        BeatNotYetPlayed = true;
-                    }
+                    ActivateKey();
+                    _M1Pressed = true;
+                    metronomeEffectSpawner.SpawnValidKeySpite();
                 }
                 else
+                {
                     BeatNotYetPlayed = true;
-
-                /// TEST if CanPressKey works
-                //if (BeatProximity <= BeatProximityThreshold && CanPressKey)
-                //{
-                //    ActivateKey();
-                //}
-
-                ////Debug.Log(BeatProximity);
-                //if (BeatProximity > BeatProximityThreshold && CanPressKey)
-                //    BeatNotYetPlayed = true;
-                //else
-                //{
-                //    //KeyPressedThisSubBeat = true;
-                //    metronomeEffectSpawner.SpawnValidKeySpite();
-                //}
+                }
             }
-
-  
-
-
+            else
+                BeatNotYetPlayed = true;
         }
         else
         {
@@ -152,32 +133,37 @@ public class InputManager : MonoBehaviour
             if(KeyPressed)
             {
                 DeactivateKey();
+                _M1Pressed = false;
+                _M1Released = true;
             }
-       
-       
         }
-
-
-
     }
 
 
 
     private void ActivateKey()
     {
-        KeyPressed = true;
+        _M1Pressed = true;
         CanPressKey = false;
-        WeaponSystem.PlayPressed = true;
-        PlaybackRecordSystem.ClickPressed = true;
-        WeaponSystem.PlayReleased = false;
-        PlaybackRecordSystem.ClickReleased = false;
+        WeaponSystem.KeyJustPressed = true;
+        PlaybackRecordSystem.KeyJustPressed = true;
+        WeaponSystem.KeyJustReleased = false;
+        PlaybackRecordSystem.KeyJustReleased = false;
     }
     private void DeactivateKey()
     {
-        WeaponSystem.PlayPressed = false;
-        PlaybackRecordSystem.ClickPressed = false;
-        WeaponSystem.PlayReleased = true;
-        PlaybackRecordSystem.ClickReleased = true;
+        WeaponSystem.KeyJustPressed = false;
+        PlaybackRecordSystem.KeyJustPressed = false;
+        WeaponSystem.KeyJustReleased = true;
+        PlaybackRecordSystem.KeyJustReleased = true;
+    }
+
+
+
+    private void FrameInputsCleanup()
+    {
+        _M1Pressed = false;
+        _M1Released = false;
     }
 
 }

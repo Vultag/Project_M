@@ -1097,7 +1097,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   active: 1
-  SpawnRate: 0.5
+  SpawnRate: 2
   SpawnRangeRadius: 5
   MonsterPrefab: {fileID: 3505441550876786229, guid: e4dd871981676b24bbfe2b95dab246f6, type: 3}
 --- !u!114 &1748953744
