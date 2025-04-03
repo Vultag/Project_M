@@ -82,7 +82,7 @@ public class ToKeyboardShader : MonoBehaviour
         pressInertia = InputManager.KeyPressed?1: Mathf.Lerp(pressInertia, pressInertia*0.25f, Time.deltaTime*4);
 
         ///UNT0022 OPTI
-        this.transform.rotation = playerRotation;
+        this.transform.transform.rotation = playerRotation;
         this.transform.position = weaponTrans.Translation();
         //Debug.Log(Quaternion.ToEulerAngles(playerTrans.Rotation()));
 

@@ -149,6 +149,9 @@ public class InputManager : MonoBehaviour
         PlaybackRecordSystem.KeyJustPressed = true;
         WeaponSystem.KeyJustReleased = false;
         PlaybackRecordSystem.KeyJustReleased = false;
+
+        MachineDrumSystem.PadJustPressed = true;
+        MachineDrumSystem.PadJustReleased = false;
     }
     private void DeactivateKey()
     {
@@ -156,6 +159,9 @@ public class InputManager : MonoBehaviour
         PlaybackRecordSystem.KeyJustPressed = false;
         WeaponSystem.KeyJustReleased = true;
         PlaybackRecordSystem.KeyJustReleased = true;
+
+        MachineDrumSystem.PadJustReleased = true;
+        MachineDrumSystem.PadJustPressed = false;
     }
 
 

@@ -1,5 +1,4 @@
-using System.Linq;
-using Unity.Collections;
+
 using Unity.Entities;
 using UnityEngine;
 
@@ -15,7 +14,7 @@ public partial struct TriggerProcessingSystem : ISystem
 {
     private Entity damageEventEntity;
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
         // Check if the GlobalDamageEvent entity already exists
         if (SystemAPI.HasSingleton<GlobalDamageEvent>())
@@ -41,10 +40,8 @@ public partial struct TriggerProcessingSystem : ISystem
         Entity triggerEventEntity = SystemAPI.GetSingletonEntity<TriggerEvent>();
         DynamicBuffer<TriggerEvent> triggerBuffer = SystemAPI.GetBuffer<TriggerEvent>(triggerEventEntity);
 
-        var activeTriggerEntity = SystemAPI.GetSingletonEntity<ActiveTriggerSingleton>();
-        var activeTriggersData = SystemAPI.GetComponent<ActiveTriggerSingleton>(activeTriggerEntity);
         // Access the ActiveTriggers map
-        var activeTriggers = activeTriggersData.TriggerMap;
+        var activeTriggers = TriggerStateSystem.TriggerMap;
 
         foreach (var trigger in triggerBuffer)
         {
@@ -62,6 +59,7 @@ public partial struct TriggerProcessingSystem : ISystem
 
             var triggerType = state.EntityManager.GetComponentData<TriggerData>(emitterEntity).triggerType;
 
+            var uiManager = UIManager.Instance;
             switch (triggerType)
             {
                 case TriggerType.DamageEffect:
@@ -78,10 +76,16 @@ public partial struct TriggerProcessingSystem : ISystem
                     break;
                 case TriggerType.WeaponCollectible:
                     //Debug.Log("collect weapon");
-                    var uiManager = UIManager.Instance;
-                    var collectibleData = SystemAPI.GetComponent<WeaponCollectibleData>(emitterEntity);
-                    if (uiManager.NumOfSynths <6)
-                        UIManager.Instance._AddSynthUI(collectibleData.weaponClass,collectibleData.weaponType);
+                    var weaponCollectibleData = SystemAPI.GetComponent<WeaponCollectibleData>(emitterEntity);
+                    if (uiManager.NumOfEquipments <6)
+                        UIManager.Instance._AddSynthUI(weaponCollectibleData.weaponClass,weaponCollectibleData.weaponType);
+                    PhysicsCalls.DestroyPhysicsEntity(ecb,emitterEntity);
+                    break;
+                case TriggerType.DrumMachineCollectibe:
+                    //Debug.Log("collect drumMachine");
+                    var DrumMachinecollectibleData = SystemAPI.GetComponent<DrumMachineCollectibleData>(emitterEntity);
+                    if (uiManager.NumOfEquipments < 6)
+                        UIManager.Instance._AddDrumMachineUI();
                     PhysicsCalls.DestroyPhysicsEntity(ecb,emitterEntity);
                     break;
                 default:
@@ -89,10 +93,6 @@ public partial struct TriggerProcessingSystem : ISystem
             }
 
         }
-
-        // Apply changes to the component only once at the end
-        activeTriggersData.TriggerMap = activeTriggers;
-        ecb.SetComponent<ActiveTriggerSingleton>(activeTriggerEntity, activeTriggersData);
 
         // Clear buffer after processing
         triggerBuffer.Clear();

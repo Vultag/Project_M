@@ -9,13 +9,12 @@ using Unity.Mathematics;
 using Unity.Entities.UniversalDelegates;
 using static UnityEngine.EventSystems.EventTrigger;
 using UnityEditor.Rendering;
+using Unity.Rendering;
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 //[UpdateAfter(typeof(PhyResolutionSystem))]
 public partial class WeaponSystem : SystemBase
 {
-
-    public static NativeArray<Entity> WeaponEntities;
 
     /// Useless ? active synth index always 0 ?
     //public static short activeSynthEntityindex;
@@ -50,21 +49,42 @@ public partial class WeaponSystem : SystemBase
 
     protected override void OnCreate()
     {
-
-        WeaponEntities = new NativeArray<Entity>(1,Allocator.Persistent);
-
-        RequireForUpdate<ControledWeaponTag>();
+        /// should work but AudioLayoutStorage.activeSynthIdx is changed before ActiveSynthTag removal
+        //RequireForUpdate<ActiveSynthTag>();
+        AudioLayoutStorage.activeSynthIdx = -1;
 
         damageEventEntity = EntityManager.CreateEntityQuery(typeof(GlobalDamageEvent)).GetSingletonEntity();
+    }
+
+    protected override void OnStartRunning()
+    {
+        var Player_query = EntityManager.CreateEntityQuery(typeof(PlayerData));
+        Entity player_entity = Player_query.GetSingletonEntity();
+        Entity start_weapon = EntityManager.GetComponentData<PlayerData>(player_entity).MainCanon;
+
+        var ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
+
+        /// hide Weapon and DMachine on main slot at start
+        var playerWeaponSpriteEntity = EntityManager.GetBuffer<Child>(start_weapon)[0].Value;
+        var playerDMachineSpriteEntity = EntityManager.GetBuffer<Child>(start_weapon)[1].Value;
+        MaterialMeshInfo newWeaponMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerWeaponSpriteEntity);
+        newWeaponMaterialMeshInfo.Mesh = 0;
+        ECB.SetComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, newWeaponMaterialMeshInfo);
+        MaterialMeshInfo newDMachineMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerDMachineSpriteEntity);
+        newDMachineMaterialMeshInfo.Mesh = 0;
+        ECB.SetComponent<MaterialMeshInfo>(playerDMachineSpriteEntity, newDMachineMaterialMeshInfo);
     }
 
 
     protected override void OnUpdate()
     {
+        var activeWeaponIdx = AudioLayoutStorage.activeSynthIdx;
+        if (activeWeaponIdx == -1)
+            return;
 
-        //BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
+            //BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
 
-        ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
+            ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
         /// Moved to input manager
         //BeatProximityThreshold = (0.2f * 4.1f) * Mathf.Min((1.5f*MusicUtils.BPM)/60f,1);
@@ -76,9 +96,9 @@ public partial class WeaponSystem : SystemBase
         //Debug.Log(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         //Debug.Break();
-        var activeWeaponIdx = AudioLayoutStorage.activeSynthIdx;
-        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(WeaponEntities[activeWeaponIdx+1]);
-        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(WeaponEntities[activeWeaponIdx+1]);
+        var mainWeaponEntity = AudioManager.EquipmentEntities[activeWeaponIdx + 1];
+        DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(mainWeaponEntity);
+        DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(mainWeaponEntity);
 
         //TO MODIFY
         //var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
@@ -166,53 +186,6 @@ public partial class WeaponSystem : SystemBase
 
             Vector2 weaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
             float weaponFz = MusicUtils.DirectionToFrequency(weaponDirLenght);
-
-            //weaponDirLenght = math.mul(trans.ValueRO.Rotation, new float3(mouseDirection.x, 0, mouseDirection.y)).xz;
-            //weaponDirLenght = mouseDirection;
-            //Vector2 weaponDirLenght = mouseDirection;
-            //trans.ValueRW.Rotation = newLocalRot;
-
-            //Debug.LogError(weaponDirLenght);
-
-            //if (CanPlayKey && localCurrentFz > 0)
-            //{    ///OPTI :
-
-            //    if (activeLegatoFz != 0)
-            //    {
-            //        if (localCurrentFz != activeLegatoFz)
-            //        {
-            //            /// If there is a playback recording I has to update before to not block it
-            //            InputManager.CanPressKey = false;
-            //            Debug.LogWarning("set false");
-            //            //if (OnBeat)
-            //            {
-            //                /// Check if the the legato glide over a released key
-            //                for (int i = 0; i < RkeyBuffer.Length; i++)
-            //                {
-            //                    if (MusicUtils.DirectionToFrequency(RkeyBuffer[i].DirLenght) == localCurrentFz)
-            //                    {
-            //                        //Debug.LogWarning("remove");
-            //                        RkeyBuffer.RemoveAt(i);
-            //                        break;
-            //                    }
-            //                }
-            //                SkeyBuffer[SkeyBuffer.Length - 1] = new SustainedKeyBufferData
-            //                {
-            //                    DirLenght = SkeyBuffer[SkeyBuffer.Length - 1].DirLenght,
-            //                    EffectiveDirLenght = SkeyBuffer[SkeyBuffer.Length - 1].EffectiveDirLenght,
-            //                    Delta = 0,
-            //                    Phase = SkeyBuffer[SkeyBuffer.Length - 1].Phase,
-            //                    currentAmplitude = SkeyBuffer[SkeyBuffer.Length - 1].currentAmplitude
-            //                };
-            //                GideReferenceDirection = mouseDirection;
-            //                activeLegatoFz = localCurrentFz;
-            //            }
-
-            //        }
-            //    }
-
-
-            //}
 
             if (KeyJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
             {
@@ -416,7 +389,7 @@ public partial class WeaponSystem : SystemBase
                         SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
                         {
                             Target = Hit.entity,
-                            DamageValue = 9f * SystemAPI.Time.DeltaTime
+                            DamageValue = 25f * SystemAPI.Time.DeltaTime
                         });
 
                     }

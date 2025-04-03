@@ -5,7 +5,14 @@ using TMPro;
 using Unity.Mathematics;
 using UnityEngine;
 
-public class SynthUIelement : MonoBehaviour
+public enum EquipmentCategory
+{
+    Weapon,
+    DrumMachine
+}
+
+
+public class EquipmentUIelement : MonoBehaviour
 {
 
     private UIManager uiManager;
@@ -17,35 +24,45 @@ public class SynthUIelement : MonoBehaviour
     private short BaseBeatBeforeSynthStart = 3;
     private float ContdownFontSize = 12;
     [HideInInspector]
-    public int thisSynthIdx;
+    public int thisEquipmentIdx;
+    [HideInInspector]
+    public EquipmentCategory thisEquipmentCategory;
     private bool RecordPrepairing = false;
 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
-        thisSynthIdx = this.gameObject.transform.GetSiblingIndex();
+        thisEquipmentIdx = this.gameObject.transform.GetSiblingIndex();
         //Debug.Log(thisSynthIdx);
     }
 
-    public void _selectThisSynth()
+    public void _selectThisEquipment()
     {
-        uiManager._SelectSynthUI(thisSynthIdx);
+        switch (thisEquipmentCategory)
+        {
+            case EquipmentCategory.Weapon:
+                uiManager._SelectSynthUI(thisEquipmentIdx);
+                break;
+            case EquipmentCategory.DrumMachine:
+                uiManager._SelectMachineDrumUI(thisEquipmentIdx);
+                break;
+        }
     }
     public void _activateThisPlayback()
     {
-        uiManager._ActivatePlayback(thisSynthIdx);
+        uiManager._ActivatePlayback(thisEquipmentIdx);
     }
 
     public void _PrepairRecord()
     {
-        uiManager._ResetPlayback(thisSynthIdx);
+        uiManager._ResetPlayback(thisEquipmentIdx);
         /// Deactivate Rec button GB
-        uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
+        uiManager.SynthToolBar.transform.GetChild(thisEquipmentIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
         ///// Deactivate Play button GB
         //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
         ///// Activate Stop button GB
         //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
-        StartCoroutine("RecordCountdown", thisSynthIdx);
+        StartCoroutine("RecordCountdown", thisEquipmentIdx);
         RecordPrepairing = true;
     }
     public void _DisplayPrepairActivation()

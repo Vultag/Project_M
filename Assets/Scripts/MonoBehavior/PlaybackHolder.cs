@@ -13,7 +13,7 @@ public class PlaybackHolder : MonoBehaviour
     [SerializeField]
     GameObject PBcontainerPrefab;
     [SerializeField]
-    SynthUIelement synthUIelement;
+    EquipmentUIelement synthUIelement;
     public GameObject trackPlaybackItem;
     [HideInInspector]
     public UIManager uiManager;

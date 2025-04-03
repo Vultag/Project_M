@@ -23,14 +23,14 @@ public struct CollisionPair
 
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
 [UpdateBefore(typeof(ApplyPhysicsSystem))]
-public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
+public partial struct PhyResolutionSystem : ISystem//, ISystemStartStop
 {
 
     public NativeList<CollisionPair> ColPair;
     //public NativeList<CollisionPair> TriggerPair;
 
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
         
         TreeInsersionSystem.CirclesShapesQuery = state.GetEntityQuery(typeof(PhyBodyData), typeof(CircleShapeData));
@@ -39,17 +39,17 @@ public partial struct PhyResolutionSystem : ISystem, ISystemStartStop
     }
 
 
-    void ISystemStartStop.OnStartRunning(ref SystemState state)
-    {
-    }
+    //void ISystemStartStop.OnStartRunning(ref SystemState state)
+    //{
+    //}
 
 
 
-    void ISystemStartStop.OnStopRunning(ref SystemState state)
-    {
-    }
+    //void ISystemStartStop.OnStopRunning(ref SystemState state)
+    //{
+    //}
 
-    void OnUpdate(ref SystemState state)
+    public void OnUpdate(ref SystemState state)
     {
         //return;
         var AABBtree = TreeInsersionSystem.AABBtree;

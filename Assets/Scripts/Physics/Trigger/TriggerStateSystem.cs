@@ -4,10 +4,11 @@ using Unity.Entities;
 using UnityEngine;
 
 // Singleton component for accessing ActiveTriggers
-public struct ActiveTriggerSingleton : IComponentData
-{
-    public NativeParallelHashMap<Entity, Entity> TriggerMap;
-}
+/// Not possible -> must be blitable
+//public struct ActiveTriggerSingleton : IComponentData
+//{
+//    public NativeParallelHashMap<Entity, Entity> TriggerMap;
+//}
 
 /// <summary>
 /// Fuse with TriggerProcessingSystem?
@@ -15,32 +16,17 @@ public struct ActiveTriggerSingleton : IComponentData
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
 [UpdateAfter(typeof(PhyResolutionSystem))]
 [BurstCompile]
-public partial struct TriggerStateSystem : ISystem
+public partial class TriggerStateSystem : SystemBase
 {
-    public void OnCreate(ref SystemState state)
-    {
-        // Create a singleton entity to store ActiveTriggers
-        Entity singletonEntity = state.EntityManager.CreateEntity(typeof(ActiveTriggerSingleton));
+    public static NativeParallelHashMap<Entity, Entity> TriggerMap;
 
-        // Set initial value (empty hash map)
-        state.EntityManager.SetComponentData(singletonEntity, new ActiveTriggerSingleton
-        {
-            TriggerMap = new NativeParallelHashMap<Entity, Entity>(128, Allocator.Persistent)
-        });
+    protected override void OnCreate()
+    {
+        TriggerMap = new NativeParallelHashMap<Entity, Entity>(128, Allocator.Persistent);
     }
 
-    public void OnUpdate(ref SystemState state)
+    protected override void OnUpdate()
     {
-        // Create an ECB for the current frame
-        EntityCommandBuffer ecb = SystemAPI.GetSingleton<BeginFixedStepSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-
-        // Get the singleton entity
-        var activeTriggerEntity = SystemAPI.GetSingletonEntity<ActiveTriggerSingleton>();
-
-        var activeTriggerData = SystemAPI.GetComponent<ActiveTriggerSingleton>(activeTriggerEntity);
-        // Access the ActiveTriggers map
-        var activeTriggers = activeTriggerData.TriggerMap;
-
         var triggerEventEntity = SystemAPI.GetSingletonEntity<TriggerEvent>();
         var triggerBuffer = SystemAPI.GetBuffer<TriggerEvent>(triggerEventEntity);
 
@@ -55,7 +41,7 @@ public partial struct TriggerStateSystem : ISystem
         }
 
         // Get key array directly
-        var keys = activeTriggers.GetKeyArray(Allocator.Temp);
+        var keys = TriggerMap.GetKeyArray(Allocator.Temp);
         foreach (var key in keys)
         {
             if (!activeEntities.Contains(key))
@@ -67,12 +53,8 @@ public partial struct TriggerStateSystem : ISystem
         // Remove outdated triggers
         foreach (var key in keysToRemove)
         {
-            activeTriggers.Remove(key);
+            TriggerMap.Remove(key);
         }   
-        
-        // Apply changes to the component only once at the end
-        activeTriggerData.TriggerMap = activeTriggers;
-        ecb.SetComponent(activeTriggerEntity, activeTriggerData);
 
         // Dispose temp memory
         keys.Dispose();
@@ -80,12 +62,8 @@ public partial struct TriggerStateSystem : ISystem
         keysToRemove.Dispose();
     }
 
-    public void OnDestroy(ref SystemState state)
+    protected override void OnDestroy()
     {
-        // Remove the ActiveTriggers from the singleton component
-        var activeTriggerEntity = SystemAPI.GetSingletonEntity<ActiveTriggerSingleton>();
-        var activeTriggers = SystemAPI.GetComponent<ActiveTriggerSingleton>(activeTriggerEntity).TriggerMap;
-
-        activeTriggers.Dispose();
+        TriggerMap.Dispose();
     }
 }

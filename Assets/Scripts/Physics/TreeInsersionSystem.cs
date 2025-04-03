@@ -6,7 +6,7 @@ using static UnityEngine.EventSystems.EventTrigger;
 
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderFirst = true)]
 [UpdateBefore(typeof(PhyResolutionSystem))]
-public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
+public partial struct TreeInsersionSystem : ISystem//, ISystemStartStop
 {
 
     public static EntityQuery CirclesShapesQuery;
@@ -15,7 +15,7 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
     public static float AABBfat;
 
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
         /*Arbitratry fat on AABB to reduce de Insert/remove each frame*/
         AABBfat = 0.2f;
@@ -25,14 +25,14 @@ public partial struct TreeInsersionSystem : ISystem, ISystemStartStop
 
     }
 
-    void ISystemStartStop.OnStartRunning(ref SystemState state)
-    {
-    }
-    void ISystemStartStop.OnStopRunning(ref SystemState state)
-    {
-    }
+    //void ISystemStartStop.OnStartRunning(ref SystemState state)
+    //{
+    //}
+    //void ISystemStartStop.OnStopRunning(ref SystemState state)
+    //{
+    //}
 
-    void OnUpdate(ref SystemState state)
+    public void OnUpdate(ref SystemState state)
     {
         var esECB = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>();
         EntityCommandBuffer ecb = esECB.CreateCommandBuffer(state.WorldUnmanaged);

@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.Entities;
 using Unity.Mathematics;
+using Unity.Rendering;
+using Unity.Transforms;
 using UnityEngine;
 
 public enum WeaponClass
@@ -65,23 +67,31 @@ public class WeaponAuthoring : MonoBehaviour
                 //OffsetFromPlayer = authoring.OffsetFromPlayer,
 
             });
-            //switch()
-            //{
-            //    case WeaponClass.Ray:
-            //        AddComponent(entity, new RayData
-            //        {
-            //        });
-            //        break;
-            //    case WeaponClass.Projectile:
-            //        AddComponent(entity, new ProjectileData
-            //        {
-            //            Damage = 6f,
-            //            Speed = 1f,
-            //            ProjectilePrefab = GetEntity(authoring.ProjectilePrefab, TransformUsageFlags.None),
-            //        });
-            //        break;
 
-            //}
+            //var equipmentBuffer = AddBuffer<Child>(entity);
+            //equipmentBuffer.Add(new Child { Value = GetEntity(authoring.transform.GetChild(0), TransformUsageFlags.None) });
+            //equipmentBuffer.Add(new Child { Value = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None) });
+
+            /// hide Weapon and DMachine on main slot at start
+            var playerWeaponSpriteEntity = GetEntity(authoring.transform.GetChild(0), TransformUsageFlags.None);
+            var playerDMachineSpriteEntity = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None);
+            //MaterialMeshInfo newWeaponMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerWeaponSpriteEntity);
+            //newWeaponMaterialMeshInfo.Mesh = 0;
+            //ECB.SetComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, newWeaponMaterialMeshInfo);
+            //MaterialMeshInfo newDMachineMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerDMachineSpriteEntity);
+            //newDMachineMaterialMeshInfo.Mesh = 0;
+            //ECB.SetComponent<MaterialMeshInfo>(playerDMachineSpriteEntity, newDMachineMaterialMeshInfo);
+
+            //AddComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, new MaterialMeshInfo
+            //{
+            //    Mesh = 0,
+            //    Material = -1,
+            //});
+            //AddComponent<MaterialMeshInfo>(playerDMachineSpriteEntity, new MaterialMeshInfo
+            //{
+            //    Mesh = 0,
+            //    Material = -2,
+            //});
         }
     }
 }

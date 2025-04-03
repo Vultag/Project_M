@@ -15,13 +15,13 @@ public partial struct MonsterSystem : ISystem
 {
 
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
 
     }
 
 
-    void OnUpdate(ref SystemState state)
+    public void OnUpdate(ref SystemState state)
     {
         EntityCommandBuffer ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         //MOUVEMENT

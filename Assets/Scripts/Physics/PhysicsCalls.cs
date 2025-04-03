@@ -21,8 +21,8 @@ public struct PhysicsCalls
 
     }
 
-    //RENAME -> AMBIGUOUS
-    public static NativeList<Entity> GatherOverlappingNodes(CircleShapeData CastSphere, PhysicsUtilities.CollisionLayer colLayer)
+
+    public static NativeList<Entity> CircleOverlapNode(CircleShapeData CastSphere)//, PhysicsUtilities.CollisionLayer colLayer)
     {
 
         DynamicAABBTree AABBtree = TreeInsersionSystem.AABBtree;
@@ -43,7 +43,7 @@ public struct PhysicsCalls
             if(treeNodeCount == 1)
             {
                 AABBTreeNode node = AABBtree.nodes[comparequeue.Dequeue()];
-                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, CastSphere) < 0 && AABBtree.nodes[0].layerMask == colLayer)
+                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, CastSphere) < 0 && AABBtree.nodes[0].layerMask == CastSphere.collisionLayer)
                 {
                     OverlapList.Add((AABBtree.nodes[0].entity,0f));
                 }
@@ -68,14 +68,14 @@ public struct PhysicsCalls
 
             if (node.isLeaf == false)
             {
-                float nodeA = PhysicsUtilities.Proximity(AABBtree.nodes[node.LeftChild].box, CastSphere);
-                float nodeB = PhysicsUtilities.Proximity(AABBtree.nodes[node.RightChild].box, CastSphere);
+                float nodeA = node.LeftChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.LeftChild].box, CastSphere) : 1;
+                float nodeB = node.RightChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.RightChild].box, CastSphere) : 1;
 
                 if (nodeA < 0)
                 {
 
-                    if (AABBtree.nodes[node.LeftChild].isLeaf == true && AABBtree.nodes[node.LeftChild].layerMask == colLayer)
-                    { 
+                    if (AABBtree.nodes[node.LeftChild].isLeaf == true && AABBtree.nodes[node.LeftChild].layerMask == CastSphere.collisionLayer)
+                    {
                         OverlapList.Add((AABBtree.nodes[node.LeftChild].entity, nodeA));
                     }
                     else
@@ -84,8 +84,8 @@ public struct PhysicsCalls
                 if (nodeB < 0)
                 {
 
-                    if (AABBtree.nodes[node.RightChild].isLeaf == true && AABBtree.nodes[node.RightChild].layerMask == colLayer)
-                    { 
+                    if (AABBtree.nodes[node.RightChild].isLeaf == true && AABBtree.nodes[node.RightChild].layerMask == CastSphere.collisionLayer)
+                    {
                         OverlapList.Add((AABBtree.nodes[node.RightChild].entity, nodeB));
                     }
                     else
@@ -99,6 +99,7 @@ public struct PhysicsCalls
         comparequeue.Dispose();
         NativeListUtils.QuickSort(OverlapList, 0, OverlapList.Length - 1);
         result = NativeListUtils.SelectFirst(OverlapList);
+        OverlapList.Dispose();
         return result;
 
     }

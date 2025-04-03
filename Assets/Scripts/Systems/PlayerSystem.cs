@@ -4,6 +4,7 @@ using Unity.Transforms;
 using UnityEngine;
 using MusicNamespace;
 using System;
+using Unity.Rendering;
 
 
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
@@ -35,6 +36,7 @@ public partial class PlayerSystem : SystemBase
         //input_actions.Enable();
         //input_actions.ActionMap.Shoot.performed += OnPlayerShoot;
         //input_actions.ActionMap.Shoot.canceled += OnPlayerShoot;
+
         //physics
         foreach (var (shape, trans) in SystemAPI.Query<RefRW<CircleShapeData>, RefRO<LocalTransform>>())
         {
@@ -43,7 +45,21 @@ public partial class PlayerSystem : SystemBase
 
         }
 
-        ///OnUpdateMode(WeaponSystem.mode.ToString(), "C4");
+        //var Player_query = EntityManager.CreateEntityQuery(typeof(PlayerData));
+        //Entity player_entity = Player_query.GetSingletonEntity();
+        //Entity start_weapon = EntityManager.GetComponentData<PlayerData>(player_entity).MainCanon;
+
+        //var ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
+
+        ///// hide Weapon and DMachine on main slot at start
+        //var playerWeaponSpriteEntity = EntityManager.GetBuffer<Child>(start_weapon)[0].Value;
+        //var playerDMachineSpriteEntity = EntityManager.GetBuffer<Child>(start_weapon)[1].Value;
+        //MaterialMeshInfo newWeaponMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerWeaponSpriteEntity);
+        //newWeaponMaterialMeshInfo.Mesh = 0;
+        //ECB.SetComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, newWeaponMaterialMeshInfo);
+        //MaterialMeshInfo newDMachineMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerDMachineSpriteEntity);
+        //newDMachineMaterialMeshInfo.Mesh = 0;
+        //ECB.SetComponent<MaterialMeshInfo>(playerDMachineSpriteEntity, newDMachineMaterialMeshInfo);
 
     }
 

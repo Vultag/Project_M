@@ -175,9 +175,9 @@ public class RaysToShader : MonoBehaviour
 
         var main_weapon_trans = math.mul(playerTrans.Rotation(), new float3(0, 0.42f,0));
         weaponsData[0].weaponPos = new float2(main_weapon_trans.x + playerTrans.Translation().x, main_weapon_trans.y + playerTrans.Translation().y);
-        for (int w = 1; w < WeaponSystem.WeaponEntities.Length; w++)
+        for (int w = 1; w < AudioManager.EquipmentEntities.Length; w++)
         {
-            float3 weapTrans = math.mul(playerTrans.Rotation(), entityManager.GetComponentData<LocalTransform>(WeaponSystem.WeaponEntities[w]).Position);
+            float3 weapTrans = math.mul(playerTrans.Rotation(), entityManager.GetComponentData<LocalTransform>(AudioManager.EquipmentEntities[w]).Position);
             weaponsData[w].weaponPos = new float2(weapTrans.x+ playerTrans.Translation().x, weapTrans.y+ playerTrans.Translation().y);
         }
 

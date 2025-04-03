@@ -13,7 +13,7 @@ public partial struct ApplyPhysicsSystem : ISystem
 
     private Vector2 gravity;
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
 
         gravity = new Vector2(0f, -9.81f);
@@ -21,13 +21,7 @@ public partial struct ApplyPhysicsSystem : ISystem
 
     }
 
-    void OnStartRunning(ref SystemState state)
-    {
-
-    }
-
-
-    void OnUpdate(ref SystemState state)
+    public void OnUpdate(ref SystemState state)
     {
 
         foreach (var (body, shape, trans) in SystemAPI.Query<RefRW<PhyBodyData>, RefRW<CircleShapeData>, RefRW<LocalTransform>>())

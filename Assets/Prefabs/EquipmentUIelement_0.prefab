@@ -486,7 +486,7 @@ GameObject:
   - component: {fileID: 2544639897066002670}
   - component: {fileID: 9001739692880858251}
   m_Layer: 5
-  m_Name: SynthUIelement_0
+  m_Name: EquipmentUIelement_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -569,8 +569,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 9001739692880858251}
-        m_TargetAssemblyTypeName: SynthUIelement, Assembly-CSharp
-        m_MethodName: _selectThisSynth
+        m_TargetAssemblyTypeName: EquipmentUIelement, Assembly-CSharp
+        m_MethodName: _selectThisEquipment
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -589,11 +589,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 2618075471381511358}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f59fcc02e443ee040ab2f1fb6099462d, type: 3}
+  m_Script: {fileID: 11500000, guid: 31683bd9ce9b9b44d8cc9ba231057228, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  startCountdown: {fileID: 8966737295921594415}
-  thisSynthIdx: 0
+  startCountdown: {fileID: 9046263244359078288}
+  thisEquipmentIdx: 0
+  thisEquipmentCategory: 0
 --- !u!1 &2948772735584981516
 GameObject:
   m_ObjectHideFlags: 0

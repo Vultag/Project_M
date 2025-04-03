@@ -11,6 +11,8 @@ public struct PlayerData : IComponentData
     public float rotate_speed;
     public Entity MainCanon;
     public Entity WeaponPrefab;
+    public Entity DrumMachinePrefab;
+    public Entity AudioSourcePrefab;
     public Entity Propeller;
 }
 
@@ -23,6 +25,8 @@ public class PlayerDataAuthoring : MonoBehaviour
     public float rotate_speed;
     public GameObject MainCanon;
     public GameObject WeaponPrefab;
+    public GameObject DrumMachinePrefab;
+    public GameObject AudioSourcePrefab;
     public GameObject PropellerGB;
 
     class DelayedDestroyDataBaker : Baker<PlayerDataAuthoring>
@@ -40,6 +44,8 @@ public class PlayerDataAuthoring : MonoBehaviour
                 rotate_speed = authoring.rotate_speed,
                 MainCanon = GetEntity(authoring.MainCanon, TransformUsageFlags.None),
                 WeaponPrefab = GetEntity(authoring.WeaponPrefab, TransformUsageFlags.None),
+                DrumMachinePrefab = GetEntity(authoring.DrumMachinePrefab, TransformUsageFlags.None),
+                AudioSourcePrefab = GetEntity(authoring.AudioSourcePrefab, TransformUsageFlags.None),
                 Propeller = GetEntity(authoring.PropellerGB, TransformUsageFlags.None),
 
             });

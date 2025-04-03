@@ -12,25 +12,31 @@ public partial struct PhysicsRenderingSystem : ISystem
 
     private Vector2 gravity;
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
-
         gravity = new Vector2(0f, -9.81f);
 
+        //var Player_query = state.EntityManager.CreateEntityQuery(typeof(PlayerData));
+        //Entity player_entity = Player_query.GetSingletonEntity();
+        //Entity start_weapon = state.EntityManager.GetComponentData<PlayerData>(player_entity).MainCanon;
+
+        //var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
+        //var ECB = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+        //var playerEquipmentSpriteBuffer = state.EntityManager.GetBuffer<Child>(start_weapon);
+
+        //ECB.AddComponent<Disabled>(playerEquipmentSpriteBuffer[0].Value);
+        //ECB.AddComponent<Disabled>(playerEquipmentSpriteBuffer[1].Value);
+        //Debug.LogError(playerEquipmentSpriteBuffer[0].Value.Index);
 
     }
 
-    void OnStartRunning(ref SystemState state)
+
+    public void OnUpdate(ref SystemState state)
     {
 
-    }
-
-
-    void OnUpdate(ref SystemState state)
-    {
         Camera cam = CameraSingleton.Instance.MainCamera;
 
-        foreach (var (player_data, player_phy, trans) in SystemAPI.Query<RefRO<PlayerData>, RefRW<PhyBodyData>, RefRO<LocalTransform>>())
+        foreach (var trans in SystemAPI.Query<RefRO<LocalTransform>>().WithAll<PlayerData>().WithAll<PhyBodyData>())
         {
             //Vector3 newCamXYpos = math.lerp(cam.transform.position, trans.ValueRO.Position, 8f * (1f / 60f));
             /// smoothing to the player cause visible stutter at high speed
