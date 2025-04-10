@@ -17,8 +17,6 @@ using static UnityEngine.EventSystems.EventTrigger;
 /// -> REVIEW AND OPTIMIZE IF NEED SYMULTANEOUS
 /// -> REMOVE COMPLETELY TO BE HANDLED BY WeaponSystem ?
 /// </summary>
-[UpdateInGroup(typeof(GameSimulationSystemGroup))]
-[UpdateBefore(typeof(WeaponSystem))]
 public partial class PlaybackRecordSystem : SystemBase
 {
 

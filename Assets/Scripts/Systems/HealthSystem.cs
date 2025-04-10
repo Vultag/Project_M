@@ -10,6 +10,8 @@ using UnityEngine;
 /// </summary>
 
 [BurstCompile]
+//[UpdateInGroup(typeof(GameSimulationSystemGroup))]
+//[UpdateBefore(typeof(PhysicsRenderingSystem))]
 public partial struct HealthSystem : ISystem
 {
     private Entity damageEventEntity;
@@ -37,28 +39,36 @@ public partial struct HealthSystem : ISystem
 
         var globalDamageBuffer = SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity);
 
-        var entitiesToDestroy = new NativeHashSet<Entity>(globalDamageBuffer.Length, Allocator.Temp);
+        /// would have excess memory for each duplicate
+        var entityDamageMap = new NativeHashMap<Entity,float>(globalDamageBuffer.Length, Allocator.Temp);
 
+        /// Process damage to a map before applying damage as group on each entity
         foreach (var damageEvent in globalDamageBuffer) 
         {
-            if (entitiesToDestroy.Contains(damageEvent.Target))
-                continue; // Skip already marked entities
+            if (!entityDamageMap.TryAdd(damageEvent.Target, damageEvent.DamageValue))
+            {
+                entityDamageMap[damageEvent.Target] += damageEvent.DamageValue;
+            }
+        }
 
-            var health = state.EntityManager.GetComponentData<HealthData>(damageEvent.Target);
-            health.HP -= damageEvent.DamageValue;
+        foreach (var damageGroup in entityDamageMap)
+        {
+            var health = state.EntityManager.GetComponentData<HealthData>(damageGroup.Key);
+            health.HP -= damageGroup.Value;
             if (health.HP > 0)
             {
-                ecb.SetComponent(damageEvent.Target, health);
+                ecb.SetComponent(damageGroup.Key, health);
             }
             else
             {
-                entitiesToDestroy.Add(damageEvent.Target);
+                //Debug.Log("called");
                 /// Assumes every entity with health is also physic
-                PhysicsCalls.DestroyPhysicsEntity(ecb, damageEvent.Target);
+                PhysicsCalls.DestroyPhysicsEntity(ecb, damageGroup.Key);
             }
-
         }
 
+
+        entityDamageMap.Dispose();
         // Clear damage events after processing
         globalDamageBuffer.Clear();
     }

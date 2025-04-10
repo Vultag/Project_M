@@ -54,6 +54,14 @@ public unsafe struct DynamicAABBTree
         rootIndex = -1;
     }
 
+    public void DisposeAABBTree()
+    {
+        nodes.Dispose();
+        leafIndices.Dispose();
+        freeNodes.Dispose();
+        entityToNode.Dispose();
+    }
+
     public int AddEntity(Entity entity, in AABB bounds, CollisionLayer collisionLayer)
     {
         int nodeID;
@@ -189,7 +197,7 @@ public unsafe struct DynamicAABBTree
     public void DisableEntity(Entity entity)
     {
         //if (!entityKeyToNode.TryGetValue(entityKey, out int nodeID)) Debug.LogError("entity key not found");
-        if (!entityToNode.TryGetValue(entity, out int nodeID)) Debug.LogError("entity not found");
+        if (!entityToNode.TryGetValue(entity, out int nodeID)) Debug.LogError("entity not found : "+ entity.Index);
 
         int parent = nodes[nodeID].parentIndex;
         int indexToRefit = parent;
@@ -200,9 +208,12 @@ public unsafe struct DynamicAABBTree
         }
         else
         {
-
             /// Propagate disable to parent if both childs are disabled
             int newParentIdx = UpdateAncestor(parent, nodeID);
+
+            //Debug.Log(newParentIdx);
+            //Debug.Log(nodes[newParentIdx].LeftChild);
+            //Debug.Log(nodes[newParentIdx].RightChild);
 
             indexToRefit = newParentIdx;
         }
@@ -212,16 +223,18 @@ public unsafe struct DynamicAABBTree
         freeNodes.Add(nodeID);
         //entityKeyToNode.Remove(entityKey);
         entityToNode.Remove(entity);
+        //Debug.Log(" remove : " + entity.Index+":"+entity.Version);
 
         Refit(indexToRefit);
 
 
-        int indexInIndices = leafIndices.IndexOf(nodeID);
+        int indexOfID = leafIndices.IndexOf(nodeID);
         // Swap the node to be removed with the last element
         int lastIndex = leafIndices.Length - 1;
-        if (indexInIndices != lastIndex)
+        if (indexOfID != lastIndex)
         {
-            leafIndices[indexInIndices] = leafIndices[lastIndex];  // Swap with last element
+            leafIndices[indexOfID] = leafIndices[lastIndex];  // Swap with last element
+            //Debug.LogWarning("swap");
         }
         // Remove the last element (which is now the node we want to remove)
         leafIndices.RemoveAt(lastIndex);
@@ -247,7 +260,10 @@ public unsafe struct DynamicAABBTree
         {
             //Debug.LogWarning("pop parent");
             //newParent.nodeType = 0; //disable
-            //nodes[currentParentIdx] = newParent;
+
+            /// ?
+            nodes[currentParentIdx] = newParent;
+
             currentEvaluatedNode = currentParentIdx;
             currentParentIdx = nodes[currentParentIdx].parentIndex;
             newParent = nodes[currentParentIdx];

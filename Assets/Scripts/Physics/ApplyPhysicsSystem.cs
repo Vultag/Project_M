@@ -7,7 +7,6 @@ using UnityEngine;
 
 ///NEEDS TO BE IN A FIXED UPDATE ?
 
-[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderLast = true)]
 public partial struct ApplyPhysicsSystem : ISystem
 {
 

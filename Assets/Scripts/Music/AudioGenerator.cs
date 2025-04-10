@@ -136,6 +136,31 @@ public class AudioGenerator : MonoBehaviour
 
     }
 
+    private void OnDestroy()
+    {
+
+        int ringBufferCapacity = 4;
+
+        SynthsData.Dispose();
+        activeKeys.Dispose();
+        activeKeyNumber.Dispose();
+        activeSynthsIdx.Dispose();
+        _audioData.Dispose();
+        SynthIdxTOactiveSynthsIdxMap.Dispose();
+        _OCSphaseIncrements.Dispose();
+        SynthGlideBaseFz.Dispose();
+        filterDelayElements.Dispose();
+        PlaybackAudioBundles.Dispose();
+        PlaybackAudioBundlesContext.Dispose();
+
+        audioRingBuffer.DisposeBuffer(ringBufferCapacity);
+
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackActivationUpdateRequired.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired.Dispose();
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Dispose();
+    }
+
 
     private void Update()
     {
@@ -368,8 +393,8 @@ public class AudioGenerator : MonoBehaviour
         //Debug.LogError(PlayerkeysBuffer.keyFrenquecies[0]);
 
         /// gather all the new playback notes in a native array
-        TotalKeysBuffer.keyFrenquecies = new NativeArray<float>(PlayerkeysBuffer.KeyNumber[0] + totalNumberOfPlaybackKeys, Allocator.TempJob);
-        TotalKeysBuffer.KeyNumber = new NativeArray<short>(activeSynthsIdx.Length, Allocator.TempJob);
+        TotalKeysBuffer.keyFrenquecies = new NativeArray<float>(PlayerkeysBuffer.KeyNumber[0] + totalNumberOfPlaybackKeys, Allocator.Temp);
+        TotalKeysBuffer.KeyNumber = new NativeArray<short>(activeSynthsIdx.Length, Allocator.Temp);
 
         ///fill the native array with the data
         //if(TotalKeysBuffer.KeyNumber.Length>0)
@@ -618,7 +643,7 @@ public class AudioGenerator : MonoBehaviour
             }
        
             /// Check if there are new note played and add it to the activeKeys array
-            int overwriteKeysNum = 0;
+            //int overwriteKeysNum = 0;
             for (int y = 0; y < TotalKeysBuffer.KeyNumber[z]; y++)
             {
                 /// The key doesnt exist -> activate it
@@ -683,33 +708,47 @@ public class AudioGenerator : MonoBehaviour
             ActiveKeysStartIdx += activeKeyNumber[i];
         }
 
-        AudioJob audioJob = new AudioJob(
-            _sampleRate,
-            _JobSynths,
-            activeKeys,
-            _JobFrequencies,
-            _JobPhases,
-            _JobDeltas,
-            filterDelayElements,
-            _audioData,
-            activeKeyNumber,
-            _OCSphaseIncrements
+        //AudioJob audioJob = new AudioJob(
+        //    _sampleRate,
+        //    _JobSynths,
+        //    activeKeys,
+        //    _JobFrequencies,
+        //    _JobPhases,
+        //    _JobDeltas,
+        //    filterDelayElements,
+        //    _audioData,
+        //    activeKeyNumber,
+        //    _OCSphaseIncrements
+        //    //SynthGlideBaseFz
+        //    );
+        AudioJob audioJob = new AudioJob {
+            _sampleRate = _sampleRate,
+            _JobSynths = _JobSynths,
+            _KeyData = activeKeys,
+            _JobFrequencies = _JobFrequencies,
+            _JobPhases = _JobPhases,
+            _JobDeltas = _JobDeltas,
+            _filterDelayElements = filterDelayElements,
+            _audioData = _audioData,
+            _activeKeynum = activeKeyNumber,
+            _OCSphaseIncrements = _OCSphaseIncrements
             //SynthGlideBaseFz
-            );
+            };
 
 
         _Audiojobhandle = audioJob.Schedule(_Audiojobhandle);
 
         _Audiojobhandle.Complete();
 
+
+        //_JobFrequencies.Dispose();
+        //_JobPhases.Dispose();
+        //_JobDeltas.Dispose();
+        //_JobSynths.Dispose();
+
         _audioData.CopyTo(data);
 
 
-    }
-
-    private void OnDestroy()
-    {
-        _audioData.Dispose();
     }
 
 
@@ -725,62 +764,63 @@ public struct AudioJob : IJob
 {
 
 
-    private float _sampleRate;
+    public float _sampleRate;
 
     [ReadOnly]
     [DeallocateOnJobCompletion]
-    private NativeArray<SynthData> _JobSynths;
+    public NativeArray<SynthData> _JobSynths;
 
-    private NativeArray<KeyData> _KeyData;
+    public NativeArray<KeyData> _KeyData;
 
 
     [ReadOnly]
     [DeallocateOnJobCompletion]
-    private NativeArray<float> _JobFrequencies;
+    public NativeArray<float> _JobFrequencies;
     [DeallocateOnJobCompletion]
-    private NativeArray<float> _JobPhases;
+    public NativeArray<float> _JobPhases;
     [DeallocateOnJobCompletion]
-    private NativeArray<float> _JobDeltas;
+    public NativeArray<float> _JobDeltas;
 
 
     //[WriteOnly]
-    private NativeArray<FilterDelayElements> _filterDelayElements;
+    public NativeArray<FilterDelayElements> _filterDelayElements;
     //[WriteOnly]
-    private NativeArray<float> _audioData;
+    public NativeArray<float> _audioData;
     //[WriteOnly]
-    private NativeArray<int> _activeKeynum;
-    private NativeArray<float> _OCSphaseIncrements;
+    public NativeArray<int> _activeKeynum;
+    public NativeArray<float> _OCSphaseIncrements;
     //[ReadOnly]
     //private NativeArray<float> _SynthGlideBaseFz;
 
-    public AudioJob(
-       float sampleRate,
-       NativeArray<SynthData> synthsdata,
-       NativeArray<KeyData> KeyData,
+    //public AudioJob(
+    //   float sampleRate,
+    //   NativeArray<SynthData> synthsdata,
+    //   NativeArray<KeyData> KeyData,
 
 
-        NativeArray<float> JobFrequencies,
-        NativeArray<float> JobPhases,
-        NativeArray<float> JobDeltas,
-        NativeArray<FilterDelayElements> filterDelayElements,
-        NativeArray<float> audioData,
-        NativeArray<int> activeKeynum,
-        NativeArray<float> OCSphaseIncrements
-        //NativeArray<float> SynthGlideBaseFz
-       )
-    {
-        _JobSynths = synthsdata;
-        _KeyData = KeyData;
-        _sampleRate = sampleRate;
-        _JobFrequencies = JobFrequencies;
-        _JobPhases = JobPhases;
-        _JobDeltas = JobDeltas;
-        _filterDelayElements = filterDelayElements;
-        _audioData = audioData;
-        _activeKeynum = activeKeynum;
-        _OCSphaseIncrements = OCSphaseIncrements;
-        //_SynthGlideBaseFz = SynthGlideBaseFz;
-    }
+    //    NativeArray<float> JobFrequencies,
+    //    NativeArray<float> JobPhases,
+    //    NativeArray<float> JobDeltas,
+    //    NativeArray<FilterDelayElements> filterDelayElements,
+    //    NativeArray<float> audioData,
+    //    NativeArray<int> activeKeynum,
+    //    NativeArray<float> OCSphaseIncrements
+    //   //NativeArray<float> SynthGlideBaseFz
+    //   )
+    //{ }
+    //{
+    //    _JobSynths = synthsdata;
+    //    _KeyData = KeyData;
+    //    _sampleRate = sampleRate;
+    //    _JobFrequencies = JobFrequencies;
+    //    _JobPhases = JobPhases;
+    //    _JobDeltas = JobDeltas;
+    //    _filterDelayElements = filterDelayElements;
+    //    _audioData = audioData;
+    //    _activeKeynum = activeKeynum;
+    //    _OCSphaseIncrements = OCSphaseIncrements;
+    //    //_SynthGlideBaseFz = SynthGlideBaseFz;
+    //}
 
     public void Execute()
     {
@@ -834,12 +874,14 @@ public struct AudioJob : IJob
             //return;
         }
 
+        /// SHOULD NOT DO ALLOCATION INSIDE JOB !?
         NativeArray<ADSRlayouts> KeysADSRlayouts = new NativeArray<ADSRlayouts>(_JobFrequencies.Length, Allocator.Temp);
 
         /// Subdivision = times the filter coefficients recalculate within the DSPbufferSize : 8 = 1 filter update per 64sample(512/8)
         /// CONSTANTS
         int filterBlockReprocessSubdivision = (int)Mathf.Pow(2,3);
         int filterBlockReprocessSize = 512 / filterBlockReprocessSubdivision;
+        /// SHOULD NOT DO ALLOCATION INSIDE JOB !?
         NativeArray<FilterCoefficients> filterCoefficients = new NativeArray<FilterCoefficients>(_JobFrequencies.Length * filterBlockReprocessSubdivision, Allocator.Temp);
 
         int activeKeyStartidx = 0;

@@ -93,7 +93,7 @@ public partial class MachineDrumSystem : SystemBase
         DrumMachineData newDMachineData = EntityManager.GetComponentData<DrumMachineData>(activeDMachineEntity);
 
         Vector2 mouseDirection = mousepos - new Vector2(Wtrans.Position.x, Wtrans.Position.y);
-        Vector2 localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
+        ///Vector2 localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
         /// Do game logic and store audio call in a nativestack ?
 
@@ -104,10 +104,10 @@ public partial class MachineDrumSystem : SystemBase
             //store it ?
             int numberOfInstruments = math.countbits((int)newDMachineData.machineDrumContent)+1;  // Counts the number of set bits
 
-            float radian = PhysicsUtilities.DirectionToRadians(localMouseDirection);
-            float side = Mathf.Sign(radian);
-            radian = radian * side + (side * 0.5f + 0.5f) * Mathf.PI;
-            float normalizedRadian = (radian / Mathf.PI)*0.5f;
+            float mouseRadian = PhysicsUtilities.DirectionToRadians(mouseDirection);
+            float side = Mathf.Sign(mouseRadian);
+            mouseRadian = mouseRadian * side + (side * 0.5f + 0.5f) * Mathf.PI;
+            float normalizedRadian = (mouseRadian / Mathf.PI)*0.5f;
 
             int PadIdx = Mathf.FloorToInt(normalizedRadian * numberOfInstruments);
 
@@ -185,23 +185,23 @@ public partial class MachineDrumSystem : SystemBase
 
                         SnareBaguetteColList.Dispose();
 
-                        var playerInverseRad = Quaternion.Inverse(parentTransform.Value.Rotation()).eulerAngles.z * Mathf.Deg2Rad;
-                        //Debug.Log(playerInverseRad);
-                        /// rotate to be relative to player
-                        float cos = Mathf.Cos(playerInverseRad);
-                        float sin = Mathf.Sin(playerInverseRad);
-                        snareDir = new Vector2(
-                            snareDir.x * cos - snareDir.y * sin,
-                            snareDir.x * sin + snareDir.y * cos
-                        );
+                        ////var playerInverseRad = Quaternion.Inverse(parentTransform.Value.Rotation()).eulerAngles.z * Mathf.Deg2Rad;
+                        //////Debug.Log(playerInverseRad);
+                        /////// rotate to be relative to player
+                        ////float cos = Mathf.Cos(playerInverseRad);
+                        ////float sin = Mathf.Sin(playerInverseRad);
+                        ////snareDir = new Vector2(
+                        ////    snareDir.x * cos - snareDir.y * sin,
+                        ////    snareDir.x * sin + snareDir.y * cos
+                        ////);
 
                     }
                     SnareColList.Dispose();
 
+                    ///float localRadian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y)/Mathf.PI + 1)*0.5f;
+                    float radian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y)/Mathf.PI + 1)*0.5f;
 
-                    float localRadian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y)/Mathf.PI + 1)*0.5f;
-                   
-                    requests.Add((1, localRadian));
+                    requests.Add((1, radian));
                     break;
                 case 2:
                     //Debug.Log("HighHat");

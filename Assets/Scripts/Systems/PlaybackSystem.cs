@@ -12,7 +12,7 @@ public partial struct PlaybackSystem : ISystem
 
     private Entity damageEventEntity;
 
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
         // Check if the GlobalDamageEvent entity already exists
         if (SystemAPI.HasSingleton<GlobalDamageEvent>())
@@ -30,7 +30,7 @@ public partial struct PlaybackSystem : ISystem
     }
 
 
-    void OnUpdate(ref SystemState state)
+    public void OnUpdate(ref SystemState state)
     {
 
         EntityCommandBuffer ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
@@ -196,7 +196,7 @@ public partial struct PlaybackSystem : ISystem
                     SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
                     {
                         Target = Hit.entity,
-                        DamageValue = 3f * SystemAPI.Time.DeltaTime
+                        DamageValue = 25f * SystemAPI.Time.DeltaTime
                     });
                     //MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
                     //newMonsterData.hp -= 3f * SystemAPI.Time.DeltaTime;
@@ -283,7 +283,7 @@ public partial struct PlaybackSystem : ISystem
                     SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
                     {
                         Target = Hit.entity,
-                        DamageValue = 3f * SystemAPI.Time.DeltaTime
+                        DamageValue = 25f * SystemAPI.Time.DeltaTime
                     });
                     //MonsterData newMonsterData = SystemAPI.GetComponent<MonsterData>(Hit.entity);
                     //newMonsterData.Health -= 3f * SystemAPI.Time.DeltaTime;

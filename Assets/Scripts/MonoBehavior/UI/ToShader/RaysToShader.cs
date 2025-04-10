@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Numerics;
@@ -83,6 +84,8 @@ public class RaysToShader : MonoBehaviour
     }
     private void LateUpdate()
     {
+        if (audioManager.Player_query.IsEmpty)
+            return;
   
         //redondant ?
         Entity player_entity = audioManager.Player_query.GetSingletonEntity();
@@ -92,12 +95,13 @@ public class RaysToShader : MonoBehaviour
         int c = 0;
         if (!audioManager.ActiveWeapon_query.IsEmpty)
         {
+            Entity controlledWeapon_entity = audioManager.ControlledEquipment_query.GetSingletonEntity();
             Entity activeWeapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
 
             if(entityManager.HasComponent<RayData>(activeWeapon_entity))
             {
-                DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(activeWeapon_entity);
-                DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(activeWeapon_entity);
+                DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(controlledWeapon_entity);
+                DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(controlledWeapon_entity);
 
                 SynthData activeSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
 
@@ -175,10 +179,10 @@ public class RaysToShader : MonoBehaviour
 
         var main_weapon_trans = math.mul(playerTrans.Rotation(), new float3(0, 0.42f,0));
         weaponsData[0].weaponPos = new float2(main_weapon_trans.x + playerTrans.Translation().x, main_weapon_trans.y + playerTrans.Translation().y);
-        for (int w = 1; w < AudioManager.EquipmentEntities.Length; w++)
+        for (int w = 0; w < AudioManager.AuxillaryEquipmentEntities.Length; w++)
         {
-            float3 weapTrans = math.mul(playerTrans.Rotation(), entityManager.GetComponentData<LocalTransform>(AudioManager.EquipmentEntities[w]).Position);
-            weaponsData[w].weaponPos = new float2(weapTrans.x+ playerTrans.Translation().x, weapTrans.y+ playerTrans.Translation().y);
+            float3 weapTrans = math.mul(playerTrans.Rotation(), entityManager.GetComponentData<LocalTransform>(AudioManager.AuxillaryEquipmentEntities[w]).Position);
+            weaponsData[w+1].weaponPos = new float2(weapTrans.x+ playerTrans.Translation().x, weapTrans.y+ playerTrans.Translation().y);
         }
 
 
@@ -199,11 +203,8 @@ public class RaysToShader : MonoBehaviour
     }
     private void OnDestroy()
     {
-        // Release the compute buffer when done
-        if (SignalBuffer != null)
-        {
-            SignalBuffer.Release();
-        }
+        SignalBuffer.Dispose();
+        WeaponsDataBuffer.Dispose();
     }
 
     //void passShaderData()

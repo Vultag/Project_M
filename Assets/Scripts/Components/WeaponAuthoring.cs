@@ -27,6 +27,8 @@ public struct WeaponData : IComponentData
     public WeaponType weaponType;
 
     public Entity ProjectilePrefab;
+    public Entity MainWeaponSpriteE;
+    public Entity MainDMachineSpriteE;
 }
 public struct RayData:IComponentData
 {
@@ -46,6 +48,9 @@ public class WeaponAuthoring : MonoBehaviour
     //Vector2 OffsetFromPlayer;
     public GameObject ProjectilePrefab;
 
+    public GameObject MainWeaponSpriteGB;
+    public GameObject MainDMachineSpriteGB;
+
     class WeaponBaker : Baker<WeaponAuthoring>
     {
         public override void Bake(WeaponAuthoring authoring)
@@ -59,11 +64,12 @@ public class WeaponAuthoring : MonoBehaviour
             
             AddComponent(entity, new WeaponData
             {
-                /// Baking weapon will be the main one
-                /// COMPONNENT IS SET ON PICKUP ANYWAY ?
+                /// both auxilliary weapon and main weapon -> decouple
                 WeaponIdx = 0,
                 weaponType = WeaponType.Raygun,
-                ProjectilePrefab = GetEntity(authoring.ProjectilePrefab,TransformUsageFlags.None)
+                ProjectilePrefab = GetEntity(authoring.ProjectilePrefab,TransformUsageFlags.None),
+                MainWeaponSpriteE = GetEntity(authoring.MainWeaponSpriteGB,TransformUsageFlags.None),
+                MainDMachineSpriteE = GetEntity(authoring.MainDMachineSpriteGB, TransformUsageFlags.None),
                 //OffsetFromPlayer = authoring.OffsetFromPlayer,
 
             });
@@ -73,8 +79,8 @@ public class WeaponAuthoring : MonoBehaviour
             //equipmentBuffer.Add(new Child { Value = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None) });
 
             /// hide Weapon and DMachine on main slot at start
-            var playerWeaponSpriteEntity = GetEntity(authoring.transform.GetChild(0), TransformUsageFlags.None);
-            var playerDMachineSpriteEntity = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None);
+            //var playerWeaponSpriteEntity = GetEntity(authoring.transform.GetChild(0), TransformUsageFlags.None);
+            //var playerDMachineSpriteEntity = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None);
             //MaterialMeshInfo newWeaponMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerWeaponSpriteEntity);
             //newWeaponMaterialMeshInfo.Mesh = 0;
             //ECB.SetComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, newWeaponMaterialMeshInfo);

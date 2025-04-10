@@ -6,7 +6,6 @@ using Unity.Transforms;
 using UnityEngine;
 
 
-[UpdateInGroup(typeof(GameSimulationSystemGroup), OrderLast = true)]
 public partial struct PhysicsRenderingSystem : ISystem
 {
 

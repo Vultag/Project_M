@@ -325,7 +325,7 @@ namespace MusicNamespace
                 newRadDir += OctaveRadianWeights[idx]*0.5f + OctaveRadianWeights[idx+1]*0.5f;
                 idx++;
             }
-            Debug.Log(idx);
+            //Debug.Log(idx);
 
             //newRadDir = (Mathf.Round(newRadDir / (Mathf.PI / NoteNumInCircle))) * (Mathf.PI / NoteNumInCircle);
             return PhysicsUtilities.RadianToDirection(newRadDir);

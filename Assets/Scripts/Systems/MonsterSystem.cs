@@ -18,6 +18,7 @@ public partial struct MonsterSystem : ISystem
     public void OnCreate(ref SystemState state)
     {
 
+        state.RequireForUpdate<PlayerData>();
     }
 
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Drawing;
 using Unity.Collections;
 using UnityEngine;
 
@@ -64,11 +65,7 @@ public struct PlaybackAudioBundle
 {
     //make sure to dispose
     public NativeArray<PlaybackKey> PlaybackKeys;
-    //public int PlaybackKeyStartIndex;
     public float PlaybackDuration;
-    //public bool IsLooping;
-    // not needed ?
-    //public bool IsPlaying;
 }
 public struct PlaybackAudioBundleContext
 {
@@ -134,6 +131,14 @@ public class AudioRingBuffer<T>
             {
                 buffer[i] = (new KeysBuffer { keyFrenquecies = new NativeArray<float>(12, Allocator.Persistent), KeyNumber = new NativeArray<short>(1, Allocator.Persistent) });
             }
+        }
+    }
+    public void DisposeBuffer(int size)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            buffer[i].KeyNumber.Dispose();
+            buffer[i].keyFrenquecies.Dispose();
         }
     }
     public void ResetSize()

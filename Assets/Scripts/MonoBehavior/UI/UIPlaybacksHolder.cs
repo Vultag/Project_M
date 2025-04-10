@@ -54,6 +54,18 @@ public class UIPlaybacksHolder : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        for (int i = 0; i < synthFullBundleLists.Length; i++)
+        {
+            for (int y = 0; y < synthFullBundleLists[i].Count; y++)
+            {
+                synthFullBundleLists[i][y].playbackAudioBundle.PlaybackKeys.Dispose();
+                synthFullBundleLists[i][y].musicSheet._Dispose();
+            }
+        }
+    }
+
     public void _AddSynthPlaybackContainer(ref PlaybackAudioBundle newAudioBundle,ref MusicSheetData newSheetData, int synthIdx)
     {
 

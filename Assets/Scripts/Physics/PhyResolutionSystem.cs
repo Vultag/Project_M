@@ -21,8 +21,6 @@ public struct CollisionPair
 }
 
 
-[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
-[UpdateBefore(typeof(ApplyPhysicsSystem))]
 public partial struct PhyResolutionSystem : ISystem//, ISystemStartStop
 {
 

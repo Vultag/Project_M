@@ -71,6 +71,7 @@ public class FliterToShader : MonoBehaviour
     /// <summary>
     /// to rework / fix
     /// </summary>
+    /*
     public void BakeShaderToTexture()
     {
 
@@ -120,6 +121,8 @@ public class FliterToShader : MonoBehaviour
         // Restore previously active render texture
         //RenderTexture.active = currentActiveRT;
     }
+    */
+
 
     //private IEnumerator BakeShaderNextFrame()
     //{

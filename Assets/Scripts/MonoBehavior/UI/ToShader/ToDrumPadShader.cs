@@ -45,14 +45,14 @@ public class ToDrumPadShader : MonoBehaviour
         Quaternion playerRotation = playerTrans.Rotation();
 
         Vector2 mouseDir = new Vector2(mousepos.x - weaponPos.x, mousepos.y - weaponPos.y);
-        mouseDir = math.mul(Quaternion.Inverse(playerRotation), new float3(mouseDir.x, mouseDir.y, 0)).xy;
+        ///mouseDir = math.mul(Quaternion.Inverse(playerRotation), new float3(mouseDir.x, mouseDir.y, 0)).xy;
 
         float mouseNormRadian = Mathf.Atan2(mouseDir.x, mouseDir.y) / Mathf.PI;
 
         pressInertia = InputManager.KeyPressed ? 1 : Mathf.Lerp(pressInertia, pressInertia * 0.25f, Time.deltaTime * 4);
 
         ///UNT0022 OPTI
-        this.transform.parent.rotation = playerRotation;
+        ///this.transform.parent.rotation = playerRotation;
         this.transform.parent.position = weaponTrans.Translation();
 
         //Debug.Log((mouseNormRadian + 1) * 0.5f);

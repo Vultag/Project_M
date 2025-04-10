@@ -103,6 +103,7 @@ public class PhyBodyAuthoring : MonoBehaviour
                 case ShapeType.Circle:
                     AddComponent(entity, new CircleShapeData
                     {
+                        Position = authoring.transform.position,
                         radius = authoring.radius,
                         collisionLayer = authoring.collisionLayer,
                         Rotation = Quaternion.identity,

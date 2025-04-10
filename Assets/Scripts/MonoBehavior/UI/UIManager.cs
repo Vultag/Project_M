@@ -64,7 +64,6 @@ public class UIManager : MonoBehaviour
     private EntityManager entityManager;
     //private EntityQuery Player_query;
 
-    [HideInInspector]
     public Canvas canvas;
     //private NativeArray<AABB> UIsurface;
 
@@ -113,8 +112,6 @@ public class UIManager : MonoBehaviour
         //Player_query = entityManager.CreateEntityQuery(typeof(PlayerData));
 
         activeUIEquipment = new List<(short, bool, bool)>();
-
-        canvas = this.gameObject.transform.parent.GetComponent<Canvas>();
 
         ///ConstructUIsurface();
         
@@ -203,7 +200,7 @@ public class UIManager : MonoBehaviour
         SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[index];
         UpdateSynthUI(
             in selectedSynthData,
-            entityManager.GetComponentData<WeaponData>(AudioManager.EquipmentEntities[index + 1]).weaponType
+            entityManager.GetComponentData<WeaponData>(AudioManager.AuxillaryEquipmentEntities[index]).weaponType
             );
 
         if (!audioManager.ActiveWeapon_query.IsEmpty)
@@ -291,17 +288,17 @@ public class UIManager : MonoBehaviour
 
         SynthData newSynthData = SynthData.CreateDefault(weaponType);
 
-        audioManager.AddSynth(NumOfEquipments + 1,newSynthData, weaponClass,weaponType);
+        audioManager.AddSynth(NumOfEquipments,newSynthData, weaponClass,weaponType);
 
-        if (NumOfEquipments == 1)
-        {
-            _SelectSynthUI(0);
-            //UpdateSynthUI(in newSynthData, weaponType);
+        //if (NumOfEquipments == 1)
+        //{
+        //    _SelectSynthUI(0);
+        //    //UpdateSynthUI(in newSynthData, weaponType);
 
-            //activeUISynthIdx = 0;
-            //audioManager.activeWeaponIDX = 0;
-            //SynthEditPanel.SetActive(true);
-        }
+        //    //activeUISynthIdx = 0;
+        //    //audioManager.activeWeaponIDX = 0;
+        //    //SynthEditPanel.SetActive(true);
+        //}
 
     }
 
@@ -318,16 +315,16 @@ public class UIManager : MonoBehaviour
 
         //SynthData newSynthData = SynthData.CreateDefault(weaponType);
 
-        audioManager.AddDrumMachine(NumOfDMachines + 1);
+        audioManager.AddDrumMachine(NumOfEquipments);
 
-        if (NumOfEquipments == 1)
-        {
-            _SelectMachineDrumUI(0);
+        //if (NumOfEquipments == 1)
+        //{
+        //    _SelectMachineDrumUI(0);
 
-            //UpdateSynthUI(in newSynthData, weaponType);
+        //    //UpdateSynthUI(in newSynthData, weaponType);
 
-            //SynthEditPanel.SetActive(true);
-        }
+        //    //SynthEditPanel.SetActive(true);
+        //}
 
     }
 
@@ -487,8 +484,8 @@ public class UIManager : MonoBehaviour
 
         AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(PBidx.x);
 
-        var weaponIdx = PBidx.x + 1;
-        Entity weapon_entity = AudioManager.EquipmentEntities[weaponIdx];
+        //var weaponIdx = PBidx.x + 1;
+        Entity weapon_entity = AudioManager.AuxillaryEquipmentEntities[PBidx.x];
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
@@ -516,8 +513,8 @@ public class UIManager : MonoBehaviour
     public void _StopPlayback(int synthIdx)
     {
         ///prevent activation if no playback playing
-        var weaponIdx = synthIdx + 1;
-        Entity weapon_entity = AudioManager.EquipmentEntities[weaponIdx];
+        //var weaponIdx = synthIdx + 1;
+        Entity weapon_entity = AudioManager.AuxillaryEquipmentEntities[synthIdx];
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 

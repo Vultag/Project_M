@@ -1,11 +1,11 @@
 using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
+using Unity.VisualScripting;
 using UnityEngine;
 using static UnityEngine.EventSystems.EventTrigger;
 
-[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderFirst = true)]
-[UpdateBefore(typeof(PhyResolutionSystem))]
+
 public partial struct TreeInsersionSystem : ISystem//, ISystemStartStop
 {
 
@@ -23,6 +23,11 @@ public partial struct TreeInsersionSystem : ISystem//, ISystemStartStop
         AABBtree = new DynamicAABBTree(128); ;
         //AABBtree.nodes = new NativeArray<AABBTreeNode>(500, Allocator.Persistent);
 
+    }
+
+    public void OnDestroy(ref SystemState state)
+    {
+        AABBtree.DisposeAABBTree();
     }
 
     //void ISystemStartStop.OnStartRunning(ref SystemState state)
@@ -118,18 +123,18 @@ public partial struct TreeInsersionSystem : ISystem//, ISystemStartStop
 
 
         /*debug purpuse*/
-        for (int i = 0; i < AABBtree.nodes.Length; i++)
-        {
-            if (AABBtree.nodes[i].isLeaf == true)
-            {
-                if (AABBtree.leafIndices.Contains(i))
-                { DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.yellow); }
-                else
-                { DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.red); }
-            }
-            else
-            { DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.green); }
-        }
+        //for (int i = 0; i < AABBtree.nodes.Length; i++)
+        //{
+        //    if (AABBtree.nodes[i].isLeaf == true)
+        //    {
+        //        if (AABBtree.leafIndices.Contains(i))
+        //        { DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.yellow); }
+        //        else
+        //        { DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.red); }
+        //    }
+        //    else
+        //    { DrawQuad(AABBtree.nodes[i].box.LowerBound, AABBtree.nodes[i].box.UpperBound, Color.green); }
+        //}
 
 
 

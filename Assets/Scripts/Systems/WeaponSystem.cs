@@ -11,8 +11,6 @@ using static UnityEngine.EventSystems.EventTrigger;
 using UnityEditor.Rendering;
 using Unity.Rendering;
 
-[UpdateInGroup(typeof(GameSimulationSystemGroup))]
-//[UpdateAfter(typeof(PhyResolutionSystem))]
 public partial class WeaponSystem : SystemBase
 {
 
@@ -47,10 +45,12 @@ public partial class WeaponSystem : SystemBase
 
     private Entity damageEventEntity;
 
+    public EntityQuery ControlledEquipment_query;
+
     protected override void OnCreate()
     {
         /// should work but AudioLayoutStorage.activeSynthIdx is changed before ActiveSynthTag removal
-        //RequireForUpdate<ActiveSynthTag>();
+        RequireForUpdate<PlayerData>();
         AudioLayoutStorage.activeSynthIdx = -1;
 
         damageEventEntity = EntityManager.CreateEntityQuery(typeof(GlobalDamageEvent)).GetSingletonEntity();
@@ -59,6 +59,7 @@ public partial class WeaponSystem : SystemBase
     protected override void OnStartRunning()
     {
         var Player_query = EntityManager.CreateEntityQuery(typeof(PlayerData));
+        ControlledEquipment_query = EntityManager.CreateEntityQuery(typeof(ControledWeaponTag));
         Entity player_entity = Player_query.GetSingletonEntity();
         Entity start_weapon = EntityManager.GetComponentData<PlayerData>(player_entity).MainCanon;
 
@@ -84,7 +85,7 @@ public partial class WeaponSystem : SystemBase
 
             //BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
 
-            ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
+        ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
         /// Moved to input manager
         //BeatProximityThreshold = (0.2f * 4.1f) * Mathf.Min((1.5f*MusicUtils.BPM)/60f,1);
@@ -96,7 +97,7 @@ public partial class WeaponSystem : SystemBase
         //Debug.Log(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
 
         //Debug.Break();
-        var mainWeaponEntity = AudioManager.EquipmentEntities[activeWeaponIdx + 1];
+        var mainWeaponEntity = ControlledEquipment_query.GetSingletonEntity();
         DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<SustainedKeyBufferData>(mainWeaponEntity);
         DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<ReleasedKeyBufferData>(mainWeaponEntity);
 
@@ -391,6 +392,8 @@ public partial class WeaponSystem : SystemBase
                             Target = Hit.entity,
                             DamageValue = 25f * SystemAPI.Time.DeltaTime
                         });
+
+                        //Debug.Log("rayhit : " + Hit.entity);
 
                     }
                     else

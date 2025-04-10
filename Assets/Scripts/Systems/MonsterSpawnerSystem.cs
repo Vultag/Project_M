@@ -12,12 +12,12 @@ using Random = UnityEngine.Random;
 [UpdateInGroup(typeof(GameSimulationSystemGroup),OrderFirst = true)]
 public partial struct MonsterSpawnerSystem : ISystem
 {
-    void OnCreate(ref SystemState state)
+    public void OnCreate(ref SystemState state)
     {
         state.RequireForUpdate<BeginSimulationEntityCommandBufferSystem.Singleton>();
     }
 
-    void OnUpdate(ref SystemState state)
+    public void OnUpdate(ref SystemState state)
     {
 
         EntityCommandBuffer ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
