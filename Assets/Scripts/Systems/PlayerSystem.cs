@@ -38,7 +38,7 @@ public partial class PlayerSystem : SystemBase
         //input_actions.ActionMap.Shoot.canceled += OnPlayerShoot;
 
         //physics
-        foreach (var (shape, trans) in SystemAPI.Query<RefRW<CircleShapeData>, RefRO<LocalTransform>>())
+        foreach (var (shape, trans) in SystemAPI.Query<RefRW<ShapeData>, RefRO<LocalTransform>>())
         {
 
             shape.ValueRW.Position = new Vector2(trans.ValueRO.Position.x, trans.ValueRO.Position.y);
@@ -81,9 +81,13 @@ public partial class PlayerSystem : SystemBase
             //newPropellerStrenghtFactor = moveDirection.y != 0 ? math.min(newPropellerStrenghtFactor+player_data.ValueRO.propellerChargeSpeed,1) : math.max(newPropellerStrenghtFactor - player_data.ValueRO.propellerChargeSpeed, 0);
             
             var PropellerStrenght = moveDirection.y > 0 ? moveDirection.y * player_data.ValueRO.propellerMaxStrenght : moveDirection.y * player_data.ValueRO.propellerBackpedalRelativeStrenght * player_data.ValueRO.propellerMaxStrenght;
-          
+
             player_phy.ValueRW.Force += PropellerStrenght * new Vector2(forward.x, forward.y);
             player_phy.ValueRW.AngularForce += -player_data.ValueRO.rotate_speed * moveDirection.x;
+
+            //player_phy.ValueRW.Force += moveDirection * player_data.ValueRO.propellerMaxStrenght *3;
+            //player_phy.ValueRW.AngularForce -= 0.003f;
+
             var newPropellerTrans = EntityManager.GetComponentData<LocalTransform>(player_data.ValueRO.Propeller);
             propellerCurrentScale = Mathf.Clamp01(propellerCurrentScale + propellerScalingSpeed * (math.sign(moveDirection.y) - 0.5f) * 2);
             newPropellerTrans.Scale = propellerCurrentScale;

@@ -49,7 +49,7 @@ Material:
     - _EditorCamRatio: 0.8116883
     - _EnableExternalAlpha: 0
     - _Frequency: 8
-    - _SignalCount: 1
+    - _SignalCount: 0
     - _Time: 8.681143
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}

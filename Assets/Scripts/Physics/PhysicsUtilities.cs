@@ -31,16 +31,20 @@ public struct PhysicsUtilities
         MonsterLayer = (1 << 2),  
         CollectibleLayer = (1 << 3),
         ProjectileLayer = (1 << 4),
+        StaticObstacleLayer = (1 << 5),
+        DynamicObstacleLayer = (1 << 6),
     }
     /// MOVE AWAY
     // Precomputed collision masks
-    private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[5]
+    private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[7]
     {
         CollisionLayer.None,
-        CollisionLayer.MonsterLayer | CollisionLayer.CollectibleLayer,
-        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer |  CollisionLayer.ProjectileLayer,
+        CollisionLayer.MonsterLayer | CollisionLayer.CollectibleLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer,
+        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer |  CollisionLayer.ProjectileLayer | CollisionLayer.StaticObstacleLayer| CollisionLayer.DynamicObstacleLayer,
         CollisionLayer.PlayerLayer,
         CollisionLayer.MonsterLayer,
+        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer,
+        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer,
     };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -66,38 +70,38 @@ public struct PhysicsUtilities
         // < 0 -> out ; > 0 -> in
         return Mathf.Sign(Mathf.Max(intersectionX, intersectionY)) * (intersectionX * intersectionY);
     }
-    public static float Proximity(AABB A, CircleShapeData B)
+    public static float Proximity(AABB A, float2 positon, float radius)
     {
 
         /*Often wrong direction but doest pose problem for proximity calculs*/
-        float minX = Mathf.Min(B.Position.x - A.LowerBound.x, 0, A.UpperBound.x - B.Position.x);
-        float minY = Mathf.Min(B.Position.y - A.LowerBound.y, 0, A.UpperBound.y - B.Position.y);
-        float pX = B.Position.x + (minX * (Mathf.Sign(B.Position.x)));
-        float pY = B.Position.y + (minY * (Mathf.Sign(B.Position.y)));
+        float minX = Mathf.Min(positon.x - A.LowerBound.x, 0, A.UpperBound.x - positon.x);
+        float minY = Mathf.Min(positon.y - A.LowerBound.y, 0, A.UpperBound.y - positon.y);
+        float pX = positon.x + (minX * (Mathf.Sign(positon.x)));
+        float pY = positon.y + (minY * (Mathf.Sign(positon.y)));
 
         //Debug purpose
         //Debug.DrawLine(new Vector3(B.Position.x, B.Position.y, 0), new Vector3(pX, pY,0), Color.red, 0.1f);
 
-        float dX = B.Position.x - pX;
-        float dY = B.Position.y - pY;
+        float dX = positon.x - pX;
+        float dY = positon.y - pY;
 
         float distance = Mathf.Sqrt(dX * dX + dY * dY);
 
         //Debug.LogError(distance - B.radius);
 
-        return distance - B.radius;
+        return distance - radius;
     }
 
-    public static float Proximity(CircleShapeData A, CircleShapeData B)
+    public static float Proximity(float2 Apositon, float Aradius, float2 Bpositon, float Bradius)
     {
 
         // Calculate squared distance between the centers of the circles
-        float deltaX = B.Position.x - A.Position.x;
-        float deltaY = B.Position.y - A.Position.y;
+        float deltaX = Bpositon.x - Apositon.x;
+        float deltaY = Bpositon.y - Apositon.y;
         float distanceSquared = deltaX * deltaX + deltaY * deltaY;
 
         // Calculate squared sum of radii
-        float sumRadiiSquared = (A.radius + B.radius) * (A.radius + B.radius);
+        float sumRadiiSquared = (Aradius + Bradius) * (Aradius + Bradius);
 
         // Calculate squared proximity (squared distance - squared sum of radii)
         float proximitySquared = distanceSquared - sumRadiiSquared;
@@ -141,12 +145,31 @@ public struct PhysicsUtilities
 
     }
 
-    public static float Intersect(CircleShapeData circle, Ray ray)
+    /// Sub-optimal, batch raycast instead ?
+    public static float Intersect(ShapeData shape, Entity entity,
+        in ComponentLookup<CircleShapeData> circleShapeLookUp, in ComponentLookup<BoxShapeData> boxShapeLookUp,
+        Ray ray)
+    {
+
+        switch (shape.shapeType)
+        {
+            case ShapeType.Circle:
+                var circle = circleShapeLookUp.GetRefRO(entity);
+                return IntersectCircle(shape.Position, circle.ValueRO.radius,ray);
+            case ShapeType.Box:
+                var box = boxShapeLookUp.GetRefRO(entity);
+                return IntersectBox(shape.Position,shape.Rotation * Mathf.Deg2Rad, box.ValueRO.dimentions*0.5f,ray);
+            default:
+                return 0;
+        }
+    }
+
+    public static float IntersectCircle(Vector2 positon, float radius, Ray ray)
     {
         float maxRange = ray.DirLength.magnitude;
-        Vector2 m = ray.Origin - circle.Position;
+        Vector2 m = ray.Origin - positon;
         float b = Vector2.Dot(m, ray.DirLength.normalized);
-        float c = Vector2.Dot(m, m) - circle.radius * circle.radius;
+        float c = Vector2.Dot(m, m) - radius * radius;
 
         float discriminant = b * b - c;
 
@@ -168,6 +191,54 @@ public struct PhysicsUtilities
         // Ensure discriminant is positive and t is within the valid range, else return -1.0f
         float noIntersectionMask = Mathf.Sign(discriminant) * Mathf.Sign(t); // If either is negative, return -1.0f
         return t * noIntersectionMask;
+    }
+    public static float IntersectBox(Vector2 boxCenter, float rotation, Vector2 halfExtents, Ray ray)
+    {
+        // Step 1: Compute vector from box center to ray origin
+        Vector2 delta = ray.Origin - boxCenter;
+
+        // Step 2: Calculate rotation axes from angle
+        float cos = Mathf.Cos(rotation);
+        float sin = Mathf.Sin(rotation);
+
+        // Rotation matrix
+        Vector2 axisX = new Vector2(cos, sin);
+        Vector2 axisY = new Vector2(-sin, cos);
+
+        // Step 3: Project ray and delta into box space (no Quaternion, just dot products)
+        Vector2 localOrigin = new Vector2(
+            Vector2.Dot(delta, axisX),
+            Vector2.Dot(delta, axisY)
+        );
+        Vector2 localDirection = new Vector2(
+            Vector2.Dot(ray.DirLength, axisX),
+            Vector2.Dot(ray.DirLength, axisY)
+        );
+
+        Vector2 invDir = new Vector2(
+            localDirection.x != 0.0f ? 1.0f / localDirection.x : float.MaxValue,
+            localDirection.y != 0.0f ? 1.0f / localDirection.y : float.MaxValue
+        );
+
+        Vector2 t1 = (-halfExtents - localOrigin) * invDir;
+        Vector2 t2 = (halfExtents - localOrigin) * invDir;
+
+        float tMin = Mathf.Max(Mathf.Min(t1.x, t2.x), Mathf.Min(t1.y, t2.y));
+        float tMax = Mathf.Min(Mathf.Max(t1.x, t2.x), Mathf.Max(t1.y, t2.y));
+
+        // No hit if slabs don't overlap or tMax < 0
+        if (tMin > tMax || tMax < 0.0f)
+            return -1.0f;
+
+        float maxRange = ray.DirLength.magnitude;
+
+        // If nearest hit is too far, no hit
+        if (tMin > maxRange)
+            return -1.0f;
+
+        // Choose valid t
+        float t = (tMin >= 0.0f) ? tMin : tMax;
+        return t;
     }
 
     /// Move away from physics utils ?
@@ -275,6 +346,84 @@ public struct PhysicsUtilities
         Vector2 Target = new Vector2(-rotatedTarget.y,rotatedTarget.x);
 
         return Target;
+    }
+
+    public static AABB AABBfromShape(Vector2 pos, CircleShapeData circleData)
+    {
+        return new AABB
+        {
+            UpperBound = new Vector2(pos.x + circleData.radius, pos.y + circleData.radius),
+            LowerBound = new Vector2(pos.x - circleData.radius, pos.y - circleData.radius)
+        };
+    }
+    public static AABB AABBfromShape(Vector2 pos, float rot, BoxShapeData boxData)
+    {
+        Vector2 halfExtents = boxData.dimentions * 0.5f;
+        rot *= Mathf.Deg2Rad;
+
+        float cos = Mathf.Cos(rot);
+        float sin = Mathf.Sin(rot);
+
+        // Compute the rotated half extents using absolute value of rotation matrix
+        float absCos = Mathf.Abs(cos);
+        float absSin = Mathf.Abs(sin);
+
+        Vector2 rotatedHalfExtents = new Vector2(
+            halfExtents.x * absCos + halfExtents.y * absSin,
+            halfExtents.x * absSin + halfExtents.y * absCos
+        );
+
+        Vector2 min = pos - rotatedHalfExtents;
+        Vector2 max = pos + rotatedHalfExtents;
+
+        return new AABB { LowerBound = min,UpperBound = max };
+    }
+
+    public static void PointSegmentDistance(float2 p, float2 a, float2 b, out float distanceSquared, out float2 closestPoint)
+    {
+        float2 ab = b - a;
+        float2 ap = p - a;
+
+        float proj = math.dot(ap, ab);
+        float abLenSq = math.dot(ab, ab);
+        float d = proj / abLenSq;
+
+        if (d <= 0f)
+        {
+            closestPoint = a;
+        }
+        else if (d >= 1f)
+        {
+            closestPoint = b;
+        }
+        else
+        {
+            closestPoint = a + d * ab;
+        }
+
+        distanceSquared = math.lengthsq(p - closestPoint);
+    }
+
+    public static bool NearlyEqual(float2 a, float2 b, float epsilon = 1e-4f)
+    {
+        return math.lengthsq(a - b) < epsilon * epsilon;
+    }
+    public static bool NearlyEqual(float a, float b, float epsilon = 1e-4f)
+    {
+        return MathF.Abs(a - b) < epsilon;
+    }
+
+
+    public static float2x2 RotationMatrix(float radians)
+    {
+        float c = math.cos(radians);
+        float s = math.sin(radians);
+        return new float2x2(c, -s, s, c);
+    }
+
+    public static float CrossProduct(float2 a, float2 b)
+    {
+        return a.x * b.y - a.y * b.x;
     }
 
 }

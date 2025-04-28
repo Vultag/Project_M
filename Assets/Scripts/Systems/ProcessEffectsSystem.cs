@@ -40,6 +40,13 @@ public partial struct ProcessEffectsSystem : ISystem
             {
                 /// PREVENT OTHER SPEED MODIFYER EFFECT. REWORK ?
                 //Debug.Log("remove");
+                /// The entity was deleted before effect expiration
+                if (!state.EntityManager.Exists(effect.TargetEntity))
+                {
+                    stunBuffer.RemoveAt(i);
+                    i--;
+                    continue;
+                }
                 var newMosterData = em.GetComponentData<MonsterData>(effect.TargetEntity);
                 newMosterData.Speed = 0.5f;
                 em.SetComponentData(effect.TargetEntity, newMosterData);

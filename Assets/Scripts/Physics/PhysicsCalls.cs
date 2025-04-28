@@ -6,6 +6,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 
 
@@ -17,16 +18,16 @@ public struct PhysicsCalls
     {
 
         //Debug.Log("disable : " + entity);
-        TreeInsersionSystem.AABBtree.DisableEntity(entity);
+        TreeInsersionSystem.DynamicBodiesAABBtree.DisableEntity(entity);
         ecb.DestroyEntity(entity);
 
     }
 
 
-    public static NativeList<Entity> CircleOverlapNode(CircleShapeData CastSphere)//, PhysicsUtilities.CollisionLayer colLayer)
+    public static NativeList<Entity> CircleOverlapNode(float2 position, float radius, PhysicsUtilities.CollisionLayer layer)//, PhysicsUtilities.CollisionLayer colLayer)
     {
-
-        DynamicAABBTree AABBtree = TreeInsersionSystem.AABBtree;
+        ///copying entire tree ?? OPTI
+        DynamicAABBTree AABBtree = TreeInsersionSystem.DynamicBodiesAABBtree;
         int treeNodeCount = AABBtree.nodes.Length;
 
         //internal capacity ? OPTI
@@ -44,7 +45,7 @@ public struct PhysicsCalls
             if(treeNodeCount == 1)
             {
                 AABBTreeNode node = AABBtree.nodes[comparequeue.Dequeue()];
-                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, CastSphere) < 0 && AABBtree.nodes[0].layerMask == CastSphere.collisionLayer)
+                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, position, radius) < 0 && (AABBtree.nodes[0].layerMask & layer) != 0)
                 {
                     OverlapList.Add((AABBtree.nodes[0].entity,0f));
                 }
@@ -69,15 +70,15 @@ public struct PhysicsCalls
 
             if (node.isLeaf == false)
             {
-                float nodeA = node.LeftChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.LeftChild].box, CastSphere) : 1;
-                float nodeB = node.RightChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.RightChild].box, CastSphere) : 1;
+                float nodeA = node.LeftChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.LeftChild].box, position, radius) : 1;
+                float nodeB = node.RightChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.RightChild].box, position, radius) : 1;
 
                 if (nodeA < 0)
                 {
 
                     if (AABBtree.nodes[node.LeftChild].isLeaf == true)
                     {
-                        if(AABBtree.nodes[node.LeftChild].layerMask == CastSphere.collisionLayer)
+                        if((AABBtree.nodes[node.LeftChild].layerMask & layer) != 0)
                         {
                             OverlapList.Add((AABBtree.nodes[node.LeftChild].entity, nodeA));
                         }
@@ -90,7 +91,7 @@ public struct PhysicsCalls
 
                     if (AABBtree.nodes[node.RightChild].isLeaf == true)
                     {
-                        if(AABBtree.nodes[node.RightChild].layerMask == CastSphere.collisionLayer)
+                        if((AABBtree.nodes[node.RightChild].layerMask & layer) != 0)
                         {
                             OverlapList.Add((AABBtree.nodes[node.RightChild].entity, nodeB));
                         }
@@ -111,9 +112,10 @@ public struct PhysicsCalls
 
     }
 
-    public static RayCastHit RaycastNode(Ray ray, PhysicsUtilities.CollisionLayer colLayer, ComponentLookup<CircleShapeData> CirclesShapesLookUp)
+    public static RayCastHit RaycastNode(Ray ray, PhysicsUtilities.CollisionLayer colLayer, 
+        in ComponentLookup<ShapeData> ShapeDataLookUp, in ComponentLookup<CircleShapeData> circleShapeLookUp, in ComponentLookup<BoxShapeData> boxShapeLookUp)
     {
-        DynamicAABBTree AABBtree = TreeInsersionSystem.AABBtree;
+        DynamicAABBTree AABBtree = TreeInsersionSystem.DynamicBodiesAABBtree;
 
         //internal capacity ? OPTI
         NativeList<(Entity, float)> OverlapList = new NativeList<(Entity, float)>(30, Allocator.Temp);
@@ -141,8 +143,9 @@ public struct PhysicsCalls
                         if(AABBtree.nodes[node.LeftChild].layerMask == colLayer)
                         {
                             Entity entity = AABBtree.nodes[node.LeftChild].entity;// DynamicAABBTree.ReconstructEntity(AABBtree.nodes[node.LeftChild].EntityKey);
+
                             /// test colision with actual physics shape
-                            float distance = PhysicsUtilities.Intersect(CirclesShapesLookUp[entity], ray);
+                            float distance = PhysicsUtilities.Intersect(ShapeDataLookUp.GetRefRO(entity).ValueRO,entity, circleShapeLookUp,boxShapeLookUp, ray);
                             if (distance > 0)
                                 OverlapList.Add((entity, distance));
                         }
@@ -163,7 +166,7 @@ public struct PhysicsCalls
                         {
                             Entity entity = AABBtree.nodes[node.RightChild].entity;//DynamicAABBTree.ReconstructEntity(AABBtree.nodes[node.RightChild].EntityKey);
                             /// test colision with actual physics shape
-                            float distance = PhysicsUtilities.Intersect(CirclesShapesLookUp[entity], ray);
+                            float distance = PhysicsUtilities.Intersect(ShapeDataLookUp.GetRefRO(entity).ValueRO, entity, circleShapeLookUp, boxShapeLookUp, ray);
                             if (distance > 0)
                                 OverlapList.Add((entity, distance));
                         }

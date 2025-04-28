@@ -11,25 +11,27 @@ using UnityEngine;
 /// NOT USED ANYMORE, DO IT DIRECTLY IN PhyBody authoring
 /// </summary>
 
-public struct TreeInsersionTag : IComponentData
+public struct TreeInsersionData : IComponentData
 {
-
+    public bool IsStaticBody;
 }
-public class TreeInsersionAuthoring : MonoBehaviour
-{
-
-    class TreeInsersionBaker : Baker<TreeInsersionAuthoring>
-    {
-        public override void Bake(TreeInsersionAuthoring authoring)
-        {
-
-            Entity entity = GetEntity(TransformUsageFlags.None);
-
-            AddComponent(entity, new TreeInsersionTag
-            {
+//public class TreeInsersionAuthoring : MonoBehaviour
+//{
 
 
-            });
-        }
-    }
-}
+
+//    class TreeInsersionBaker : Baker<TreeInsersionAuthoring>
+//    {
+//        public override void Bake(TreeInsersionAuthoring authoring)
+//        {
+
+//            Entity entity = GetEntity(TransformUsageFlags.None);
+
+//            AddComponent(entity, new TreeInsersionData
+//            {
+
+
+//            });
+//        }
+//    }
+//}

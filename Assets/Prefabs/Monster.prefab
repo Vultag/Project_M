@@ -110,11 +110,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13a9c0a3f669be94287fb7375c76a5e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Mass: 1
   shapeType: 0
   dimentions: {x: 1, y: 1}
   radius: 0.5
   HasDynamics: 1
+  IsStaticBody: 0
+  Mass: 1
+  restitution: 0.5
   IsTrigger: 0
   triggerType: 0
   collisionLayer: 4

@@ -2,6 +2,7 @@ using Unity.Burst;
 using Unity.Entities;
 using Unity.Transforms;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 
 [BurstCompile]
@@ -19,8 +20,9 @@ public partial struct ProjectileSystem : ISystem
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (projectileData,entity) in SystemAPI.Query<RefRW<ProjectileInstanceData>>().WithEntityAccess())
+        foreach (var (projectileData,body,entity) in SystemAPI.Query<RefRW<ProjectileInstanceData>,RefRW<PhyBodyData>>().WithEntityAccess())
         {
+            //body.ValueRW.Velocity = body.ValueRO.Velocity.normalized * projectileData.ValueRO.speed;
             projectileData.ValueRW.remainingLifeTime -= SystemAPI.Time.DeltaTime;
             if(projectileData.ValueRO.remainingLifeTime < 0)
             {

@@ -123,18 +123,18 @@ public partial class MachineDrumSystem : SystemBase
                     //Debug.Log("BaseDrum");
 
                     //Debug.DrawLine(Wtrans.Position, Wtrans.Position+new float3(0,3f,0),Color.red,5);
-                    var KickColList = PhysicsCalls.CircleOverlapNode(new CircleShapeData { 
-                        Position = Wtrans.Position.xy, 
-                        radius = 3f, 
-                        collisionLayer = PhysicsUtilities.CollisionLayer.MonsterLayer 
-                    });
+                    var KickColList = PhysicsCalls.CircleOverlapNode(
+                        Wtrans.Position.xy, 
+                        3f, 
+                        PhysicsUtilities.CollisionLayer.MonsterLayer | PhysicsUtilities.CollisionLayer.DynamicObstacleLayer
+                    );
 
                     for (int i = 0; i < KickColList.Length; i++)
                     {
                         var entity = KickColList[i];
                         var newPhyBody = EntityManager.GetComponentData<PhyBodyData>(entity);
                         /// Redondant -> OPTI
-                        var kickDirLenght = (EntityManager.GetComponentData<CircleShapeData>(entity).Position - (Vector2)Wtrans.Position.xy);
+                        var kickDirLenght = (EntityManager.GetComponentData<ShapeData>(entity).Position - (Vector2)Wtrans.Position.xy);
                         /// establish how much the effect denpends on the distance from the explosion
                         float explosionConsentrationFactor = 0.45f;
 
@@ -151,24 +151,23 @@ public partial class MachineDrumSystem : SystemBase
 
                     Vector2 snareDir = Vector2.up;
 
-                    var SnareColList = PhysicsCalls.CircleOverlapNode(new CircleShapeData
-                    {
-                        Position = Wtrans.Position.xy,
-                        radius = 3.5f,
-                        collisionLayer = PhysicsUtilities.CollisionLayer.MonsterLayer
-                    });
+                    var SnareColList = PhysicsCalls.CircleOverlapNode(
+                        Wtrans.Position.xy,
+                        3.5f,
+                        PhysicsUtilities.CollisionLayer.MonsterLayer
+                    );
                     if(SnareColList.Length>0)
                     {
                         var mainSlotPos = EntityManager.GetComponentData<LocalToWorld>(SnareColList[0]).Value.Translation();
 
                         snareDir = ((Vector2)(mainSlotPos.xy - Wtrans.Position.xy)).normalized;
                      
-                        var SnareBaguetteColList = PhysicsCalls.CircleOverlapNode(new CircleShapeData
-                        {
-                            Position = (Vector2)Wtrans.Position.xy + (snareDir * 3.5f),
-                            radius = 0.25f,
-                            collisionLayer = PhysicsUtilities.CollisionLayer.MonsterLayer
-                        });
+                        var SnareBaguetteColList = PhysicsCalls.CircleOverlapNode(
+                        
+                            (Vector2)Wtrans.Position.xy + (snareDir * 3.5f),
+                            0.25f,
+                            PhysicsUtilities.CollisionLayer.MonsterLayer
+                        );
 
                         var damageEventEntity = damageEventEntityQuery.GetSingletonEntity();
 
@@ -206,12 +205,12 @@ public partial class MachineDrumSystem : SystemBase
                 case 2:
                     //Debug.Log("HighHat");
 
-                    var HitHatColList = PhysicsCalls.CircleOverlapNode(new CircleShapeData
-                    {
-                        Position = Wtrans.Position.xy,
-                        radius = 3.5f,
-                        collisionLayer = PhysicsUtilities.CollisionLayer.MonsterLayer
-                    });
+                    var HitHatColList = PhysicsCalls.CircleOverlapNode(
+                    
+                        Wtrans.Position.xy,
+                        3.5f,
+                        PhysicsUtilities.CollisionLayer.MonsterLayer
+                    );
 
                     for (int i = 0; i < HitHatColList.Length; i++)
                     {

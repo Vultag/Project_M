@@ -442,7 +442,7 @@ public class AudioManager : MonoBehaviour
             ecb.AddComponent(new_weapon, new ProjectileData
             {
                 Damage = 6f,
-                Speed = 1f,
+                Speed = 0.05f,
                 LifeTime = 3f,
                 penetrationCapacity = 1
             });

@@ -72,7 +72,7 @@ public class SliderMono : MonoBehaviour, IBeginDragHandler, IEndDragHandler, IDr
         //TO DO : ADD MORE POTENTIAL CASES (SQUARE | PENTAGONE | HEXAGONE)
 
         //change in other cases
-        float minInterval = Mathf.PI * 2 / 3;
+        //float minInterval = Mathf.PI * 2 / 3;
         float posCutoffMaxFactor = Mathf.Sin(Mathf.PI/6);
 
 

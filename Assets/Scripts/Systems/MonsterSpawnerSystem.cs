@@ -36,16 +36,17 @@ public partial struct MonsterSpawnerSystem : ISystem
 
                     var monster = ecb.Instantiate(spawner.ValueRO.MonsterPrefab);
 
-                    var direction = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0).normalized;
+                    var direction = new Vector3(Random.Range(-1f, 1f), Random.Range(-1f, 1f), 0).normalized*3;
 
                     var new_pos = ltw.ValueRO.Position + new float3(direction * spawner.ValueRO.SpawnRangeRadius);
 
 
                     ecb.SetComponent<LocalTransform>(monster, new LocalTransform { Position = new_pos, Rotation = Quaternion.identity, Scale = 1f });
 
-                    var newCircleShapeData = state.EntityManager.GetComponentData<CircleShapeData>(spawner.ValueRO.MonsterPrefab);
-                    newCircleShapeData.Position = new_pos.xy;
-                    ecb.SetComponent<CircleShapeData>(monster, newCircleShapeData);
+                    var newShapeData = state.EntityManager.GetComponentData<ShapeData>(spawner.ValueRO.MonsterPrefab);
+                    newShapeData.Position = new_pos.xy;
+                    newShapeData.Rotation = 0;
+                    ecb.SetComponent<ShapeData>(monster, newShapeData);
                 
 
                     spawner.ValueRW.RespawnTimer = spawner.ValueRO.SpawnRate;

@@ -1,4 +1,5 @@
 
+using System;
 using Unity.Entities;
 using UnityEngine;
 
@@ -6,6 +7,22 @@ public struct TriggerEvent : IBufferElementData
 {
     public Entity EmitterEntity;
     public Entity ReciverEntity;
+}
+public struct TriggerPair : IEquatable<TriggerPair>
+{
+    public Entity EmitterEntity;
+    public Entity ReciverEntity;
+    public bool Equals(TriggerPair other)
+    {
+        return (EmitterEntity == other.EmitterEntity && ReciverEntity == other.ReciverEntity);
+    }
+    public override int GetHashCode()
+    {
+        // Order-insensitive hash (use XOR or commutative hash)
+        int hashA = EmitterEntity.GetHashCode();
+        int hashB = ReciverEntity.GetHashCode();
+        return hashA ^ hashB;
+    }
 }
 
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
@@ -64,12 +81,18 @@ public partial struct TriggerProcessingSystem : ISystem
             {
                 case TriggerType.DamageEffect:
                     //Debug.Log("damage");
+                    ProjectileInstanceData newProjectileData = state.EntityManager.GetComponentData<ProjectileInstanceData>(emitterEntity);
+                    if (!state.EntityManager.HasComponent<HealthData>(reciverEntity))
+                    {
+                        newProjectileData.remainingLifeTime = 0;
+                        ecb.SetComponent<ProjectileInstanceData>(emitterEntity, newProjectileData);
+                        continue;
+                    }
                     var damageBuffer = SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity);
                     damageBuffer.Add(new GlobalDamageEvent { 
                         Target = reciverEntity,
                         DamageValue = SystemAPI.GetComponent<ProjectileInstanceData>(emitterEntity).damage
                     });
-                    ProjectileInstanceData newProjectileData = state.EntityManager.GetComponentData<ProjectileInstanceData>(emitterEntity);
                     newProjectileData.penetrationCapacity--;
                     newProjectileData.remainingLifeTime = newProjectileData.remainingLifeTime * Mathf.Min(newProjectileData.penetrationCapacity,1);
                     ecb.SetComponent<ProjectileInstanceData>(emitterEntity, newProjectileData);

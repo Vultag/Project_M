@@ -85,6 +85,8 @@ public class UIManager : MonoBehaviour
     List<(short,bool,bool)> activeUIEquipment;
     //Dictionary<int> synthsInfo = new();
 
+    List<short> EquipmentIdxToSynthDataIdx;
+
     private Vector2 PreviousMousePos;
 
     float TimeForShaderSync = 0;
@@ -112,9 +114,10 @@ public class UIManager : MonoBehaviour
         //Player_query = entityManager.CreateEntityQuery(typeof(PlayerData));
 
         activeUIEquipment = new List<(short, bool, bool)>();
+        EquipmentIdxToSynthDataIdx = new List<short>();
 
         ///ConstructUIsurface();
-        
+
         //NumOfSynths = SynthToolBar.GetComponentsInChildren<Button>().Length-1;
         SynthUIadd_rect = SynthToolBar.transform.GetChild(SynthToolBar.transform.childCount-1).GetComponent<RectTransform>();
 
@@ -197,7 +200,8 @@ public class UIManager : MonoBehaviour
     public void _SelectSynthUI(int index)
     {
         SynthEditPanel.SetActive(true);
-        SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[index];
+        short synthDataIdx = EquipmentIdxToSynthDataIdx[index];
+        SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[synthDataIdx];
         UpdateSynthUI(
             in selectedSynthData,
             entityManager.GetComponentData<WeaponData>(AudioManager.AuxillaryEquipmentEntities[index]).weaponType
@@ -240,7 +244,7 @@ public class UIManager : MonoBehaviour
         SynthToolBar.transform.GetChild(index).GetChild(0).GetComponent<Image>().color = Color.black;
         SynthToolBar.transform.GetChild(index).GetChild(2).GetChild(0).gameObject.SetActive(true);
 
-        AudioLayoutStorage.activeSynthIdx = index;
+        AudioLayoutStorage.activeSynthIdx = synthDataIdx;
 
         activeUISynthIdx = index;
         activeUIDrumMachineIdx = -1;
@@ -285,6 +289,7 @@ public class UIManager : MonoBehaviour
         NumOfSynths++;
         NumOfEquipments++;
         SynthToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentCategory = EquipmentCategory.Weapon;
+        EquipmentIdxToSynthDataIdx.Add((short)(NumOfSynths-1));
 
         SynthData newSynthData = SynthData.CreateDefault(weaponType);
 
@@ -312,6 +317,8 @@ public class UIManager : MonoBehaviour
         NumOfDMachines++;
         NumOfEquipments++;
         SynthToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentCategory = EquipmentCategory.DrumMachine;
+        /// add invalid index for padding
+        EquipmentIdxToSynthDataIdx.Add(-1);
 
         //SynthData newSynthData = SynthData.CreateDefault(weaponType);
 

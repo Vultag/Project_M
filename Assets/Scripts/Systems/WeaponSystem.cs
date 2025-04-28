@@ -79,11 +79,15 @@ public partial class WeaponSystem : SystemBase
 
     protected override void OnUpdate()
     {
-        var activeWeaponIdx = AudioLayoutStorage.activeSynthIdx;
-        if (activeWeaponIdx == -1)
+        var activeSynthIdx = AudioLayoutStorage.activeSynthIdx;
+        if (activeSynthIdx == -1)
             return;
 
-            //BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
+        var ShapeComponentLookup = SystemAPI.GetComponentLookup<ShapeData>(true);
+        var circleShapeLookUp = SystemAPI.GetComponentLookup<CircleShapeData>(true);
+        var boxShapeLookUp = SystemAPI.GetComponentLookup<BoxShapeData>(true);
+
+        //BeatCooldown -= MusicUtils.BPM * SystemAPI.Time.DeltaTime;
 
         ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
@@ -103,7 +107,7 @@ public partial class WeaponSystem : SystemBase
 
         //TO MODIFY
         //var ActiveSynth = SystemAPI.GetComponent<SynthData>(WeaponEntities[AudioLayoutStorage.activeSynthIdx]);
-        var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[activeWeaponIdx];
+        var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[activeSynthIdx];
 
         var MainWeapon = SystemAPI.GetSingletonEntity<ControledWeaponTag>();
         var Wtrans = EntityManager.GetComponentData<LocalToWorld>(MainWeapon);
@@ -294,10 +298,6 @@ public partial class WeaponSystem : SystemBase
                 KeyJustReleased = false;
             }
 
-    
-
-            /*remplace with generic shape*/
-            ComponentLookup<CircleShapeData> ShapeComponentLookup = GetComponentLookup<CircleShapeData>(isReadOnly: true);
 
             KeysBuffer keysBuffer = new KeysBuffer 
             { 
@@ -355,7 +355,7 @@ public partial class WeaponSystem : SystemBase
                         DirLength = raycastDirlenght
                     },
                         PhysicsUtilities.CollisionLayer.MonsterLayer,
-                        ShapeComponentLookup);
+                        ShapeComponentLookup,circleShapeLookUp,boxShapeLookUp);
 
                     float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                     float newCurrentAmplitude;
@@ -443,7 +443,7 @@ public partial class WeaponSystem : SystemBase
                         DirLength = raycastDirlenght
                     },
                         PhysicsUtilities.CollisionLayer.MonsterLayer,
-                        ShapeComponentLookup);
+                        ShapeComponentLookup, circleShapeLookUp, boxShapeLookUp);
 
                     if (Hit.entity != Entity.Null)
                     {
@@ -535,26 +535,26 @@ public partial class WeaponSystem : SystemBase
                     ECB.SetComponent<Ocs1SinSawSquareFactorOverride>(projectileInstance, new Ocs1SinSawSquareFactorOverride { Value = ActiveSynth.Osc1SinSawSquareFactor });
                     ECB.SetComponent<Ocs2SinSawSquareFactorOverride>(projectileInstance, new Ocs2SinSawSquareFactorOverride { Value = ActiveSynth.Osc2SinSawSquareFactor });
                     /// do default + right trans ?
-                    ECB.SetComponent<CircleShapeData>(projectileInstance, new CircleShapeData
+                    ECB.SetComponent<ShapeData>(projectileInstance, new ShapeData
                     {
                         Position = Wtrans.Position.xy,
                         PreviousPosition = trans.Position.xy,
-                        Rotation = Quaternion.identity,
+                        Rotation = 0,
                         collisionLayer = PhysicsUtilities.CollisionLayer.ProjectileLayer,
                         HasDynamics = false,
                         IsTrigger = true,
-                        radius = 0.32f
                     });
                     ECB.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
                     {
                         AngularDamp = 0,
                         LinearDamp = 0,
-                        Force = mouseDirection.normalized * projectileData.ValueRO.Speed * 0.05f
+                        Velocity = mouseDirection.normalized * projectileData.ValueRO.Speed,
                     });
                     ECB.AddComponent<ProjectileInstanceData>(projectileInstance, new ProjectileInstanceData
                     {
                         damage = projectileData.ValueRO.Damage,
                         remainingLifeTime = projectileData.ValueRO.LifeTime,
+                        speed = projectileData.ValueRO.Speed,
                         penetrationCapacity = 3
                     });
                 }

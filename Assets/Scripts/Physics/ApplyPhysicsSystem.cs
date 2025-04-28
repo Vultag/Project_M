@@ -1,4 +1,5 @@
 
+using System;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -23,10 +24,14 @@ public partial struct ApplyPhysicsSystem : ISystem
     public void OnUpdate(ref SystemState state)
     {
 
-        foreach (var (body, shape, trans) in SystemAPI.Query<RefRW<PhyBodyData>, RefRW<CircleShapeData>, RefRW<LocalTransform>>())
+        foreach (var (body, shape, trans) in SystemAPI.Query<RefRW<PhyBodyData>, RefRW<ShapeData>, RefRW<LocalTransform>>())
         {
 
-            body.ValueRW.Velocity += body.ValueRO.Force;
+            Vector2 lienarAcceleration = body.ValueRO.Force * body.ValueRO.InvMass;
+            ///??
+            ///Vector2 angularAcceleration = body.ValueRO.Force / body.ValueRO.Mass;
+
+            body.ValueRW.Velocity += lienarAcceleration;
             body.ValueRW.Force = Vector2.zero;
 
             body.ValueRW.AngularVelocity += body.ValueRO.AngularForce;
@@ -35,17 +40,15 @@ public partial struct ApplyPhysicsSystem : ISystem
             ///specify linear dampening in physics component
             //float dampingFactor = math.exp(-0.05f);
             //body.ValueRW.Velocity *= dampingFactor;
-            body.ValueRW.Velocity -= (body.ValueRO.Velocity * body.ValueRO.LinearDamp);
-            body.ValueRW.AngularVelocity -= (body.ValueRO.AngularVelocity * body.ValueRO.AngularDamp);
 
             shape.ValueRW.PreviousPosition = shape.ValueRO.Position;
             shape.ValueRW.PreviousRotation = shape.ValueRO.Rotation;
 
             shape.ValueRW.Position += body.ValueRO.Velocity;
-            shape.ValueRW.Rotation = math.mul(shape.ValueRO.Rotation, quaternion.RotateZ(body.ValueRO.AngularVelocity));
+            shape.ValueRW.Rotation += body.ValueRO.AngularVelocity * Mathf.Rad2Deg;
 
-            //trans.ValueRW.Position = new Vector3(shape.ValueRO.Position.x, shape.ValueRO.Position.y, trans.ValueRW.Position.z);
-            //trans.ValueRW.Rotation = new Quaternion(shape.ValueRO.Rotation.x, shape.ValueRO.Rotation.y, shape.ValueRO.Rotation.z, shape.ValueRO.Rotation.w);
+            body.ValueRW.Velocity -= (body.ValueRO.Velocity * body.ValueRO.LinearDamp);
+            body.ValueRW.AngularVelocity -= (body.ValueRO.AngularVelocity * body.ValueRO.AngularDamp);
 
 
         }

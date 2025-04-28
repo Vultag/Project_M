@@ -35,7 +35,10 @@ public partial struct PlaybackSystem : ISystem
 
         EntityCommandBuffer ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
 
-        ComponentLookup<CircleShapeData> ShapeComponentLookup = SystemAPI.GetComponentLookup<CircleShapeData>(isReadOnly: true);
+        //ComponentLookup<CircleShapeData> ShapeComponentLookup = SystemAPI.GetComponentLookup<CircleShapeData>(isReadOnly: true);
+        var ShapeComponentLookup = SystemAPI.GetComponentLookup<ShapeData>(true);
+        var circleShapeLookUp = SystemAPI.GetComponentLookup<CircleShapeData>(true);
+        var boxShapeLookUp = SystemAPI.GetComponentLookup<BoxShapeData>(true);
 
         var MainWeapon = SystemAPI.GetSingletonEntity<ControledWeaponTag>();
         Entity ProjectilePrefab = state.EntityManager.GetComponentData<WeaponData>(MainWeapon).ProjectilePrefab;
@@ -163,8 +166,8 @@ public partial struct PlaybackSystem : ISystem
                 RayCastHit Hit = PhysicsCalls.RaycastNode(new Ray { 
                     Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), 
                     DirLength = raycastDirlenght }, 
-                    PhysicsUtilities.CollisionLayer.MonsterLayer, 
-                    ShapeComponentLookup);
+                    PhysicsUtilities.CollisionLayer.MonsterLayer,
+                    ShapeComponentLookup, circleShapeLookUp, boxShapeLookUp);
 
                 float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                 Filter newFilter = new Filter(0, 0);
@@ -259,7 +262,7 @@ public partial struct PlaybackSystem : ISystem
                     Origin = new Vector2(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y), 
                     DirLength = raycastDirlenght}, 
                     PhysicsUtilities.CollisionLayer.MonsterLayer, 
-                    ShapeComponentLookup);
+                    ShapeComponentLookup,circleShapeLookUp,boxShapeLookUp);
 
                 if (Hit.entity != Entity.Null)
                 {
@@ -388,15 +391,14 @@ public partial struct PlaybackSystem : ISystem
                     ecb.SetComponent<Ocs1SinSawSquareFactorOverride>(projectileInstance, new Ocs1SinSawSquareFactorOverride { Value = ActiveSynth.Osc1SinSawSquareFactor });
                     ecb.SetComponent<Ocs2SinSawSquareFactorOverride>(projectileInstance, new Ocs2SinSawSquareFactorOverride { Value = ActiveSynth.Osc2SinSawSquareFactor });
                     /// do default + right trans ?
-                    ecb.SetComponent<CircleShapeData>(projectileInstance, new CircleShapeData
+                    ecb.SetComponent<ShapeData>(projectileInstance, new ShapeData
                     {
                         Position = Wtrans.ValueRO.Position.xy,
                         PreviousPosition = trans.ValueRO.Position.xy,
-                        Rotation = Quaternion.identity,
+                        Rotation = 0,
                         collisionLayer = PhysicsUtilities.CollisionLayer.ProjectileLayer,
                         HasDynamics = false,
                         IsTrigger = true,
-                        radius = 0.32f
                     });
                     ecb.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
                     {

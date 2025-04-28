@@ -147,7 +147,6 @@ public unsafe struct DynamicAABBTree
         }
         else
         {
-
             // Handle Empty Child Slots First
             if (nodes[currentEvaluatedNode].LeftChild == -1)
             {
@@ -184,10 +183,7 @@ public unsafe struct DynamicAABBTree
             else
                 InsertLeaf(nodeID, nodes[currentEvaluatedNode].RightChild);
 
-            //AABBTreeNode newEvaluatedNode = nodes[currentEvaluatedNode];
-            ///// redondant ? -> Refit is called anyway at the end of the insertion
-            //newEvaluatedNode.box = Union(nodes[ nodes[currentEvaluatedNode].LeftChild].box, nodes[nodes[currentEvaluatedNode].RightChild].box);
-            //nodes[currentEvaluatedNode] = newEvaluatedNode;
+            Refit(currentEvaluatedNode);
         }
     }
     /// <summary>
@@ -338,9 +334,43 @@ public unsafe struct DynamicAABBTree
         }
 
     }
+    public void GatherIntersectingStaticNodes(ref NativeList<CollisionPair> ColPair, ref DynamicAABBTree dynamibBodiesTree, int index)
+    {
+        if (index == -1) return;
+        for (int i = 0; i < dynamibBodiesTree.leafIndices.Length; i++)
+        {
+            TryRegisterStaticCollisionPair(ref ColPair, index, dynamibBodiesTree.nodes[dynamibBodiesTree.leafIndices[i]]);
+        }
+    }
+    private void TryRegisterStaticCollisionPair(ref NativeList<CollisionPair> ColPair, int staticNodeIdx, AABBTreeNode dynamicNode)
+    {
+        if (staticNodeIdx == -1) return;
+        AABBTreeNode node = nodes[staticNodeIdx];
+        if (!IsOverlapping(node, dynamicNode)) return;
+
+        if (node.isLeaf == true)
+        {
+            if (PhysicsUtilities.ShouldCollide(node.layerMask, dynamicNode.layerMask))
+            {
+                ColPair.Add(new CollisionPair { EntityA = node.entity, EntityB = dynamicNode.entity });
+            }
+        }
+        else
+        {
+            TryRegisterStaticCollisionPair(ref ColPair, node.LeftChild, dynamicNode);
+            TryRegisterStaticCollisionPair(ref ColPair, node.RightChild, dynamicNode);
+        }
+            
+        
+
+    }
     private bool IsOverlapping(int nodeA,int nodeB)
     {
         return (0 < PhysicsUtilities.Proximity(nodes[nodeA].box, nodes[nodeB].box));
+    }
+    private bool IsOverlapping(AABBTreeNode nodeA, AABBTreeNode nodeB)
+    {
+        return (0 < PhysicsUtilities.Proximity(nodeA.box, nodeB.box));
     }
     //Decend into the tree whenever there is an intersection to see if the intersection lands and two leafs.
     //Then add the collision pair
