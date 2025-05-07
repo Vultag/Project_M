@@ -2,7 +2,7 @@
     "name": "PlayerControls",
     "maps": [
         {
-            "name": "ActionMap",
+            "name": "PlayerMap",
             "id": "8470a751-71a4-4362-9029-8ddbea30915c",
             "actions": [
                 {
@@ -150,6 +150,124 @@
                     "processors": "",
                     "groups": "",
                     "action": "MousePos",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "ConstructionMap",
+            "id": "385efbe4-3c7b-4ce0-b35b-5d3d0be69d38",
+            "actions": [
+                {
+                    "name": "TryPlaceBuilding",
+                    "type": "Button",
+                    "id": "b5286acf-c8e8-49d3-95df-a044a96babd6",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "5b01fc64-51d5-4507-b62d-0eadef4eb52a",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TryPlaceBuilding",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "UI_Map",
+            "id": "142959b4-b61f-42a7-af76-5b8a255d5296",
+            "actions": [
+                {
+                    "name": "Tabulation",
+                    "type": "Button",
+                    "id": "e179963c-e72a-4c01-9495-0f461d635535",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "TEMPO",
+                    "type": "Value",
+                    "id": "895d3569-e19d-4462-8c34-89c29786ff95",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "Zoom",
+                    "type": "Value",
+                    "id": "7724e1b1-0920-4bf4-b3f3-41adc8c8297d",
+                    "expectedControlType": "Axis",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "1D Axis",
+                    "id": "c3dbf2df-5c42-4c93-9e0d-5d0221d3b1a4",
+                    "path": "1DAxis",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TEMPO",
+                    "isComposite": true,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "negative",
+                    "id": "3828e001-52fa-43c1-81f2-b7ba36a7c461",
+                    "path": "<Keyboard>/numpad3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TEMPO",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "positive",
+                    "id": "2b583999-9b4e-4c9e-95e8-94cf2bbf1dc8",
+                    "path": "<Keyboard>/numpad9",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "TEMPO",
+                    "isComposite": false,
+                    "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "1c0bb09f-cd50-4f22-9545-ecf975bc6056",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Tabulation",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f62a0af3-5dda-4d23-94ec-fba8cd3a9a3d",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Zoom",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

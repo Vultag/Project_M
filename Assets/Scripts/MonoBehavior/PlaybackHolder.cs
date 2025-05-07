@@ -15,8 +15,6 @@ public class PlaybackHolder : MonoBehaviour
     [SerializeField]
     EquipmentUIelement synthUIelement;
     public GameObject trackPlaybackItem;
-    [HideInInspector]
-    public UIManager uiManager;
 
     [SerializeField]
     Sprite associatedSprite;
@@ -26,10 +24,11 @@ public class PlaybackHolder : MonoBehaviour
 
     void Start()
     {
-        uiManager = Object.FindAnyObjectByType<UIManager>();
+
     }
     public void _AddContainerUI(int2 PBidx)
     {
+        var uiManager = UIManager.Instance;
         uiManager.MusicSheetGB.SetActive(false);
         _RearangeContainerForAdd();
 
@@ -60,17 +59,20 @@ public class PlaybackHolder : MonoBehaviour
     /// Arm the synth for the next mesure
     public void _QuePlaybackUI()
     {
-        synthUIelement._DisplayPrepairActivation();
+        Debug.LogError("not supposed to happen");
+        //synthUIelement._DisplayPrepairActivation();
     }
     /// Arm the synth for immediate playback
     public void _ImmediatePlaybackActivate(int2 PBidx)
     {
-        uiManager._ActivatePlayback(PBidx);
+        Debug.LogError("not supposed to happen");
+        //UIManager.Instance._ActivatePlayback(PBidx);
     }
     /// Stop the no longer active current playback
     public void _StopCurrentPlayback(int synthIdx)
     {
-        uiManager._StopPlayback(synthIdx);
+        Debug.LogError("not supposed to happen");
+        ///UIManager.Instance._StopPlayback(synthIdx);
     }
     public void _CancelPlaybackPrepair()
     {
@@ -106,13 +108,5 @@ public class PlaybackHolder : MonoBehaviour
 
         return new float3(r, g, b);
     }
-
-    //float3 PackIntToFloat3(int packedColor)
-    //{
-    //    byte r = (byte)((packedColor >> 16) & 0xFFFF);
-    //    byte g = (byte)((packedColor >> 8) & 0xFFFF);
-    //    byte b = (byte)(packedColor & 0xFFFF);
-    //    return new float3(r, g, b);
-    //}
 
 }

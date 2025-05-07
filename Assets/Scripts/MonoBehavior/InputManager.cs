@@ -6,6 +6,27 @@ using UnityEngine.InputSystem;
 using Unity.Entities;
 using MusicNamespace;
 using System;
+using Unity.Collections;
+
+/// <summary>
+/// For ECS world
+/// </summary>
+public struct CentralizedInputData : IComponentData
+{
+    public Vector2 playerMouvements;
+    public bool shootJustPressed;
+    public bool shootJustReleased;
+}
+/// <summary>
+/// For Mono world
+/// </summary>
+public struct Inputs
+{
+    public bool M1Pressed;
+    public bool M1JustPressed;
+    public bool M1JustReleased;
+}
+
 
 public class InputManager : MonoBehaviour
 {
@@ -15,30 +36,38 @@ public class InputManager : MonoBehaviour
 
     public static Vector2 mousePos;
     //public static Vector2 mouseDelta;
-    public static Vector2 playerMouvement;
+    // public static Vector2 playerMouvement;
 
     public static float BeatProximityThreshold = 0.2f;
     /// To detect offbeat keys
     bool BeatNotYetPlayed = false;
-    /// Keyswitch of two state to alternate the start/end press window and prevent multiple key press over the same subbeat
-    /// 0 = start ; 1 = end
-    ///short KeyPressingStage = 0;
-
+    float BeatProximity;
+    public static bool CanPressKey;
     int CanPressKeySwitchState = 0;
-    public static bool CanPressKey = true;
-    private static bool _M1Pressed = false;
-    public static bool KeyPressed => _M1Pressed; // Read-only
-    private static bool _M1Released = false;
-    public static bool KeyReleased => _M1Released; // Read-only
+
+    //private Inputs inputs;
+    private CentralizedInputData CentralizedInputData;
+
+    private EntityQuery CentralizedInputDataQuery;
 
 
     void Start()
     {
         playerControls = new PlayerControls();
-        playerControls.Enable();
+        playerControls.PlayerMap.Enable();
 
-        playerControls.ActionMap.Shoot.performed += OnPlayerShoot;
-        playerControls.ActionMap.Shoot.canceled += OnPlayerShoot;
+        //inputs = new Inputs();
+        CentralizedInputData = new CentralizedInputData();
+
+        playerControls.PlayerMap.Shoot.performed += OnPlayerShoot;
+        playerControls.PlayerMap.Shoot.canceled += OnPlayerShoot;
+
+        var world = World.DefaultGameObjectInjectionWorld;
+        var em = world.EntityManager;
+        CentralizedInputDataQuery = em.CreateEntityQuery(typeof(CentralizedInputData));
+        em.CreateEntity(em.CreateArchetype(typeof(CentralizedInputData)));
+        //em.AddComponent<CentralizedInputData>(CentralizedInputEntity);
+
     }
     //void OnEnable()
     //{
@@ -52,26 +81,33 @@ public class InputManager : MonoBehaviour
 
     void Update()
     {
-        /// testing
-        //if (playerControls.ActionMap.Mouvements.ReadValue<Vector2>().x>0)
-        //    Debug.Break();
 
 
-        mousePos = playerControls.ActionMap.MousePos.ReadValue<Vector2>();
-        playerMouvement = playerControls.ActionMap.Mouvements.ReadValue<Vector2>();
+        mousePos = playerControls.PlayerMap.MousePos.ReadValue<Vector2>();
+        CentralizedInputData.playerMouvements = playerControls.PlayerMap.Mouvements.ReadValue<Vector2>();
+
+        //var newinputs = new Inputs
+        //{
+        //    M1JustPressed = inputs.M1JustPressed,
+        //    M1JustReleased = inputs.M1JustReleased,
+        //    M1Pressed = playerControls.PlayerMap.Shoot.IsPressed(),
+        //};
+
+
         //Debug.Log(mousePos);
 
         float normalizedProximity = ((float)MusicUtils.time % (60f / (MusicUtils.BPM * 4))) / (60f / (MusicUtils.BPM * 4));
         float BeatProximity = 1 - Mathf.Abs((normalizedProximity - 0.5f) * 2);
+
         //Debug.DrawLine(Vector3.zero, new Vector3(0, normalizedProximity * 10, 0));
 
         //WeaponSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true:false;
         //PlaybackRecordSystem.OnBeat = BeatProximity < BeatProximityThreshold ? true : false;
 
-        if(BeatProximity<BeatProximityThreshold && BeatNotYetPlayed)
+
+        if (BeatProximity<BeatProximityThreshold && BeatNotYetPlayed)
         {
             ActivateKey();
-            _M1Pressed = true;
             CanPressKey = false;
             BeatNotYetPlayed = false;
             metronomeEffectSpawner.SpawnValidKeySpite();
@@ -86,6 +122,15 @@ public class InputManager : MonoBehaviour
             CanPressKeySwitchState = 1-CanPressKeySwitchState;
         }
 
+        // Push to ECS
+        var world = World.DefaultGameObjectInjectionWorld;
+        var em = world.EntityManager;
+
+        //Debug.Log(CentralizedInputData.shootJustPressed);
+
+        em.SetComponentData(CentralizedInputDataQuery.GetSingletonEntity(), CentralizedInputData);
+        /// clear for next frame
+        CentralizedInputData = new CentralizedInputData();
 
     }
 
@@ -94,24 +139,23 @@ public class InputManager : MonoBehaviour
     private void OnPlayerShoot(CallbackContext context)
     {
         ///OPTI -> Activate 1 PlayPressed for all here and switch it at the end of the frame ?
-        bool IsShooting = playerControls.ActionMap.Shoot.IsPressed();
-
+        bool IsShooting = playerControls.PlayerMap.Shoot.IsPressed();
 
         /// Here For test -> move away in ifs
         float normalizedProximity = ((float)MusicUtils.time % (60f / (MusicUtils.BPM * 4))) / (60f / (MusicUtils.BPM * 4));
-        float BeatProximity = 1 - Mathf.Abs((normalizedProximity - 0.5f) * 2);
+        BeatProximity = 1 - Mathf.Abs((normalizedProximity - 0.5f) * 2);
 
         //bool hasAlreadyShot = 
 
         //Debug.Log(IsShooting);
         if (IsShooting)
         {
-            if(CanPressKey)
+            if (CanPressKey)
             {
                 if (BeatProximity <= BeatProximityThreshold)
                 {
                     ActivateKey();
-                    _M1Pressed = true;
+                    //inputs.M1JustPressed = true;
                     metronomeEffectSpawner.SpawnValidKeySpite();
                 }
                 else
@@ -130,12 +174,12 @@ public class InputManager : MonoBehaviour
                 BeatNotYetPlayed = false;
                 metronomeEffectSpawner.SpawnInvalidKeySpite();
             }
-            if(KeyPressed)
-            {
-                DeactivateKey();
-                _M1Pressed = false;
-                _M1Released = true;
-            }
+            DeactivateKey();
+            //if (inputs.M1Pressed)
+            //{
+            //    DeactivateKey();
+            //    inputs.M1JustReleased = true;
+            //}
         }
     }
 
@@ -143,33 +187,28 @@ public class InputManager : MonoBehaviour
 
     private void ActivateKey()
     {
-        _M1Pressed = true;
         CanPressKey = false;
-        WeaponSystem.KeyJustPressed = true;
-        PlaybackRecordSystem.KeyJustPressed = true;
-        WeaponSystem.KeyJustReleased = false;
-        PlaybackRecordSystem.KeyJustReleased = false;
+        CentralizedInputData.shootJustPressed = true;
+        CentralizedInputData.shootJustReleased = false;
+        //WeaponSystem.KeyJustPressed = true;
+        //PlaybackRecordSystem.KeyJustPressed = true;
+        //WeaponSystem.KeyJustReleased = false;
+        //PlaybackRecordSystem.KeyJustReleased = false;
 
-        MachineDrumSystem.PadJustPressed = true;
-        MachineDrumSystem.PadJustReleased = false;
+        //MachineDrumSystem.PadJustPressed = true;
+        //MachineDrumSystem.PadJustReleased = false;
     }
     private void DeactivateKey()
     {
-        WeaponSystem.KeyJustPressed = false;
-        PlaybackRecordSystem.KeyJustPressed = false;
-        WeaponSystem.KeyJustReleased = true;
-        PlaybackRecordSystem.KeyJustReleased = true;
+        CentralizedInputData.shootJustPressed = false;
+        CentralizedInputData.shootJustReleased = true;
+        //WeaponSystem.KeyJustPressed = false;
+        //PlaybackRecordSystem.KeyJustPressed = false;
+        //WeaponSystem.KeyJustReleased = true;
+        //PlaybackRecordSystem.KeyJustReleased = true;
 
-        MachineDrumSystem.PadJustReleased = true;
-        MachineDrumSystem.PadJustPressed = false;
-    }
-
-
-
-    private void FrameInputsCleanup()
-    {
-        _M1Pressed = false;
-        _M1Released = false;
+        //MachineDrumSystem.PadJustReleased = true;
+        //MachineDrumSystem.PadJustPressed = false;
     }
 
 }

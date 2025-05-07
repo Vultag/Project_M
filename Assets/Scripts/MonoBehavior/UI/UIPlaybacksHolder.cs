@@ -32,18 +32,6 @@ public class UIPlaybacksHolder : MonoBehaviour
     [HideInInspector]
     public List<FullPlaybackBundle>[] synthFullBundleLists = new List<FullPlaybackBundle>[6];
 
-    //[HideInInspector]
-    //public List<FullPlaybackBundle> Synth1FullBundleList = new List<FullPlaybackBundle>(8);
-    //[HideInInspector]
-    //public List<FullPlaybackBundle> Synth2FullBundleList = new List<FullPlaybackBundle>(8);
-    //[HideInInspector]
-    //public List<FullPlaybackBundle> Synth3FullBundleList = new List<FullPlaybackBundle>(8);
-    //[HideInInspector]
-    //public List<FullPlaybackBundle> Synth4FullBundleList = new List<FullPlaybackBundle>(8);
-    //[HideInInspector]
-    //public List<FullPlaybackBundle> Synth5FullBundleList = new List<FullPlaybackBundle>(8);
-    //[HideInInspector]
-    //public List<FullPlaybackBundle> Synth6FullBundleList = new List<FullPlaybackBundle>(8);
 
     void Start()
     {
@@ -69,27 +57,11 @@ public class UIPlaybacksHolder : MonoBehaviour
     public void _AddSynthPlaybackContainer(ref PlaybackAudioBundle newAudioBundle,ref MusicSheetData newSheetData, int synthIdx)
     {
 
-        //synthFullBundleLists[PBidx.x][PBidx.y] = new FullPlaybackBundle { playbackAudioBundle =newAudioBundle,musicSheet=newSheetData};
         synthFullBundleLists[synthIdx].Add(new FullPlaybackBundle { playbackAudioBundle = newAudioBundle, musicSheet = newSheetData });
-        //Debug.Log(synthFullBundleLists[synthIdx].ToArray().Length-1);
-        
+
         PBholders[synthIdx]._AddContainerUI(new int2(synthIdx, synthFullBundleLists[synthIdx].ToArray().Length-1));
-        PBholders[synthIdx].uiManager._SetSynthUItoSleep(synthIdx);
+        UIManager.Instance._SetSynthUItoSleep(synthIdx);
 
-        //switch (PBidx.x)
-        //{
-        //    case 0:
-
-        //        PBholder1._AddContainerUI(PBidx);
-        //        break;
-        //    //case 1:
-        //    //    PBholder2._AddContainer(newAudioBundle, newSheetData);
-        //    //    break;
-        //    //case 2:
-        //    //    PBholder3._AddContainer(newAudioBundle, newSheetData);
-        //    //    break;
-
-        //}
 
     }
 

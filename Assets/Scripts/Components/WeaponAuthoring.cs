@@ -26,7 +26,9 @@ public struct WeaponData : IComponentData
     public WeaponClass weaponClass;
     public WeaponType weaponType;
 
-    public Entity ProjectilePrefab;
+    /// <summary>
+    /// TO REMOVE
+    /// </summary>
     public Entity MainWeaponSpriteE;
     public Entity MainDMachineSpriteE;
 }
@@ -34,14 +36,13 @@ public struct RayData:IComponentData
 {
     /// to do
 }
-public struct ProjectileData :IComponentData
+public struct WeaponAmmoData :IComponentData
 {
     public float Damage;
     public float Speed;
     public float LifeTime;
     public int penetrationCapacity;
 }
-
 
 public class WeaponAuthoring : MonoBehaviour
 {
@@ -58,8 +59,6 @@ public class WeaponAuthoring : MonoBehaviour
 
             Entity entity = GetEntity(TransformUsageFlags.None);
 
-            //authoring.transform.parent
-
             /// make default weapon ?
             
             AddComponent(entity, new WeaponData
@@ -67,37 +66,14 @@ public class WeaponAuthoring : MonoBehaviour
                 /// both auxilliary weapon and main weapon -> decouple
                 WeaponIdx = 0,
                 weaponType = WeaponType.Raygun,
-                ProjectilePrefab = GetEntity(authoring.ProjectilePrefab,TransformUsageFlags.None),
                 MainWeaponSpriteE = GetEntity(authoring.MainWeaponSpriteGB,TransformUsageFlags.None),
                 MainDMachineSpriteE = GetEntity(authoring.MainDMachineSpriteGB, TransformUsageFlags.None),
                 //OffsetFromPlayer = authoring.OffsetFromPlayer,
 
             });
 
-            //var equipmentBuffer = AddBuffer<Child>(entity);
-            //equipmentBuffer.Add(new Child { Value = GetEntity(authoring.transform.GetChild(0), TransformUsageFlags.None) });
-            //equipmentBuffer.Add(new Child { Value = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None) });
-
-            /// hide Weapon and DMachine on main slot at start
-            //var playerWeaponSpriteEntity = GetEntity(authoring.transform.GetChild(0), TransformUsageFlags.None);
-            //var playerDMachineSpriteEntity = GetEntity(authoring.transform.GetChild(1), TransformUsageFlags.None);
-            //MaterialMeshInfo newWeaponMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerWeaponSpriteEntity);
-            //newWeaponMaterialMeshInfo.Mesh = 0;
-            //ECB.SetComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, newWeaponMaterialMeshInfo);
-            //MaterialMeshInfo newDMachineMaterialMeshInfo = EntityManager.GetComponentData<MaterialMeshInfo>(playerDMachineSpriteEntity);
-            //newDMachineMaterialMeshInfo.Mesh = 0;
-            //ECB.SetComponent<MaterialMeshInfo>(playerDMachineSpriteEntity, newDMachineMaterialMeshInfo);
-
-            //AddComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, new MaterialMeshInfo
-            //{
-            //    Mesh = 0,
-            //    Material = -1,
-            //});
-            //AddComponent<MaterialMeshInfo>(playerDMachineSpriteEntity, new MaterialMeshInfo
-            //{
-            //    Mesh = 0,
-            //    Material = -2,
-            //});
+            ///// Authoring expected only on main weapon
+            //AddComponent(entity, new MainWeaponTag());
         }
     }
 }

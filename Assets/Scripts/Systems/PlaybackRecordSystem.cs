@@ -25,9 +25,9 @@ public partial class PlaybackRecordSystem : SystemBase
     public Vector2 mousepos;
     private Vector2 mouseDirection;
 
-    public static bool KeyJustPressed;
-    public static bool KeyJustReleased;
-    public static bool OnBeat;
+    //public static bool KeyJustPressed;
+    //public static bool KeyJustReleased;
+    //public static bool OnBeat;
 
     float PlaybackStartBeat;
     float PlaybackTime;
@@ -69,6 +69,8 @@ public partial class PlaybackRecordSystem : SystemBase
 
     float BeatProximityThreshold;
 
+    private EntityQuery CentralizedInputDataQuery;
+
     protected override void OnCreate()
     {
         RequireForUpdate<PlaybackRecordingData>();        // Find AudioManager once at the start
@@ -100,6 +102,7 @@ public partial class PlaybackRecordSystem : SystemBase
         /// Expand the new mesure
         ActiveMusicSheet.ElementsInMesure[0 + 1] = 4;
 
+        CentralizedInputDataQuery = EntityManager.CreateEntityQuery(typeof(CentralizedInputData));
     }
 
 
@@ -109,6 +112,7 @@ public partial class PlaybackRecordSystem : SystemBase
         /// OPTI -> Called this multiple times per frame
         mousepos = Camera.main.ScreenToWorldPoint(InputManager.mousePos);
 
+        var inputs = EntityManager.GetComponentData<CentralizedInputData>(CentralizedInputDataQuery.GetSingletonEntity());
 
         EntityCommandBuffer ecb = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
@@ -180,7 +184,7 @@ public partial class PlaybackRecordSystem : SystemBase
             {
            
 
-                if (recordData.ValueRO.activeLegatoFz != 0 && !KeyJustReleased)
+                if (recordData.ValueRO.activeLegatoFz != 0 && !inputs.shootJustReleased)
                 {
 
                     //var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
@@ -281,7 +285,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 }
             }
 
-            if (KeyJustPressed && !UIInput.MouseOverUI && localCurrentFz > 0)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz > 0)
             {
                 //float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));
                 //int note = MusicUtils.radiansToNote(randian);
@@ -301,7 +305,6 @@ public partial class PlaybackRecordSystem : SystemBase
                 recordData.ValueRW.GideReferenceDirection = weaponDirLenght;
                 recordData.ValueRW.activeLegatoFz = ActiveSynth.Legato ? MusicUtils.DirectionToFrequency(weaponDirLenght) : 0;
                 AudioKeyActive = true;
-                KeyJustPressed = false;
 
                 /// SHEET
 
@@ -344,7 +347,7 @@ public partial class PlaybackRecordSystem : SystemBase
             else
             {
 
-                if (KeyJustReleased)
+                if (inputs.shootJustReleased)
                 {
                     if(AudioKeyActive)
                     {
@@ -362,7 +365,6 @@ public partial class PlaybackRecordSystem : SystemBase
                         };
                         recordData.ValueRW.activeLegatoFz = 0;
                         AudioKeyActive = false;
-                        KeyJustReleased = false;
 
                         /// Sheet
 
@@ -457,7 +459,6 @@ public partial class PlaybackRecordSystem : SystemBase
                                 }
                             };
                             AudioKeyActive = false;
-                            KeyJustReleased = false;
                         }
                         //Debug.Log(accumulator.Length);
 

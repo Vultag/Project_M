@@ -15,6 +15,7 @@ public class ToDrumPadShader : MonoBehaviour
     private EntityManager entityManager;
 
     public EntityQuery Controlled_Weapon_query;
+    private EntityQuery CentralizedInputDataQuery;
 
     private float pressInertia;
 
@@ -25,6 +26,7 @@ public class ToDrumPadShader : MonoBehaviour
         var world = World.DefaultGameObjectInjectionWorld;
         entityManager = world.EntityManager;
         Controlled_Weapon_query = entityManager.CreateEntityQuery(typeof(ControledWeaponTag));
+        CentralizedInputDataQuery = entityManager.CreateEntityQuery(typeof(CentralizedInputData));
     }
     private void LateUpdate()
     {
@@ -33,6 +35,7 @@ public class ToDrumPadShader : MonoBehaviour
         {
             return;
         }
+        var inputs = entityManager.GetComponentData<CentralizedInputData>(CentralizedInputDataQuery.GetSingletonEntity());
 
         //redondant ?
         Entity weapon_entity = Controlled_Weapon_query.GetSingletonEntity();
@@ -49,7 +52,7 @@ public class ToDrumPadShader : MonoBehaviour
 
         float mouseNormRadian = Mathf.Atan2(mouseDir.x, mouseDir.y) / Mathf.PI;
 
-        pressInertia = InputManager.KeyPressed ? 1 : Mathf.Lerp(pressInertia, pressInertia * 0.25f, Time.deltaTime * 4);
+        pressInertia = inputs.shootJustPressed ? 1 : Mathf.Lerp(pressInertia, pressInertia * 0.25f, Time.deltaTime * 4);
 
         ///UNT0022 OPTI
         ///this.transform.parent.rotation = playerRotation;

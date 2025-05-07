@@ -1,16 +1,29 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Numerics;
 using MusicNamespace;
-using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.InputSystem.InputSettings;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 using Vector4 = UnityEngine.Vector4;
+
+/// <summary>
+/// rename pb state info
+/// </summary>
+public struct PlabackUpdateCode
+{
+    //public ushort threadIdx;
+    //public bool OnOff;
+
+    public byte PBupdateBitFlags;
+
+    public NativeQueue<ushort> PBupdateIdxQueue;
+    public NativeArray<bool> ActiveThreads;
+    public NativeArray<ushort> PBcontainerIdices;
+}
 
 public class MusicTrackConveyorBelt : MonoBehaviour
 {
@@ -39,9 +52,9 @@ public class MusicTrackConveyorBelt : MonoBehaviour
     private Material TrackMaterial;
 
 
-    private bool[] ActiveThread;
-    //private int[] ActiveThreadOrder;
-    //private int runningPBnum = 0;
+    private PlabackUpdateCode PBupdateInfo;
+    //private bool[] ActiveThread;
+
 
     [HideInInspector]
     public Dictionary<int2, float3> indexToColorMap = new();
@@ -54,9 +67,15 @@ public class MusicTrackConveyorBelt : MonoBehaviour
         TrackSlotsGrid = new Vector4[10*6+6];
         TrackSlotsGridColor = new Vector4[10 * 6 + 6];
 
-        ActiveThread = new bool[6];
-        //ActiveThreadOrder = new int[6];
-        //for (int i = 0; i < ActiveThreadOrder.Length; i++){ActiveThreadOrder[i] = 99;}
+        //ActiveThread = new bool[ThreadNum];
+        //PBupdateCodes = new NativeArray<PlabackUpdateCode>(ThreadNum,Allocator.Persistent);
+        PBupdateInfo = new PlabackUpdateCode
+        {
+            PBupdateIdxQueue = new NativeQueue<ushort>(Allocator.Persistent),
+            ActiveThreads = new NativeArray<bool>(7,Allocator.Persistent),
+            PBcontainerIdices = new NativeArray<ushort>(7,Allocator.Persistent),
+        };
+
 
         mesurePassed = 1;
         for (int i = 0; i < TrackSlotsGrid.Length; i++)
@@ -71,6 +90,13 @@ public class MusicTrackConveyorBelt : MonoBehaviour
         //}
         TrackMaterial = this.GetComponent<Image>().material;
 
+    }
+
+    private void OnDestroy()
+    {
+        PBupdateInfo.ActiveThreads.Dispose();
+        PBupdateInfo.PBupdateIdxQueue.Dispose();
+        PBupdateInfo.PBcontainerIdices.Dispose();
     }
 
     void Update()
@@ -126,10 +152,13 @@ public class MusicTrackConveyorBelt : MonoBehaviour
             /// Insert in next mesure -> prepair playback
             if(Yindex==1 && TrackSlotsGrid[Xindex].x==99)
             {
-                //Debug.LogError("insertfromrackPrepair");
-                //int ContaineritemIdx = (int)(TrackSlotsGrid[Xindex + 6].z);
-                GetComponent<MusicTrack>().PlaybackHolderArray[Xindex]._QuePlaybackUI();
-                //ActiveThread[Xindex] = true;
+
+                ///GetComponent<MusicTrack>().PlaybackHolderArray[Xindex]._QuePlaybackUI();
+                //PBupdateInfo.PBupdateIdxQueue.Enqueue(x);
+                //PBupdateInfo.PBupdateBitFlags |= (byte)(1 << x);
+                //PBupdateInfo.PBcontainerIdices[x] = ContaineritemIdx;
+                //PBupdateInfo.ActiveThreads[x] = true;
+
             }
 
         }
@@ -163,17 +192,12 @@ public class MusicTrackConveyorBelt : MonoBehaviour
                 /// Insert in next mesure -> prepair playback
                 if (Yindex == 1)
                 {
-                    //Debug.LogError("insertPrepair");
-                    //int ContaineritemIdx = (int)(TrackSlotsGrid[Xindex + 6].z);
                     GetComponent<MusicTrack>().PlaybackHolderArray[Xindex]._QuePlaybackUI();
-                    //ActiveThread[Xindex] = true;
                 }
                 /// remove from the prepairing state
                 else if (InitialCoords.y == 1)
                 {
-                    //Debug.LogError("remove");
                     GetComponent<MusicTrack>().PlaybackHolderArray[Xindex]._CancelPlaybackPrepair();
-                    //ActiveThread[Xindex] = false;
                 }
             }
        
@@ -202,8 +226,10 @@ public class MusicTrackConveyorBelt : MonoBehaviour
         /// drop item as it is getting locked in for playback
         if (draggedCoords.y == 1) musicTrack.ForceDrop();
 
-        for (int x = 0; x < ThreadNum; x++)
+        for (ushort x = 0; x < ThreadNum; x++)
         {
+
+
             for (int y = 0; y < ThreadElementNum; y++)
             {
                 /// Icrement slots downward to keep up with the continuous displacement
@@ -211,46 +237,55 @@ public class MusicTrackConveyorBelt : MonoBehaviour
                 TrackSlotsGridColor[x + y * 6] = TrackSlotsGridColor[x + (y + 1) * 6];
             }
 
-
-
-
-      
-
             if (TrackSlotsGrid[x].x == 99)
             {
                 /// Anticipate 1 ahead for display to start prepair
                 if (TrackSlotsGrid[x + 6].x < 99)
                 {
-                    musicTrack.PlaybackHolderArray[x]._QuePlaybackUI();
-                    //ActiveThread[x] = true;
+                    //musicTrack.PlaybackHolderArray[x]._QuePlaybackUI();
                 }
                 /// Stop the thread
-                if (ActiveThread[x] == true)
+                if (PBupdateInfo.ActiveThreads[x] == true)
                 {
-                    //Debug.Log("stop : "+ x);
-                    musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
-                    ActiveThread[x] = false;
+                    //musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
+                    //PBupdateCodes.Push(new PlabackUpdateCode
+                    //{
+                    //    threadIdx = x,
+                    //    OnOff = false 
+                    //});
+                    PBupdateInfo.PBupdateIdxQueue.Enqueue(x);
+                    PBupdateInfo.PBupdateBitFlags |= (byte)(1 << x);
+                    PBupdateInfo.ActiveThreads[x] = false;
+                    Debug.Log("stop");
                 }
             }
             else
             {
 
                 /// restart thread with new playback
-                int ContaineritemIdx = (int)(TrackSlotsGrid[x].z);
-
-                //if(ActiveThread[x]==true) AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(x);
-                
-                //Debug.Log(new int2(x, ContaineritemIdx));
+                ushort ContaineritemIdx = (ushort)TrackSlotsGrid[x].z;
 
                 /// DO bool check and function change to also write playback cause new container use ?
-                musicTrack.PlaybackHolderArray[x]._ImmediatePlaybackActivate(new int2(x, ContaineritemIdx));
-                ActiveThread[x] = true;
-
+                //musicTrack.PlaybackHolderArray[x]._ImmediatePlaybackActivate(new int2(x, ContaineritemIdx));
+                //PBupdateCodes.Push(new PlabackUpdateCode { 
+                //    threadIdx = x,
+                //    OnOff = true,
+                //    PBcontainerIdx = ContaineritemIdx
+                //});
+                if (PBupdateInfo.PBcontainerIdices[x] != ContaineritemIdx || PBupdateInfo.ActiveThreads[x] == false)
+                {
+                    PBupdateInfo.PBupdateIdxQueue.Enqueue(x);
+                    PBupdateInfo.PBupdateBitFlags |= (byte)(1 << x);
+                    PBupdateInfo.PBcontainerIdices[x] = ContaineritemIdx;
+                    PBupdateInfo.ActiveThreads[x] = true;
+                }
             }
-      
-
-
         }
+
+        UIManager.Instance._UpdatePlaybacks(PBupdateInfo);
+        /// reset update flags after being proccessed
+        PBupdateInfo.PBupdateBitFlags = 0;
+
         TrackSlotsGrid[60] = new Vector4(99, 99, 99, 0);
         TrackSlotsGrid[61] = new Vector4(99, 99, 99, 0);
         TrackSlotsGrid[62] = new Vector4(99, 99, 99, 0);

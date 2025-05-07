@@ -23,12 +23,14 @@ public partial class PlayerSystem : SystemBase
     private float propellerCurrentScale;
     private float propellerScalingSpeed = 0.2f;
 
+    private EntityQuery CentralizedInputDataQuery;
 
     protected override void OnCreate()
     {
         //input_actions = new PlayerControls();
         modeSwitchBaseCD = 7;
         modeSwitchCD = modeSwitchBaseCD;
+        CentralizedInputDataQuery = EntityManager.CreateEntityQuery(typeof(CentralizedInputData));
     }
     protected override void OnStartRunning()
     {
@@ -67,7 +69,7 @@ public partial class PlayerSystem : SystemBase
     protected override void OnUpdate()
     {
 
-        var moveDirection = InputManager.playerMouvement;
+        //var moveDirection = InputManager.playerMouvement;
 
         //Camera cam = CameraSingleton.Instance.MainCamera;
 
@@ -75,11 +77,15 @@ public partial class PlayerSystem : SystemBase
         ///SET IN A INPUT EVENT ?
         foreach (var (player_data, player_phy,trans) in SystemAPI.Query<RefRW<PlayerData>, RefRW<PhyBodyData>, RefRO<LocalTransform>>())
         {
+
+            var inputs = EntityManager.GetComponentData<CentralizedInputData>(CentralizedInputDataQuery.GetSingletonEntity());
+
             float3 forward = trans.ValueRO.Up();
+            var moveDirection = inputs.playerMouvements;
             //var newPropellerStrenght = math.lerp(0,Mathf.Sign(moveDirection.y) - player_data.ValueRO.propellerBackpedalRelativeStrenght, player_data.ValueRO.propellerChargeSpeed*);
             //var newPropellerStrenghtFactor = player_data.ValueRO.propellerStrenghtFactor;
             //newPropellerStrenghtFactor = moveDirection.y != 0 ? math.min(newPropellerStrenghtFactor+player_data.ValueRO.propellerChargeSpeed,1) : math.max(newPropellerStrenghtFactor - player_data.ValueRO.propellerChargeSpeed, 0);
-            
+
             var PropellerStrenght = moveDirection.y > 0 ? moveDirection.y * player_data.ValueRO.propellerMaxStrenght : moveDirection.y * player_data.ValueRO.propellerBackpedalRelativeStrenght * player_data.ValueRO.propellerMaxStrenght;
 
             player_phy.ValueRW.Force += PropellerStrenght * new Vector2(forward.x, forward.y);

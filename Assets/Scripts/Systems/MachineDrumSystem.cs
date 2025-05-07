@@ -26,8 +26,8 @@ public partial class MachineDrumSystem : SystemBase
 
     EntityCommandBuffer ECB;
 
-    public static bool PadJustPressed;
-    public static bool PadJustReleased;
+    //public static bool PadJustPressed;
+    //public static bool PadJustReleased;
 
     private int PlayedKeyIndex;
     //public Vector2 mousepos;
@@ -48,6 +48,8 @@ public partial class MachineDrumSystem : SystemBase
 
     private EntityQuery StunManagerEntityQuery;
 
+    private EntityQuery CentralizedInputDataQuery;
+
     protected override void OnCreate()
     {
         /// should work but AudioLayoutStorage.activeSynthIdx is changed before ActiveSynthTag removal
@@ -61,12 +63,15 @@ public partial class MachineDrumSystem : SystemBase
 
         StunManagerEntityQuery = EntityManager.CreateEntityQuery(typeof(StunEffectData));
 
+        CentralizedInputDataQuery = EntityManager.CreateEntityQuery(typeof(CentralizedInputData));
     }
 
 
     protected override void OnUpdate()
     {
         ECB = World.GetOrCreateSystemManaged<BeginSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
+
+        var inputs = EntityManager.GetComponentData<CentralizedInputData>(CentralizedInputDataQuery.GetSingletonEntity());
 
         /// OPTI ? allocation each frame
         NativeList<(ushort, float)> requests = new NativeList<(ushort,float)>(3, Allocator.Temp);
@@ -97,7 +102,7 @@ public partial class MachineDrumSystem : SystemBase
 
         /// Do game logic and store audio call in a nativestack ?
 
-        if (PadJustPressed && !UIInput.MouseOverUI)
+        if (inputs.shootJustPressed && !UIInput.MouseOverUI)
         {
             //Debug.Log(newDMachineData.InstrumentAddOrder[0]);
 
@@ -183,17 +188,6 @@ public partial class MachineDrumSystem : SystemBase
                         }
 
                         SnareBaguetteColList.Dispose();
-
-                        ////var playerInverseRad = Quaternion.Inverse(parentTransform.Value.Rotation()).eulerAngles.z * Mathf.Deg2Rad;
-                        //////Debug.Log(playerInverseRad);
-                        /////// rotate to be relative to player
-                        ////float cos = Mathf.Cos(playerInverseRad);
-                        ////float sin = Mathf.Sin(playerInverseRad);
-                        ////snareDir = new Vector2(
-                        ////    snareDir.x * cos - snareDir.y * sin,
-                        ////    snareDir.x * sin + snareDir.y * cos
-                        ////);
-
                     }
                     SnareColList.Dispose();
 
@@ -224,7 +218,6 @@ public partial class MachineDrumSystem : SystemBase
                     break;
             }
 
-            PadJustPressed = false;
         }
 
 

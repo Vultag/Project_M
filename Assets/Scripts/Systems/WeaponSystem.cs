@@ -6,9 +6,6 @@ using Unity.Transforms;
 using UnityEngine;
 using MusicNamespace;
 using Unity.Mathematics;
-using Unity.Entities.UniversalDelegates;
-using static UnityEngine.EventSystems.EventTrigger;
-using UnityEditor.Rendering;
 using Unity.Rendering;
 
 public partial class WeaponSystem : SystemBase
@@ -27,8 +24,8 @@ public partial class WeaponSystem : SystemBase
     //temp -> put on component
     public static MusicUtils.MusicalMode mode;
 
-    public static bool KeyJustPressed;
-    public static bool KeyJustReleased;
+    //public static bool KeyJustPressed;
+    //public static bool KeyJustReleased;
     private int PlayedKeyIndex;
     public Vector2 mousepos;
     private bool IsShooting;
@@ -46,6 +43,7 @@ public partial class WeaponSystem : SystemBase
     private Entity damageEventEntity;
 
     public EntityQuery ControlledEquipment_query;
+    private EntityQuery CentralizedInputDataQuery;
 
     protected override void OnCreate()
     {
@@ -54,6 +52,7 @@ public partial class WeaponSystem : SystemBase
         AudioLayoutStorage.activeSynthIdx = -1;
 
         damageEventEntity = EntityManager.CreateEntityQuery(typeof(GlobalDamageEvent)).GetSingletonEntity();
+        CentralizedInputDataQuery = EntityManager.CreateEntityQuery(typeof(CentralizedInputData));
     }
 
     protected override void OnStartRunning()
@@ -82,6 +81,8 @@ public partial class WeaponSystem : SystemBase
         var activeSynthIdx = AudioLayoutStorage.activeSynthIdx;
         if (activeSynthIdx == -1)
             return;
+
+        var inputs = EntityManager.GetComponentData<CentralizedInputData>(CentralizedInputDataQuery.GetSingletonEntity());
 
         var ShapeComponentLookup = SystemAPI.GetComponentLookup<ShapeData>(true);
         var circleShapeLookUp = SystemAPI.GetComponentLookup<CircleShapeData>(true);
@@ -112,7 +113,7 @@ public partial class WeaponSystem : SystemBase
         var MainWeapon = SystemAPI.GetSingletonEntity<ControledWeaponTag>();
         var Wtrans = EntityManager.GetComponentData<LocalToWorld>(MainWeapon);
         var trans = EntityManager.GetComponentData<LocalTransform>(MainWeapon);
-        Entity ProjectilePrefab = EntityManager.GetComponentData<WeaponData>(MainWeapon).ProjectilePrefab;
+        Entity ProjectilePrefab = SystemAPI.GetSingleton<AmmoPrefabHolder>().ProjectilePrefab;
 
         //Debug.Log(ActiveSynth.ADSR.Sustain);
 
@@ -138,7 +139,7 @@ public partial class WeaponSystem : SystemBase
         /// Move to Synth system all together ?
         /// foreach not necessary as 1 weapon controlled at a time ?
         /// Ray class weapon logic
-        foreach (var (rayData,entity) in SystemAPI.Query<RefRO<RayData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
+        foreach (var (rayData,entity) in SystemAPI.Query<RefRO<RayData>>().WithAll<ControledWeaponTag>().WithEntityAccess())
         {
             //Debug.Log(BeatProximity);
             //Debug.DrawLine(new Vector3(5, 0, 0), new Vector3(5, BeatProximity * 10, 0), Color.red);
@@ -192,7 +193,7 @@ public partial class WeaponSystem : SystemBase
             Vector2 weaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
             float weaponFz = MusicUtils.DirectionToFrequency(weaponDirLenght);
 
-            if (KeyJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
             {
                 //Debug.LogError("test");
                 //InputManager.BeatNotYetPlayed = false;
@@ -264,12 +265,10 @@ public partial class WeaponSystem : SystemBase
                 }
                 GideReferenceDirection = weaponDirLenght;
                 IsShooting = true;
-               
-                KeyJustPressed = false;
             }
 
 
-            if (KeyJustReleased)
+            if (inputs.shootJustReleased)
             {
                 //if (weaponData.ValueRO.weaponClass == WeaponClass.Ray)
                 {
@@ -295,7 +294,6 @@ public partial class WeaponSystem : SystemBase
                 }
                 activeLegatoFz = 0;
                 IsShooting = false;
-                KeyJustReleased = false;
             }
 
 
@@ -509,7 +507,7 @@ public partial class WeaponSystem : SystemBase
         }
 
         /// Projectile class weapon logic
-        foreach (var (projectileData, entity) in SystemAPI.Query<RefRO<ProjectileData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
+        foreach (var (projectileData, entity) in SystemAPI.Query<RefRO<WeaponAmmoData>>().WithAll<ControledWeaponTag>().WithEntityAccess())
         {
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
@@ -527,23 +525,17 @@ public partial class WeaponSystem : SystemBase
                 trans.Rotation = math.mul(math.inverse(parentTransform.Rotation), newLocalRot);
                 ECB.SetComponent<LocalTransform>(MainWeapon, trans);
             }
-            if (KeyJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
             {
                 /// Projectile instanciate
-                { 
+                {
                     var projectileInstance = ECB.Instantiate(ProjectilePrefab);
                     ECB.SetComponent<Ocs1SinSawSquareFactorOverride>(projectileInstance, new Ocs1SinSawSquareFactorOverride { Value = ActiveSynth.Osc1SinSawSquareFactor });
                     ECB.SetComponent<Ocs2SinSawSquareFactorOverride>(projectileInstance, new Ocs2SinSawSquareFactorOverride { Value = ActiveSynth.Osc2SinSawSquareFactor });
-                    /// do default + right trans ?
-                    ECB.SetComponent<ShapeData>(projectileInstance, new ShapeData
-                    {
-                        Position = Wtrans.Position.xy,
-                        PreviousPosition = trans.Position.xy,
-                        Rotation = 0,
-                        collisionLayer = PhysicsUtilities.CollisionLayer.ProjectileLayer,
-                        HasDynamics = false,
-                        IsTrigger = true,
-                    });
+
+                    var projectileLTW = LocalTransform.FromPosition(new float3(Wtrans.Position.x, Wtrans.Position.y, -3));
+                    ECB.SetComponent<LocalTransform>(projectileInstance, projectileLTW);
+
                     ECB.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
                     {
                         AngularDamp = 0,
@@ -626,9 +618,8 @@ public partial class WeaponSystem : SystemBase
                 GideReferenceDirection = weaponDirLenght;
                 IsShooting = true;
 
-                KeyJustPressed = false;
             }
-            if (KeyJustReleased)
+            if (inputs.shootJustReleased)
             {
                 if (SkeyBuffer.Length != 0)
                 {
@@ -648,7 +639,6 @@ public partial class WeaponSystem : SystemBase
                 }
                 activeLegatoFz = 0;
                 IsShooting = false;
-                KeyJustReleased = false;
             }
 
             KeysBuffer keysBuffer = new KeysBuffer

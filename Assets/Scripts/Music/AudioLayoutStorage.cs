@@ -45,11 +45,6 @@ public struct AudioLayoutStorage
     public bool SelectSynthUpdateRequirement;
     public bool ModifySynthUpdateRequirement;
 
-    //public bool PlaybackUpdateRequirement;
-
-    //public bool ActivationUpdateRequirement;
-    //private bool ActivationState;
-    //public int synthActivationIdx;
     public int synthSelectionIdx;
 
     /// integrate to the other que ?

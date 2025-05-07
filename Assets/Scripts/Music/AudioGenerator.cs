@@ -175,7 +175,6 @@ public class AudioGenerator : MonoBehaviour
         /// To reset audio playbacks and keep them in sync with the main thread
         while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Count > 0)
         {
-
             int SynthIdx = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Dequeue();
             int contextIndex = SynthIdxTOactiveSynthsIdxMap[SynthIdx];
             PlaybackAudioBundlesContext[contextIndex - 1] = new PlaybackAudioBundleContext { PlaybackKeyStartIndex = 0, PlaybackTime = 0 };

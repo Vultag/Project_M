@@ -24,7 +24,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     ""name"": ""PlayerControls"",
     ""maps"": [
         {
-            ""name"": ""ActionMap"",
+            ""name"": ""PlayerMap"",
             ""id"": ""8470a751-71a4-4362-9029-8ddbea30915c"",
             ""actions"": [
                 {
@@ -176,16 +176,142 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""ConstructionMap"",
+            ""id"": ""385efbe4-3c7b-4ce0-b35b-5d3d0be69d38"",
+            ""actions"": [
+                {
+                    ""name"": ""TryPlaceBuilding"",
+                    ""type"": ""Button"",
+                    ""id"": ""b5286acf-c8e8-49d3-95df-a044a96babd6"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""5b01fc64-51d5-4507-b62d-0eadef4eb52a"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TryPlaceBuilding"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""UI_Map"",
+            ""id"": ""142959b4-b61f-42a7-af76-5b8a255d5296"",
+            ""actions"": [
+                {
+                    ""name"": ""Tabulation"",
+                    ""type"": ""Button"",
+                    ""id"": ""e179963c-e72a-4c01-9495-0f461d635535"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""TEMPO"",
+                    ""type"": ""Value"",
+                    ""id"": ""895d3569-e19d-4462-8c34-89c29786ff95"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Zoom"",
+                    ""type"": ""Value"",
+                    ""id"": ""7724e1b1-0920-4bf4-b3f3-41adc8c8297d"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""c3dbf2df-5c42-4c93-9e0d-5d0221d3b1a4"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TEMPO"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""3828e001-52fa-43c1-81f2-b7ba36a7c461"",
+                    ""path"": ""<Keyboard>/numpad3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TEMPO"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""2b583999-9b4e-4c9e-95e8-94cf2bbf1dc8"",
+                    ""path"": ""<Keyboard>/numpad9"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""TEMPO"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1c0bb09f-cd50-4f22-9545-ecf975bc6056"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Tabulation"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f62a0af3-5dda-4d23-94ec-fba8cd3a9a3d"",
+                    ""path"": ""<Mouse>/scroll"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Zoom"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
 }");
-        // ActionMap
-        m_ActionMap = asset.FindActionMap("ActionMap", throwIfNotFound: true);
-        m_ActionMap_Mouvements = m_ActionMap.FindAction("Mouvements", throwIfNotFound: true);
-        m_ActionMap_Tempo = m_ActionMap.FindAction("Tempo", throwIfNotFound: true);
-        m_ActionMap_Shoot = m_ActionMap.FindAction("Shoot", throwIfNotFound: true);
-        m_ActionMap_MousePos = m_ActionMap.FindAction("MousePos", throwIfNotFound: true);
+        // PlayerMap
+        m_PlayerMap = asset.FindActionMap("PlayerMap", throwIfNotFound: true);
+        m_PlayerMap_Mouvements = m_PlayerMap.FindAction("Mouvements", throwIfNotFound: true);
+        m_PlayerMap_Tempo = m_PlayerMap.FindAction("Tempo", throwIfNotFound: true);
+        m_PlayerMap_Shoot = m_PlayerMap.FindAction("Shoot", throwIfNotFound: true);
+        m_PlayerMap_MousePos = m_PlayerMap.FindAction("MousePos", throwIfNotFound: true);
+        // ConstructionMap
+        m_ConstructionMap = asset.FindActionMap("ConstructionMap", throwIfNotFound: true);
+        m_ConstructionMap_TryPlaceBuilding = m_ConstructionMap.FindAction("TryPlaceBuilding", throwIfNotFound: true);
+        // UI_Map
+        m_UI_Map = asset.FindActionMap("UI_Map", throwIfNotFound: true);
+        m_UI_Map_Tabulation = m_UI_Map.FindAction("Tabulation", throwIfNotFound: true);
+        m_UI_Map_TEMPO = m_UI_Map.FindAction("TEMPO", throwIfNotFound: true);
+        m_UI_Map_Zoom = m_UI_Map.FindAction("Zoom", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -244,30 +370,30 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         return asset.FindBinding(bindingMask, out action);
     }
 
-    // ActionMap
-    private readonly InputActionMap m_ActionMap;
-    private List<IActionMapActions> m_ActionMapActionsCallbackInterfaces = new List<IActionMapActions>();
-    private readonly InputAction m_ActionMap_Mouvements;
-    private readonly InputAction m_ActionMap_Tempo;
-    private readonly InputAction m_ActionMap_Shoot;
-    private readonly InputAction m_ActionMap_MousePos;
-    public struct ActionMapActions
+    // PlayerMap
+    private readonly InputActionMap m_PlayerMap;
+    private List<IPlayerMapActions> m_PlayerMapActionsCallbackInterfaces = new List<IPlayerMapActions>();
+    private readonly InputAction m_PlayerMap_Mouvements;
+    private readonly InputAction m_PlayerMap_Tempo;
+    private readonly InputAction m_PlayerMap_Shoot;
+    private readonly InputAction m_PlayerMap_MousePos;
+    public struct PlayerMapActions
     {
         private @PlayerControls m_Wrapper;
-        public ActionMapActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
-        public InputAction @Mouvements => m_Wrapper.m_ActionMap_Mouvements;
-        public InputAction @Tempo => m_Wrapper.m_ActionMap_Tempo;
-        public InputAction @Shoot => m_Wrapper.m_ActionMap_Shoot;
-        public InputAction @MousePos => m_Wrapper.m_ActionMap_MousePos;
-        public InputActionMap Get() { return m_Wrapper.m_ActionMap; }
+        public PlayerMapActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Mouvements => m_Wrapper.m_PlayerMap_Mouvements;
+        public InputAction @Tempo => m_Wrapper.m_PlayerMap_Tempo;
+        public InputAction @Shoot => m_Wrapper.m_PlayerMap_Shoot;
+        public InputAction @MousePos => m_Wrapper.m_PlayerMap_MousePos;
+        public InputActionMap Get() { return m_Wrapper.m_PlayerMap; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
         public bool enabled => Get().enabled;
-        public static implicit operator InputActionMap(ActionMapActions set) { return set.Get(); }
-        public void AddCallbacks(IActionMapActions instance)
+        public static implicit operator InputActionMap(PlayerMapActions set) { return set.Get(); }
+        public void AddCallbacks(IPlayerMapActions instance)
         {
-            if (instance == null || m_Wrapper.m_ActionMapActionsCallbackInterfaces.Contains(instance)) return;
-            m_Wrapper.m_ActionMapActionsCallbackInterfaces.Add(instance);
+            if (instance == null || m_Wrapper.m_PlayerMapActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_PlayerMapActionsCallbackInterfaces.Add(instance);
             @Mouvements.started += instance.OnMouvements;
             @Mouvements.performed += instance.OnMouvements;
             @Mouvements.canceled += instance.OnMouvements;
@@ -282,7 +408,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @MousePos.canceled += instance.OnMousePos;
         }
 
-        private void UnregisterCallbacks(IActionMapActions instance)
+        private void UnregisterCallbacks(IPlayerMapActions instance)
         {
             @Mouvements.started -= instance.OnMouvements;
             @Mouvements.performed -= instance.OnMouvements;
@@ -298,26 +424,144 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @MousePos.canceled -= instance.OnMousePos;
         }
 
-        public void RemoveCallbacks(IActionMapActions instance)
+        public void RemoveCallbacks(IPlayerMapActions instance)
         {
-            if (m_Wrapper.m_ActionMapActionsCallbackInterfaces.Remove(instance))
+            if (m_Wrapper.m_PlayerMapActionsCallbackInterfaces.Remove(instance))
                 UnregisterCallbacks(instance);
         }
 
-        public void SetCallbacks(IActionMapActions instance)
+        public void SetCallbacks(IPlayerMapActions instance)
         {
-            foreach (var item in m_Wrapper.m_ActionMapActionsCallbackInterfaces)
+            foreach (var item in m_Wrapper.m_PlayerMapActionsCallbackInterfaces)
                 UnregisterCallbacks(item);
-            m_Wrapper.m_ActionMapActionsCallbackInterfaces.Clear();
+            m_Wrapper.m_PlayerMapActionsCallbackInterfaces.Clear();
             AddCallbacks(instance);
         }
     }
-    public ActionMapActions @ActionMap => new ActionMapActions(this);
-    public interface IActionMapActions
+    public PlayerMapActions @PlayerMap => new PlayerMapActions(this);
+
+    // ConstructionMap
+    private readonly InputActionMap m_ConstructionMap;
+    private List<IConstructionMapActions> m_ConstructionMapActionsCallbackInterfaces = new List<IConstructionMapActions>();
+    private readonly InputAction m_ConstructionMap_TryPlaceBuilding;
+    public struct ConstructionMapActions
+    {
+        private @PlayerControls m_Wrapper;
+        public ConstructionMapActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @TryPlaceBuilding => m_Wrapper.m_ConstructionMap_TryPlaceBuilding;
+        public InputActionMap Get() { return m_Wrapper.m_ConstructionMap; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(ConstructionMapActions set) { return set.Get(); }
+        public void AddCallbacks(IConstructionMapActions instance)
+        {
+            if (instance == null || m_Wrapper.m_ConstructionMapActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_ConstructionMapActionsCallbackInterfaces.Add(instance);
+            @TryPlaceBuilding.started += instance.OnTryPlaceBuilding;
+            @TryPlaceBuilding.performed += instance.OnTryPlaceBuilding;
+            @TryPlaceBuilding.canceled += instance.OnTryPlaceBuilding;
+        }
+
+        private void UnregisterCallbacks(IConstructionMapActions instance)
+        {
+            @TryPlaceBuilding.started -= instance.OnTryPlaceBuilding;
+            @TryPlaceBuilding.performed -= instance.OnTryPlaceBuilding;
+            @TryPlaceBuilding.canceled -= instance.OnTryPlaceBuilding;
+        }
+
+        public void RemoveCallbacks(IConstructionMapActions instance)
+        {
+            if (m_Wrapper.m_ConstructionMapActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        public void SetCallbacks(IConstructionMapActions instance)
+        {
+            foreach (var item in m_Wrapper.m_ConstructionMapActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_ConstructionMapActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    public ConstructionMapActions @ConstructionMap => new ConstructionMapActions(this);
+
+    // UI_Map
+    private readonly InputActionMap m_UI_Map;
+    private List<IUI_MapActions> m_UI_MapActionsCallbackInterfaces = new List<IUI_MapActions>();
+    private readonly InputAction m_UI_Map_Tabulation;
+    private readonly InputAction m_UI_Map_TEMPO;
+    private readonly InputAction m_UI_Map_Zoom;
+    public struct UI_MapActions
+    {
+        private @PlayerControls m_Wrapper;
+        public UI_MapActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        public InputAction @Tabulation => m_Wrapper.m_UI_Map_Tabulation;
+        public InputAction @TEMPO => m_Wrapper.m_UI_Map_TEMPO;
+        public InputAction @Zoom => m_Wrapper.m_UI_Map_Zoom;
+        public InputActionMap Get() { return m_Wrapper.m_UI_Map; }
+        public void Enable() { Get().Enable(); }
+        public void Disable() { Get().Disable(); }
+        public bool enabled => Get().enabled;
+        public static implicit operator InputActionMap(UI_MapActions set) { return set.Get(); }
+        public void AddCallbacks(IUI_MapActions instance)
+        {
+            if (instance == null || m_Wrapper.m_UI_MapActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_UI_MapActionsCallbackInterfaces.Add(instance);
+            @Tabulation.started += instance.OnTabulation;
+            @Tabulation.performed += instance.OnTabulation;
+            @Tabulation.canceled += instance.OnTabulation;
+            @TEMPO.started += instance.OnTEMPO;
+            @TEMPO.performed += instance.OnTEMPO;
+            @TEMPO.canceled += instance.OnTEMPO;
+            @Zoom.started += instance.OnZoom;
+            @Zoom.performed += instance.OnZoom;
+            @Zoom.canceled += instance.OnZoom;
+        }
+
+        private void UnregisterCallbacks(IUI_MapActions instance)
+        {
+            @Tabulation.started -= instance.OnTabulation;
+            @Tabulation.performed -= instance.OnTabulation;
+            @Tabulation.canceled -= instance.OnTabulation;
+            @TEMPO.started -= instance.OnTEMPO;
+            @TEMPO.performed -= instance.OnTEMPO;
+            @TEMPO.canceled -= instance.OnTEMPO;
+            @Zoom.started -= instance.OnZoom;
+            @Zoom.performed -= instance.OnZoom;
+            @Zoom.canceled -= instance.OnZoom;
+        }
+
+        public void RemoveCallbacks(IUI_MapActions instance)
+        {
+            if (m_Wrapper.m_UI_MapActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        public void SetCallbacks(IUI_MapActions instance)
+        {
+            foreach (var item in m_Wrapper.m_UI_MapActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_UI_MapActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    public UI_MapActions @UI_Map => new UI_MapActions(this);
+    public interface IPlayerMapActions
     {
         void OnMouvements(InputAction.CallbackContext context);
         void OnTempo(InputAction.CallbackContext context);
         void OnShoot(InputAction.CallbackContext context);
         void OnMousePos(InputAction.CallbackContext context);
+    }
+    public interface IConstructionMapActions
+    {
+        void OnTryPlaceBuilding(InputAction.CallbackContext context);
+    }
+    public interface IUI_MapActions
+    {
+        void OnTabulation(InputAction.CallbackContext context);
+        void OnTEMPO(InputAction.CallbackContext context);
+        void OnZoom(InputAction.CallbackContext context);
     }
 }

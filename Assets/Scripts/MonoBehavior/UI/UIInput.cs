@@ -15,7 +15,7 @@ public partial class UIInput : MonoBehaviour
 
     public Action<int> OnUpdateTempo;
 
-    UIControls UI_Controls;
+    PlayerControls.UI_MapActions UI_Controls;
 
     public static bool MouseOverUI;
 
@@ -33,12 +33,12 @@ public partial class UIInput : MonoBehaviour
     {
         zoomTarget = Camera.main.orthographicSize;
         currentZoom = zoomTarget;
-        UI_Controls = new UIControls();
+        UI_Controls = InputManager.playerControls.UI_Map;
         UI_Controls.Enable();
 
-        UI_Controls.UI.Tabulation.performed += OnTabulationPressed;
+        UI_Controls.Tabulation.performed += OnTabulationPressed;
 
-        UI_Controls.UI.Zoom.performed += OnZoomTick;
+        UI_Controls.Zoom.performed += OnZoomTick;
     }
 
     private void Update()
@@ -81,7 +81,7 @@ public partial class UIInput : MonoBehaviour
     {
         zoomDelta = 0;
         currentZoom = Camera.main.orthographicSize;
-        zoomTarget = Mathf.Clamp(Mathf.Max(zoomTarget - UI_Controls.UI.Zoom.ReadValue<Vector2>().y*0.01f,0),MinMaxZoom.x,MinMaxZoom.y);
+        zoomTarget = Mathf.Clamp(Mathf.Max(zoomTarget - UI_Controls.Zoom.ReadValue<Vector2>().y*0.01f,0),MinMaxZoom.x,MinMaxZoom.y);
 
     }
 

@@ -3,6 +3,7 @@ using System.Linq;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Entities.UniversalDelegates;
+using Unity.Transforms;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -69,8 +70,11 @@ public partial struct TreeInsersionSystem : ISystem//, ISystemStartStop
         var BoxLookUp = SystemAPI.GetComponentLookup<BoxShapeData>(true);
 
         #region insert at start AABB body
-        foreach (var (shapes, insertionData, entity) in SystemAPI.Query<RefRO<ShapeData>, RefRO<TreeInsersionData>>().WithEntityAccess())
+        foreach (var (shapes, insertionData, ltw, entity) in SystemAPI.Query<RefRW<ShapeData>, RefRO<TreeInsersionData>, RefRO<LocalToWorld>>().WithEntityAccess())
         {
+            shapes.ValueRW.Position  = ltw.ValueRO.Position.xy;
+            shapes.ValueRW.PreviousPosition = ltw.ValueRO.Position.xy;
+            /// rotation also ?
 
             switch (shapes.ValueRO.shapeType)
             {

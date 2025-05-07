@@ -13,6 +13,7 @@ using UnityEngine.EventSystems;
 using System.Linq;
 using Unity.Transforms;
 using Unity.Collections;
+using UnityEngine.Rendering;
 
 /*
  Break on window dimention change --> TO FIX
@@ -60,6 +61,8 @@ public class UIManager : MonoBehaviour
     SliderMono simplexSlider;
 
     public Transform toolTip;
+    [SerializeField]
+    GameObject BuildingBlueprintGB;
 
     private EntityManager entityManager;
     //private EntityQuery Player_query;
@@ -73,9 +76,9 @@ public class UIManager : MonoBehaviour
     public GameObject SynthToolBar;
 
     [HideInInspector]
-    public int NumOfEquipments = 0;
-    public int NumOfDMachines = 0;
-    public int NumOfSynths = 0;
+    public short NumOfEquipments = 0;
+    public short NumOfDMachines = 0;
+    public short NumOfSynths = 0;
     /// Need local activeSynthIdx to modify previous activeSynth upon change
     int activeUISynthIdx = -1;
     /// Same
@@ -196,35 +199,42 @@ public class UIManager : MonoBehaviour
 
     #endregion
 
+    public void _SelectBuildingUI(int index, BuildingInfo buildingInfo)
+    {
+        // temp
+        _SelectSynthUI(index);
+
+        /// buildin placement blueprint GB activation
+        BuildingBlueprintGB.SetActive(true);
+
+        var buildingBlueprint = BuildingBlueprintGB.GetComponent<BuildingBlueprintUI>();
+        buildingBlueprint.buildingInfo = buildingInfo;
+        /// arbitrary but tailored to 0.85 scale circle sprite
+        buildingBlueprint.CurrentCircle = new CircleShapeData { radius = 0.55f };
+
+        /// change synthUI color to distinguish
+        SynthToolBar.transform.GetChild(index).GetChild(0).GetComponent<Image>().color = Color.black;
+        SynthToolBar.transform.GetChild(index).GetChild(2).GetChild(0).gameObject.SetActive(true);
+    }
 
     public void _SelectSynthUI(int index)
     {
         SynthEditPanel.SetActive(true);
         short synthDataIdx = EquipmentIdxToSynthDataIdx[index];
-        SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[synthDataIdx];
-        UpdateSynthUI(
-            in selectedSynthData,
-            entityManager.GetComponentData<WeaponData>(AudioManager.AuxillaryEquipmentEntities[index]).weaponType
-            );
+        ////SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[synthDataIdx];
+        ////UpdateSynthUI(
+        ////    in selectedSynthData,
+        ////    entityManager.GetComponentData<WeaponData>(AudioManager.AuxillaryEquipmentEntities[index]).weaponType
+        ////    );
 
-        if (!audioManager.ActiveWeapon_query.IsEmpty)
+        if (!audioManager.ControlledEquipment_query.IsEmpty)
         {
-            Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+            Entity weapon_entity = audioManager.ControlledEquipment_query.GetSingletonEntity();
             /// prevent synth select if already selected or curently recording
             if (index == activeUISynthIdx || entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
                 return;
 
         }
-
-
-        //if(SynthToolBar.transform.GetChild(index).GetComponent<SynthUIelement>().coro)
-        //{
-        //    return;
-        //}
-
-
-        //if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
-        //    _StopPlayback(activeSynthIdx);
 
         KeyboardShaderGB.SetActive(true);
         /// activate Rec button GB for new synth and deactivate for the old one
@@ -288,7 +298,7 @@ public class UIManager : MonoBehaviour
 
         NumOfSynths++;
         NumOfEquipments++;
-        SynthToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentCategory = EquipmentCategory.Weapon;
+        SynthToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisBuildingInfo.equipmentCategory = EquipmentCategory.Weapon;
         EquipmentIdxToSynthDataIdx.Add((short)(NumOfSynths-1));
 
         SynthData newSynthData = SynthData.CreateDefault(weaponType);
@@ -316,7 +326,7 @@ public class UIManager : MonoBehaviour
 
         NumOfDMachines++;
         NumOfEquipments++;
-        SynthToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentCategory = EquipmentCategory.DrumMachine;
+        SynthToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisBuildingInfo.equipmentCategory = EquipmentCategory.DrumMachine;
         /// add invalid index for padding
         EquipmentIdxToSynthDataIdx.Add(-1);
 
@@ -399,7 +409,7 @@ public class UIManager : MonoBehaviour
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
-        Entity weapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
+        Entity weapon_entity = audioManager.ControlledEquipment_query.GetSingletonEntity();
 
         /// If the the Current playback of the synth is playing, stop it
         //for (int i = 1; i < AudioManager.audioGenerator.activeSynthsIdx.Length; i++)
@@ -430,8 +440,8 @@ public class UIManager : MonoBehaviour
             ecb.AddComponent<PlaybackRecordingData>(weapon_entity, playbackRecordingData);
             ecb.AddBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
 
-            PlaybackRecordSystem.KeyJustPressed = false;
-            PlaybackRecordSystem.KeyJustReleased = false;
+            //PlaybackRecordSystem.KeyJustPressed = false;
+            //PlaybackRecordSystem.KeyJustReleased = false;
         }
         if (entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
         {
@@ -440,13 +450,80 @@ public class UIManager : MonoBehaviour
             //entityManager.GetBuffer<PlaybackReleasedKeyBufferData>(weapon_entity).Clear();
         }
     }
+
+
+    public void _UpdatePlaybacks(PlabackUpdateCode updateInfo)
+    {
+        var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
+        var updateCount = updateInfo.PBupdateIdxQueue.Count;
+        for (int i = 0; i < updateCount; i++)
+        {
+            ushort synthIdx = updateInfo.PBupdateIdxQueue.Dequeue();
+            ushort containerIdx = updateInfo.PBcontainerIdices[synthIdx];
+            /// unessesary if same playback recording being reset ?
+            AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(
+            UIplaybacksHolder.synthFullBundleLists[synthIdx][containerIdx].playbackAudioBundle,
+                synthIdx);
+
+            var slider = SynthToolBar.transform.GetChild(synthIdx).gameObject.GetComponentInChildren<Slider>();
+            slider.value = 0;
+            slider.gameObject.transform.GetChild(0).GetComponent<Image>().color = Color.white;
+
+            var synthInfo = activeUIEquipment.FirstOrDefault(item => item.Item1 == (short)synthIdx);
+            bool synthAlreadyActive = !synthInfo.Equals(default((short, bool, bool)));
+            if (synthAlreadyActive)
+            {
+                /// both playing and recording in mesure
+                if (synthInfo.Item2 == true) slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.yellow;
+
+            }
+            else
+            {
+                ///change slider color
+                slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.green;
+                activeUIEquipment.Add(((short)synthIdx, false, true));
+            }
+
+            /// Prevent from having a synth with more than 1 playback
+            var safe = AudioManager.audioGenerator.activeSynthsIdx.Length;
+            for (int y = 1; y < safe; y++)
+            {
+                if (AudioManager.audioGenerator.activeSynthsIdx[y] == synthIdx)
+                {
+                    Debug.LogError("synth aleady activated");
+                    return;
+                }
+            }
+
+            AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(synthIdx);
+
+            /// ecs tuerrets ..
+            /// set component enabled on all required.
+            NativeList<Entity> weaponGroupList = AudioManager.TurretEquipmentEntities[synthIdx];
+            for (int y = 0; y < weaponGroupList.Length; y++)
+            {
+                ecb.SetComponentEnabled<PlaybackData>(weaponGroupList[y],true);
+            }
+
+        }
+    }
+
+
+    /// <summary>
+    /// Remplace with _UpdatePlaybacks to batch all the turrets's playback data modifications ?
+    /// </summary>
+    /// <param name="PBidx"></param>
+    /// TO REMOVE
     public void _ActivatePlayback(int2 PBidx)
     {
-
+        /*
         /// Prevent play on empty playback
         //if (AudioManager.audioGenerator.PlaybackAudioBundles[synthIdx].PlaybackDuration == 0)
         //    return;
 
+        Debug.Log("rere");
+
+        /// unessesary if same playback recording being reset ?
         AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(
             UIplaybacksHolder.synthFullBundleLists[PBidx.x][PBidx.y].playbackAudioBundle,
             PBidx.x);
@@ -479,7 +556,7 @@ public class UIManager : MonoBehaviour
         {
             if (AudioManager.audioGenerator.activeSynthsIdx[i] == PBidx.x)
             {
-                //Debug.Log("synth aleady activated");
+                Debug.LogError("synth aleady activated");
                 return;
             }
         }
@@ -491,23 +568,16 @@ public class UIManager : MonoBehaviour
 
         AudioLayoutStorageHolder.audioLayoutStorage.WriteActivation(PBidx.x);
 
+        /// HERE FOR EACH TURRET ADD PB DATA IF NEED
+
         //var weaponIdx = PBidx.x + 1;
         Entity weapon_entity = AudioManager.AuxillaryEquipmentEntities[PBidx.x];
 
         var ecb = audioManager.endSimulationECBSystem.CreateCommandBuffer();
 
-        PlaybackData playbackData = new PlaybackData { SynthIndex = PBidx.x};
+        PlaybackData playbackData = new PlaybackData { PlaybackIndex = PBidx.x};
 
         ecb.AddComponent<PlaybackData>(weapon_entity, playbackData);
-        //switch (entityManager.GetComponentData<WeaponData>(weapon_entity).weaponClass)
-        //{
-        //    case WeaponClass.Ray:
-        //        ecb.AddComponent<RayData>(weapon_entity, entityManager.GetComponentData<RayData>(WeaponSystem.WeaponEntities[0]));
-        //        break;
-        //    case WeaponClass.Projectile:
-        //        ecb.AddComponent<ProjectileData>(weapon_entity, entityManager.GetComponentData<ProjectileData>(WeaponSystem.WeaponEntities[0]));
-        //        break;
-        //}
 
         if (!entityManager.HasBuffer<PlaybackSustainedKeyBufferData>(weapon_entity))
         {
@@ -515,10 +585,11 @@ public class UIManager : MonoBehaviour
             ecb.AddBuffer<PlaybackSustainedKeyBufferData>(weapon_entity);
             ecb.AddBuffer<PlaybackReleasedKeyBufferData>(weapon_entity);
         }
-
+        */
     }
     public void _StopPlayback(int synthIdx)
     {
+        /*
         ///prevent activation if no playback playing
         //var weaponIdx = synthIdx + 1;
         Entity weapon_entity = AudioManager.AuxillaryEquipmentEntities[synthIdx];
@@ -553,49 +624,6 @@ public class UIManager : MonoBehaviour
         ecb.RemoveComponent<PlaybackData>(weapon_entity);
 
 
-        /// The playback is curently recording 
-        //if (entityManager.HasComponent<PlaybackRecordingData>(weapon_entity))
-        {
-            ///Debug.LogError("stop on record. DISABLED UNTIL REASSESSMENT");
-            //return;
-            /*
-            PlaybackRecordingData runningPlaybackData = new PlaybackRecordingData();
-            runningPlaybackData = entityManager.GetComponentData<PlaybackRecordingData>(weapon_entity);
-
-            slider.maxValue = (float)(MusicUtils.time)-runningPlaybackData.startBeat;
-            ///change slider color
-            slider.gameObject.transform.GetChild(1).GetChild(0).GetComponent<Image>().color = Color.green;
-            for (int i = 0; i < synthsInfo.Count; i++)
-            {
-                if (synthsInfo[i].Item1 == synthIdx)
-                {
-                    synthsInfo.RemoveAt(i);
-                    break;
-                }
-            }
-
-
-
-            var keyBuffer = entityManager.GetBuffer<PlaybackRecordingKeysBuffer>(weapon_entity);
-
-            var playbackKeys = new NativeArray<PlaybackKey>(keyBuffer.Length, Allocator.Persistent);
-            playbackKeys.CopyFrom(keyBuffer.AsNativeArray().Reinterpret<PlaybackKey>());
-
-            AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(new PlaybackAudioBundle
-            {
-                IsLooping = true,
-                //IsPlaying = false,
-                PlaybackDuration =  runningPlaybackData.time,
-                PlaybackKeys = playbackKeys
-            },synthIdx);
-
-
-            ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(weapon_entity);
-            ecb.RemoveComponent<PlaybackRecordingData>(weapon_entity);
-            */
-        }
-
-
         /// Activate Play button GB
         //SynthToolBar.transform.GetChild(synthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
         /// Deactivate Stop button GB
@@ -608,7 +636,7 @@ public class UIManager : MonoBehaviour
         }
 
    
-     
+        */
     }
 
     public void _SetSynthUItoSleep(int synthIdx)

@@ -6,13 +6,14 @@ using UnityEngine;
 public struct MCoreData : IComponentData
 {
     public float Health;
-    ///to do...
+    public Entity TurretPrefab;
 }
 
 public class MCoreAuthoring : MonoBehaviour
 {
 
     public float Health;
+    public GameObject TurretPrefab;
 
     class MCoreAuthoringBaker : Baker<MCoreAuthoring>
     {
@@ -24,6 +25,7 @@ public class MCoreAuthoring : MonoBehaviour
             AddComponent(entity, new MCoreData
             {
                 Health = authoring.Health,
+                TurretPrefab = GetEntity(authoring.TurretPrefab, TransformUsageFlags.Dynamic),
 
             });
         }

@@ -20,11 +20,23 @@ public class AudioManager : MonoBehaviour
 
     /// CHANGE PLACE ?
     public EntityQuery Player_query;
-    public EntityQuery ActiveWeapon_query;
+
+    //public EntityQuery ActiveWeapon_query;
+    //public EntityQuery MainWeapon_query;
     public EntityQuery ActiveDMachine_query;
+
     public EntityQuery ControlledEquipment_query;
 
-    public static NativeArray<Entity> AuxillaryEquipmentEntities;
+    /// <summary>
+    /// REMOVED FOR ALL TURRET WEAPONS ENTITIES
+    /// </summary>
+    //public static NativeArray<Entity> AuxillaryEquipmentEntities;
+
+    /// <summary>
+    /// native array of the turrets's weapon entity grouped in list of playback associated
+    /// </summary>
+    public static NativeArray<NativeList<Entity>> TurretEquipmentEntities;
+
 
     //public NativeArray<Entity> WeaponSynthEntities;
     //public short activeWeaponSynth;
@@ -56,7 +68,12 @@ public class AudioManager : MonoBehaviour
     private void Awake()
     {
 
-        AuxillaryEquipmentEntities = new NativeArray<Entity>(0, Allocator.Persistent);
+        //AuxillaryEquipmentEntities = new NativeArray<Entity>(0, Allocator.Persistent);
+        TurretEquipmentEntities = new NativeArray<NativeList<Entity>>(7, Allocator.Persistent);
+        for (int i = 0; i < TurretEquipmentEntities.Length; i++)
+        {
+            TurretEquipmentEntities[i] = new NativeList<Entity>(Allocator.Persistent);
+        }
 
         if (Instance == null)
         {
@@ -109,7 +126,7 @@ public class AudioManager : MonoBehaviour
         uiPlaybacksHolder = Object.FindAnyObjectByType<UIPlaybacksHolder>();
         //PlaybackRecordSystem.SetAudioManager(this);
 
-        ActiveWeapon_query = entityManager.CreateEntityQuery(typeof(ActiveSynthTag));
+        //ActiveWeapon_query = entityManager.CreateEntityQuery(typeof(ActiveSynthTag));
         ActiveDMachine_query = entityManager.CreateEntityQuery(typeof(ActiveDMachineTag));
         ControlledEquipment_query = entityManager.CreateEntityQuery(typeof(ControledWeaponTag));
 
@@ -121,33 +138,18 @@ public class AudioManager : MonoBehaviour
         audioGenerator.activeSynthsIdx = new NativeArray<int>(1, Allocator.Persistent);
         audioGenerator.SynthsData[0] = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[0];
         audioGenerator.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
-        /// Useless ?
-        //AudioManager.EquipmentEntities[0] = start_weapon;
-
-        //endSimulationECBSystem.CreateCommandBuffer().AddComponent<ActiveSynthTag>(start_weapon);
-        //AudioLayoutStorage.activeSynthIdx = 0;
-
-
-        //var playerEquipmentSpriteBuffer = entityManager.GetBuffer<Child>(start_weapon);
-        //var startBuffer = endSimulationECBSystem.CreateCommandBuffer();
-
-        //startBuffer.AddComponent<Disabled>(playerEquipmentSpriteBuffer[0].Value);
-        //startBuffer.AddComponent<Disabled>(playerEquipmentSpriteBuffer[1].Value);
-        //Debug.Log(playerEquipmentSpriteBuffer[0].Value.Index);
-
-
-        //Debug.Log(ActiveWeapon_query.CalculateEntityCount());
-
-        // Get the EndSimulationEntityCommandBufferSystem from the World
-
-        //AudioSources = new List<GameObject>();
-        //_query = entityManager.CreateEntityQuery(typeof(SynthData));
     }
     private void OnDestroy()
     {
-        AuxillaryEquipmentEntities.Dispose();
+        //AuxillaryEquipmentEntities.Dispose();
         AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData.Dispose();
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles.Dispose();
+
+        for (int i = 0; i < TurretEquipmentEntities.Length; i++)
+        {
+            TurretEquipmentEntities[i].Dispose();
+        }
+        TurretEquipmentEntities.Dispose();
     }
 
 
@@ -186,6 +188,7 @@ public class AudioManager : MonoBehaviour
 
     public void SelectSynth(int index)
     {
+        
         if (index == activeEquipmentIDX)
             return;
         //Debug.Log(index);
@@ -193,7 +196,7 @@ public class AudioManager : MonoBehaviour
 
         activeEquipmentIDX = (short)index;
         var controlledEquipmentE = ControlledEquipment_query.GetSingletonEntity();
-        var newWeaponE = AudioManager.AuxillaryEquipmentEntities[index];
+        ////var newWeaponE = AudioManager.AuxillaryEquipmentEntities[index];
 
         var ecb = endSimulationECBSystem.CreateCommandBuffer();
         var newWeaponData = entityManager.GetComponentData<WeaponData>(controlledEquipmentE);
@@ -205,30 +208,6 @@ public class AudioManager : MonoBehaviour
         newWeaponMaterialMeshInfo.Mesh = -1;
         ecb.SetComponent<MaterialMeshInfo>(playerWeaponSpriteEntity, newWeaponMaterialMeshInfo);
 
-        //if(ControlledEquipment_query.IsEmpty)
-        //{
-        //    ecb.AddComponent<ControledWeaponTag>(controlledEquipmentE);
-
-        //    if (newWeaponData.weaponClass == WeaponClass.Ray)
-        //    {
-        //        ecb.SetComponent<URPMaterialPropertyAtlasItemIdx>(playerWeaponSpriteEntity, new URPMaterialPropertyAtlasItemIdx { Value = 2 });
-        //        //ecb.AddComponent(start_weapon, new RayData
-        //        //{
-        //        //    //to do
-        //        //});
-        //    }
-        //    else if (newWeaponData.weaponClass == WeaponClass.Projectile)
-        //    {
-        //        ecb.SetComponent<URPMaterialPropertyAtlasItemIdx>(playerWeaponSpriteEntity, new URPMaterialPropertyAtlasItemIdx { Value = 1 });
-        //        //ecb.AddComponent(start_weapon, new ProjectileData
-        //        //{
-        //        //    Damage = 6f,
-        //        //    Speed = 1f
-        //        //});
-        //    }
-        //    //AudioLayoutStorage.activeSynthIdx = 0;
-        //    //AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(synthData);
-        //}
 
         if (newWeaponData.weaponClass == WeaponClass.Ray)
         {
@@ -242,11 +221,11 @@ public class AudioManager : MonoBehaviour
             ecb.SetComponent<URPMaterialPropertyAtlasItemIdx>(playerWeaponSpriteEntity, new URPMaterialPropertyAtlasItemIdx { Value = 1 });
 
         }
-        if (!ActiveWeapon_query.IsEmpty)
-        {
-            Entity weapon_entity = ActiveWeapon_query.GetSingletonEntity();
-            ecb.RemoveComponent<ActiveSynthTag>(weapon_entity);
-        }
+        //if (!ActiveWeapon_query.IsEmpty)
+        //{
+        //    Entity weapon_entity = ActiveWeapon_query.GetSingletonEntity();
+        //    ecb.RemoveComponent<ActiveSynthTag>(weapon_entity);
+        //}
         if(!ActiveDMachine_query.IsEmpty)
         {
             /// hide DMachine on main slot
@@ -259,13 +238,14 @@ public class AudioManager : MonoBehaviour
             Entity DMachine_entity = ActiveDMachine_query.GetSingletonEntity();
             ecb.RemoveComponent<ActiveDMachineTag>(DMachine_entity);
         }
-        ecb.AddComponent<ActiveSynthTag>(newWeaponE);
+        //ecb.AddComponent<ActiveSynthTag>(newWeaponE);
 
         AudioLayoutStorageHolder.audioLayoutStorage.WriteSelectSynth(index);
-
+        
     }
     public void SelectDrumMachine(int index)
     {
+        /*
         if (index == activeEquipmentIDX)
             return;
 
@@ -304,6 +284,7 @@ public class AudioManager : MonoBehaviour
             ecb.RemoveComponent<ActiveDMachineTag>(DMachine_entity);
         }
         ecb.AddComponent<ActiveDMachineTag>(newDMachineE);
+        */
     }
     /// <summary>
     ///  INSTANCIATING WITH ENTITY MANAGER -> REWORK
@@ -315,20 +296,27 @@ public class AudioManager : MonoBehaviour
 
         Entity player_entity = Player_query.GetSingletonEntity();
         var start_weapon = entityManager.GetComponentData<PlayerData>(player_entity).MainCanon;
+
         Entity new_weapon = entityManager.Instantiate(entityManager.GetComponentData<PlayerData>(player_entity).WeaponPrefab);
-        NativeArray<Entity> equipmentEntities = new NativeArray<Entity>(NumOfEquipments, Allocator.Persistent);
-        for (int i = 0; i < AudioManager.AuxillaryEquipmentEntities.Length; i++)
-        {
-            equipmentEntities[i] = AudioManager.AuxillaryEquipmentEntities[i];
-        }
-        equipmentEntities[NumOfEquipments-1] = new_weapon;
-        AudioManager.AuxillaryEquipmentEntities.Dispose();
-        AudioManager.AuxillaryEquipmentEntities = equipmentEntities;
+        //Entity new_weapon = start_weapon;
+
+        /// remove
+        //NativeArray<Entity> equipmentEntities = new NativeArray<Entity>(NumOfEquipments, Allocator.Persistent);
+        //for (int i = 0; i < AudioManager.AuxillaryEquipmentEntities.Length; i++)
+        //{
+        //    equipmentEntities[i] = AudioManager.AuxillaryEquipmentEntities[i];
+        //}
+        //equipmentEntities[NumOfEquipments-1] = new_weapon;
+        //AudioManager.AuxillaryEquipmentEntities.Dispose();
+        //AudioManager.AuxillaryEquipmentEntities = equipmentEntities;
+        ///
+        /// Instead
+        TurretEquipmentEntities[NumOfEquipments].Add(new_weapon);
+
 
         //Debug.Log(synthData.ADSR.Sustain);
 
-        ecb.AddBuffer<SustainedKeyBufferData>(new_weapon);
-        ecb.AddBuffer<ReleasedKeyBufferData>(new_weapon);
+     
         //ecb.AddComponent<SynthData>(new_weapon, synthData);
 
         /// Add the Parent component to the child entity to set the singleton as its parent
@@ -343,7 +331,9 @@ public class AudioManager : MonoBehaviour
             //audioGenerator.gameObject.SetActive(true);
             ///// Activate the RaysToShader gameObject
             //Camera.main.transform.GetChild(0).gameObject.SetActive(true);
-            ecb.AddComponent<ControledWeaponTag>(start_weapon);
+            ecb.AddComponent<ControledWeaponTag>(start_weapon); 
+            ecb.AddBuffer<SustainedKeyBufferData>(new_weapon);
+            ecb.AddBuffer<ReleasedKeyBufferData>(new_weapon);
             //ecb.AddComponent<ActiveSynthTag>(new_weapon);
             //ecb.AddBuffer<SustainedKeyBufferData>(start_weapon);
             //ecb.AddBuffer<ReleasedKeyBufferData>(start_weapon);
@@ -371,82 +361,82 @@ public class AudioManager : MonoBehaviour
             AudioLayoutStorage.activeSynthIdx = 0;
             AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(synthData);
             AudioLayoutStorage.activeSynthIdx = -1;
+
+            /// do in authoring ?
+            if (weaponClass == WeaponClass.Ray)
+            {
+                ecb.AddComponent(start_weapon, new RayData
+                {
+                    //to do
+                });
+            }
+            else if (weaponClass == WeaponClass.Projectile)
+            {
+                ecb.AddComponent(start_weapon, new WeaponAmmoData
+                {
+                    Damage = 6f,
+                    Speed = 0.05f,
+                    LifeTime = 3f,
+                    penetrationCapacity = 1
+                });
+            }
+
         }
         else
         {
             AudioLayoutStorageHolder.audioLayoutStorage.WriteAddSynth(synthData);
         }
-        /// TEMPORARY TILL I FIGURE WEAPON "SLOTS" ON THE PLAYER
-        switch (NumOfEquipments)
-        {
-            case 1:
-                newWeaponLTW = LocalTransform.FromPosition(new float3(-0.5985f, 0.1386f, 0));
-                newWeaponLTW.Rotation = Quaternion.Euler(0, 0, -45);
-                break;
-            case 2:
-                newWeaponLTW = LocalTransform.FromPosition(new float3(0.5985f, 0.1386f, 0));
-                newWeaponLTW.Rotation = Quaternion.Euler(0, 0, 225);
-                break;
-            case 3:
-                newWeaponLTW = LocalTransform.FromPosition(new float3(-0.9569f, -0.2231f, 0));
-                newWeaponLTW.Rotation = Quaternion.Euler(0, 0, -45);
-                break;
-            case 4:
-                newWeaponLTW = LocalTransform.FromPosition(new float3(0.9569f, -0.2231f, 0));
-                newWeaponLTW.Rotation = Quaternion.Euler(0, 0, 225);
-                break;
-            case 5:
-                newWeaponLTW = LocalTransform.FromPosition(new float3(-1.3189f, -0.5808f, 0));
-                newWeaponLTW.Rotation = Quaternion.Euler(0, 0, -45);
-                break;
-            case 6:
-                newWeaponLTW = LocalTransform.FromPosition(new float3(1.3189f, -0.5808f, 0));
-                newWeaponLTW.Rotation = Quaternion.Euler(0, 0, 225);
-                break;
 
-        }
+        /// TEMPORARY TILL I FIGURE WEAPON "SLOTS" ON THE PLAYER
+        ////switch (NumOfEquipments)
+        ////{
+        ////    case 1:
+        ////        newWeaponLTW = LocalTransform.FromPosition(new float3(-0.5985f, 0.1386f, 0));
+        ////        newWeaponLTW.Rotation = Quaternion.Euler(0, 0, -45);
+        ////        break;
+        ////    case 2:
+        ////        newWeaponLTW = LocalTransform.FromPosition(new float3(0.5985f, 0.1386f, 0));
+        ////        newWeaponLTW.Rotation = Quaternion.Euler(0, 0, 225);
+        ////        break;
+        ////    case 3:
+        ////        newWeaponLTW = LocalTransform.FromPosition(new float3(-0.9569f, -0.2231f, 0));
+        ////        newWeaponLTW.Rotation = Quaternion.Euler(0, 0, -45);
+        ////        break;
+        ////    case 4:
+        ////        newWeaponLTW = LocalTransform.FromPosition(new float3(0.9569f, -0.2231f, 0));
+        ////        newWeaponLTW.Rotation = Quaternion.Euler(0, 0, 225);
+        ////        break;
+        ////    case 5:
+        ////        newWeaponLTW = LocalTransform.FromPosition(new float3(-1.3189f, -0.5808f, 0));
+        ////        newWeaponLTW.Rotation = Quaternion.Euler(0, 0, -45);
+        ////        break;
+        ////    case 6:
+        ////        newWeaponLTW = LocalTransform.FromPosition(new float3(1.3189f, -0.5808f, 0));
+        ////        newWeaponLTW.Rotation = Quaternion.Euler(0, 0, 225);
+        ////        break;
+
+        ////}
       
-        ecb.AddComponent(new_weapon, newWeaponLTW);
+        ////ecb.AddComponent(new_weapon, newWeaponLTW);
+
         //ecb.AddComponent(new_weapon, newWeaponData);
 
         /// Need to fetch LinkedEntityGroup as parent/childs arnt assigned yet
-        Entity newWeaponSpriteEntity = Entity.Null;
-        foreach (LinkedEntityGroup linkedE in entityManager.GetBuffer<LinkedEntityGroup>(new_weapon))
-        {
-            if (entityManager.HasComponent<MaterialMeshInfo>(linkedE.Value))
-                newWeaponSpriteEntity = linkedE.Value;
-        }
+        ////Entity newWeaponSpriteEntity = Entity.Null;
+        ////foreach (LinkedEntityGroup linkedE in entityManager.GetBuffer<LinkedEntityGroup>(new_weapon))
+        ////{
+        ////    if (entityManager.HasComponent<MaterialMeshInfo>(linkedE.Value))
+        ////        newWeaponSpriteEntity = linkedE.Value;
+        ////}
         //WeaponData newWeaponData = entityManager.GetComponentData<WeaponData>(start_weapon);
 
-        ecb.AddComponent<WeaponData>(new_weapon, new WeaponData
-        {
-            WeaponIdx = NumOfEquipments,
-            weaponClass = weaponClass,
-            weaponType = weaponType,
-        });
-        if (weaponClass == WeaponClass.Ray)
-        {
-            /// Set sprite idx on auxillary weapon
-            ecb.AddComponent<URPMaterialPropertyAtlasItemIdx>(newWeaponSpriteEntity, new URPMaterialPropertyAtlasItemIdx { Value = 2 });
-
-            ecb.AddComponent(new_weapon, new RayData
-            {
-                //to do
-            });
-        }
-        else if (weaponClass == WeaponClass.Projectile)
-        {
-            /// Set sprite idx on auxillary weapon
-            ecb.AddComponent<URPMaterialPropertyAtlasItemIdx>(newWeaponSpriteEntity, new URPMaterialPropertyAtlasItemIdx { Value = 1 });
-
-            ecb.AddComponent(new_weapon, new ProjectileData
-            {
-                Damage = 6f,
-                Speed = 0.05f,
-                LifeTime = 3f,
-                penetrationCapacity = 1
-            });
-        }
+        //ecb.AddComponent<WeaponData>(new_weapon, new WeaponData
+        //{
+        //    WeaponIdx = NumOfEquipments,
+        //    weaponClass = weaponClass,
+        //    weaponType = weaponType,
+        //});
+        
 
     }
     /// <summary>
@@ -454,6 +444,7 @@ public class AudioManager : MonoBehaviour
     /// </summary>
     public void AddDrumMachine(int NumOfEquipments)
     {
+        /*
         var ecb = endSimulationECBSystem.CreateCommandBuffer();
 
         Entity player_entity = Player_query.GetSingletonEntity();
@@ -517,6 +508,7 @@ public class AudioManager : MonoBehaviour
             machineDrumContent = MachineDrumContent.SnareDrum | MachineDrumContent.BaseDrum | MachineDrumContent.HighHat,
             InstrumentAddOrder = new FixedList32Bytes<byte> { 2,1,0 }
         });
+        */
     }
 
     public void PlayRequestedDMachineSounds(NativeList<(ushort, float)> requests)

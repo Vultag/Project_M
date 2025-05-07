@@ -47,7 +47,7 @@ public class PlaybackContainerUI : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        if (isShowingSheet) playbackHolder.uiManager.MusicSheetGB.SetActive(false);
+        if (isShowingSheet) UIManager.Instance.MusicSheetGB.SetActive(false);
         isShowingSheet = false;
     }
     public void _ArmPlaybackItem(int containerIdx)
@@ -65,7 +65,7 @@ public class PlaybackContainerUI : MonoBehaviour, IPointerClickHandler, IPointer
     public void OnPointerEnter(PointerEventData eventData)
     {
         /// reactivate it if PB is recording ?
-        playbackHolder.uiManager.MusicSheetGB.SetActive(true);
+        UIManager.Instance.MusicSheetGB.SetActive(true);
         AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = this.transform.parent.parent.GetComponent<UIPlaybacksHolder>().synthFullBundleLists[PBidx.x][PBidx.y].musicSheet;
         isShowingSheet = true;
     }

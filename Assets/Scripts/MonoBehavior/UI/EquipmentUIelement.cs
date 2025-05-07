@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using MusicNamespace;
 using TMPro;
+using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -9,6 +10,16 @@ public enum EquipmentCategory
 {
     Weapon,
     DrumMachine
+}
+
+public struct BuildingInfo
+{
+    public EquipmentCategory equipmentCategory;
+    public WeaponType weaponType;
+    public WeaponClass weaponClass;
+    public short buildingIdx;
+    public Entity WeaponAmmoPrefab;
+    //...
 }
 
 
@@ -24,29 +35,40 @@ public class EquipmentUIelement : MonoBehaviour
     private short BaseBeatBeforeSynthStart = 3;
     private float ContdownFontSize = 12;
     [HideInInspector]
-    public int thisEquipmentIdx;
+    public short thisEquipmentIdx;
     [HideInInspector]
-    public EquipmentCategory thisEquipmentCategory;
+    public BuildingInfo thisBuildingInfo;
     private bool RecordPrepairing = false;
 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
-        thisEquipmentIdx = this.gameObject.transform.GetSiblingIndex();
-        //Debug.Log(thisSynthIdx);
+        thisEquipmentIdx = (short)this.gameObject.transform.GetSiblingIndex();
+
+        /// TEMP
+        thisBuildingInfo = new BuildingInfo
+        {
+            weaponClass = WeaponClass.Ray,
+            weaponType = WeaponType.Raygun,
+            buildingIdx = thisEquipmentIdx,
+            equipmentCategory = EquipmentCategory.Weapon,
+        };
+
+
     }
 
     public void _selectThisEquipment()
     {
-        switch (thisEquipmentCategory)
-        {
-            case EquipmentCategory.Weapon:
-                uiManager._SelectSynthUI(thisEquipmentIdx);
-                break;
-            case EquipmentCategory.DrumMachine:
-                uiManager._SelectMachineDrumUI(thisEquipmentIdx);
-                break;
-        }
+        uiManager._SelectBuildingUI(thisEquipmentIdx, thisBuildingInfo);
+        //switch (thisEquipmentCategory)
+        //{
+        //    case EquipmentCategory.Weapon:
+        //        uiManager._SelectSynthUI(thisEquipmentIdx);
+        //        break;
+        //    case EquipmentCategory.DrumMachine:
+        //        uiManager._SelectMachineDrumUI(thisEquipmentIdx);
+        //        break;
+        //}
     }
     public void _activateThisPlayback()
     {
