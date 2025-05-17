@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using Unity.Entities;
 using UnityEngine;
 
-public struct PlaybackData : IComponentData, IEnableableComponent
+public struct PlaybackData : IComponentData
 {
     public int KeysPlayed;
     /// <summary>
-    /// MOVE TO PlaybackIdentifyer ?
+    /// relative to weap/DM/...
     /// </summary>
     public int PlaybackIndex;
 

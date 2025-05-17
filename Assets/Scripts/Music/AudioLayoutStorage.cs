@@ -1,8 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using Unity.Collections;
-using Unity.Entities.UniversalDelegates;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 /// <summary>
@@ -84,7 +83,7 @@ public struct AudioLayoutStorage
     {
         synthSelectionIdx = synthIdx;
         //Debug.Log(synthIdx);
-        //Debug.Log(AuxillarySynthsData[synthIdx].ADSR.Sustain);
+        //Debug.Log(AuxillarySynthsData[synthIdx].ADSR.Release);
         UpdateRequirement = true;
         SelectSynthUpdateRequirement = true;
     }
@@ -92,7 +91,6 @@ public struct AudioLayoutStorage
     {
         var newSynthsData = new NativeArray<SynthData>(AuxillarySynthsData.Length, Allocator.Persistent);
         AuxillarySynthsData.CopyTo(newSynthsData);
-        //Debug.Log(activeSynthIdx);
         newSynthsData[activeSynthIdx] = newSynthData;
         AuxillarySynthsData.Dispose();
         AuxillarySynthsData = newSynthsData;
@@ -104,33 +102,7 @@ public struct AudioLayoutStorage
 
     /// REMPLACE WRITE AND ACTIVATION BY QUE 
 
-    //public void WritePlayback(PlaybackAudioBundle newPlaybackAudioBundle, int synthIdx)
-    //{
-    //    NewPlaybackAudioBundle = newPlaybackAudioBundle;
-    //    var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
-    //    PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
-    //    newPlaybackAudioBundles[synthIdx] = newPlaybackAudioBundle;
-    //    PlaybackAudioBundles.Dispose();
-    //    PlaybackAudioBundles = newPlaybackAudioBundles;
-
-    //    synthPlaybackIdx = synthIdx;
-    //    UpdateRequirement = true;
-    //    PlaybackUpdateRequirement = true;
-    //}
-    //public void WriteActivation(int synthIdx, bool OnOff)
-    //{
-    //    synthActivationIdx = synthIdx;
-    //    if (OnOff)
-    //    {
-    //        ActivationState = true;
-    //    }
-    //    else
-    //    {
-    //        ActivationState = false;
-    //    }
-    //    UpdateRequirement = true;
-    //    ActivationUpdateRequirement = true;
-    //}
+    /// SHOULD PLAN FOR EQUIPMENTIDX ?
     public void WriteActivation(int synthIdx)
     {
         PlaybackActivationUpdateRequired.Enqueue(synthIdx);
@@ -147,6 +119,7 @@ public struct AudioLayoutStorage
         //    NewPlaybackAudioBundle = newPlaybackAudioBundle;
         var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
         PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
+
         newPlaybackAudioBundles[synthIdx] = newPlaybackAudioBundle;
         PlaybackAudioBundles.Dispose();
         PlaybackAudioBundles = newPlaybackAudioBundles;
@@ -166,14 +139,4 @@ public struct AudioLayoutStorage
         ModifySynthUpdateRequirement = false;
         return NewSynthData;
     }
-    //public PlaybackAudioBundle ReadPlayback()
-    //{
-    //    PlaybackUpdateRequirement = false;
-    //    return NewPlaybackAudioBundle;
-    //}
-    //public (int, bool) ReadActivation()
-    //{
-    //    ActivationUpdateRequirement = false;
-    //    return (synthActivationIdx, ActivationState);
-    //}
 }

@@ -11,18 +11,14 @@ using Vector3 = UnityEngine.Vector3;
 using Vector4 = UnityEngine.Vector4;
 
 /// <summary>
-/// rename pb state info
+/// Rename Playback€pdateOrder
 /// </summary>
-public struct PlabackUpdateCode
+public struct PlabackUpdateInfoPack
 {
-    //public ushort threadIdx;
-    //public bool OnOff;
-
-    public byte PBupdateBitFlags;
-
-    public NativeQueue<ushort> PBupdateIdxQueue;
-    public NativeArray<bool> ActiveThreads;
-    public NativeArray<ushort> PBcontainerIdices;
+    public ushort threadIdx;
+    public bool OnOff;
+    /// if on
+    public ushort PBcontainerIdx;
 }
 
 public class MusicTrackConveyorBelt : MonoBehaviour
@@ -52,8 +48,10 @@ public class MusicTrackConveyorBelt : MonoBehaviour
     private Material TrackMaterial;
 
 
-    private PlabackUpdateCode PBupdateInfo;
-    //private bool[] ActiveThread;
+    private NativeQueue<PlabackUpdateInfoPack> PBupdateInfoQueue;
+    ///private bool[] ActiveThreads;
+    /// -1 = inactive ; 0+ = containerIdx;
+    private short[] ActiveContainers;
 
 
     [HideInInspector]
@@ -67,16 +65,14 @@ public class MusicTrackConveyorBelt : MonoBehaviour
         TrackSlotsGrid = new Vector4[10*6+6];
         TrackSlotsGridColor = new Vector4[10 * 6 + 6];
 
-        //ActiveThread = new bool[ThreadNum];
-        //PBupdateCodes = new NativeArray<PlabackUpdateCode>(ThreadNum,Allocator.Persistent);
-        PBupdateInfo = new PlabackUpdateCode
+        ///ActiveThreads = new bool[ThreadNum];
+        ActiveContainers = new short[ThreadNum];
+        for (int i = 0; i < ActiveContainers.Length; i++)
         {
-            PBupdateIdxQueue = new NativeQueue<ushort>(Allocator.Persistent),
-            ActiveThreads = new NativeArray<bool>(7,Allocator.Persistent),
-            PBcontainerIdices = new NativeArray<ushort>(7,Allocator.Persistent),
-        };
-
-
+            ActiveContainers[i] = -1;
+        }
+        PBupdateInfoQueue = new NativeQueue<PlabackUpdateInfoPack>(Allocator.Persistent);
+   
         mesurePassed = 1;
         for (int i = 0; i < TrackSlotsGrid.Length; i++)
         {
@@ -94,9 +90,7 @@ public class MusicTrackConveyorBelt : MonoBehaviour
 
     private void OnDestroy()
     {
-        PBupdateInfo.ActiveThreads.Dispose();
-        PBupdateInfo.PBupdateIdxQueue.Dispose();
-        PBupdateInfo.PBcontainerIdices.Dispose();
+        PBupdateInfoQueue.Dispose();
     }
 
     void Update()
@@ -136,11 +130,6 @@ public class MusicTrackConveyorBelt : MonoBehaviour
              Xindex * content.rect.width,
              ((Yindex * 2 + 1) * mesureElementSpacing - 0.5f) * content.rect.height,
                 -10);
-
-
-            //element.GetComponent<RectTransform>().localPosition = assignedPos;
-            //element.GetComponent<TrackPlaybackItem>().associatedPlaybackContainer = container;
-            //element.GetComponent<TrackPlaybackItem>().assignedPosition = assignedPos;
 
 
             int2 spriteIdx = new int2(Xindex % 3, (Xindex / 3));
@@ -242,49 +231,30 @@ public class MusicTrackConveyorBelt : MonoBehaviour
                 /// Anticipate 1 ahead for display to start prepair
                 if (TrackSlotsGrid[x + 6].x < 99)
                 {
-                    //musicTrack.PlaybackHolderArray[x]._QuePlaybackUI();
+                    musicTrack.PlaybackHolderArray[x]._QuePlaybackUI();
+                    //ActiveThread[x] = true;
                 }
                 /// Stop the thread
-                if (PBupdateInfo.ActiveThreads[x] == true)
+                if (ActiveContainers[x] != -1)
                 {
-                    //musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
-                    //PBupdateCodes.Push(new PlabackUpdateCode
-                    //{
-                    //    threadIdx = x,
-                    //    OnOff = false 
-                    //});
-                    PBupdateInfo.PBupdateIdxQueue.Enqueue(x);
-                    PBupdateInfo.PBupdateBitFlags |= (byte)(1 << x);
-                    PBupdateInfo.ActiveThreads[x] = false;
-                    Debug.Log("stop");
+                    //Debug.Log("stop");
+                    musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
+                    ActiveContainers[x] = -1;
                 }
             }
             else
             {
 
                 /// restart thread with new playback
-                ushort ContaineritemIdx = (ushort)TrackSlotsGrid[x].z;
-
-                /// DO bool check and function change to also write playback cause new container use ?
-                //musicTrack.PlaybackHolderArray[x]._ImmediatePlaybackActivate(new int2(x, ContaineritemIdx));
-                //PBupdateCodes.Push(new PlabackUpdateCode { 
-                //    threadIdx = x,
-                //    OnOff = true,
-                //    PBcontainerIdx = ContaineritemIdx
-                //});
-                if (PBupdateInfo.PBcontainerIdices[x] != ContaineritemIdx || PBupdateInfo.ActiveThreads[x] == false)
+                short ContaineritemIdx = (short)TrackSlotsGrid[x].z;
+                if(ActiveContainers[x] != ContaineritemIdx)
                 {
-                    PBupdateInfo.PBupdateIdxQueue.Enqueue(x);
-                    PBupdateInfo.PBupdateBitFlags |= (byte)(1 << x);
-                    PBupdateInfo.PBcontainerIdices[x] = ContaineritemIdx;
-                    PBupdateInfo.ActiveThreads[x] = true;
+                    musicTrack.PlaybackHolderArray[x]._ImmediatePlaybackActivate(new int2(x, ContaineritemIdx));
+                    ActiveContainers[x] = ContaineritemIdx;
                 }
+             
             }
         }
-
-        UIManager.Instance._UpdatePlaybacks(PBupdateInfo);
-        /// reset update flags after being proccessed
-        PBupdateInfo.PBupdateBitFlags = 0;
 
         TrackSlotsGrid[60] = new Vector4(99, 99, 99, 0);
         TrackSlotsGrid[61] = new Vector4(99, 99, 99, 0);
@@ -293,17 +263,5 @@ public class MusicTrackConveyorBelt : MonoBehaviour
         TrackSlotsGrid[64] = new Vector4(99, 99, 99, 0);
         TrackSlotsGrid[65] = new Vector4(99, 99, 99, 0);
     }
-
-    //int UnpackFloat3ToInt16Bit(float3 color)
-    //{
-    //    // Scale the float values to the range of 0ñ65535 (for 16-bit per channel)
-    //    int r = Mathf.FloorToInt(color.x * 65535f); // Scale r (0.0ñ1.0 -> 0ñ65535)
-    //    int g = Mathf.FloorToInt(color.y * 65535f); // Scale g (0.0ñ1.0 -> 0ñ65535)
-    //    int b = Mathf.FloorToInt(color.z * 65535f); // Scale b (0.0ñ1.0 -> 0ñ65535)
-
-    //    // Pack the values into a single 48-bit integer (16-bit per channel)
-    //    return (r << 32) | (g << 16) | b;
-    //}
-
 
 }

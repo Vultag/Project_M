@@ -14,6 +14,10 @@ public class PlaybackContainerUI : MonoBehaviour, IPointerClickHandler, IPointer
     private bool isShowingSheet;
     [HideInInspector]
     public int2 PBidx;
+
+    [HideInInspector]
+    public ushort relativeEquipmentIdx;
+
     [HideInInspector]
     public Sprite associatedSprite;
     [HideInInspector]
@@ -66,7 +70,7 @@ public class PlaybackContainerUI : MonoBehaviour, IPointerClickHandler, IPointer
     {
         /// reactivate it if PB is recording ?
         UIManager.Instance.MusicSheetGB.SetActive(true);
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = this.transform.parent.parent.GetComponent<UIPlaybacksHolder>().synthFullBundleLists[PBidx.x][PBidx.y].musicSheet;
+        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = this.transform.parent.parent.GetComponent<UIPlaybacksHolder>().synthFullBundleLists[relativeEquipmentIdx][PBidx.y].musicSheet;
         isShowingSheet = true;
     }
 }

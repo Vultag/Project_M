@@ -13,7 +13,7 @@ public class TurretWeaponAuthoring : MonoBehaviour
 
             Entity entity = GetEntity(TransformUsageFlags.None);
 
-            AddComponent(entity, new TurretWeaponTag());
+            ///AddComponent(entity, new TurretWeaponTag());
         }
     }
 }

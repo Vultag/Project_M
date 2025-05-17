@@ -35,45 +35,48 @@ public class EquipmentUIelement : MonoBehaviour
     private short BaseBeatBeforeSynthStart = 3;
     private float ContdownFontSize = 12;
     [HideInInspector]
-    public short thisEquipmentIdx;
+    public ushort thisEquipmentIdx;
     [HideInInspector]
-    public BuildingInfo thisBuildingInfo;
-    private bool RecordPrepairing = false;
+    public EquipmentCategory thisEquipmentCategory;
+    [HideInInspector]
+    ///public BuildingInfo thisBuildingInfo;
+    ///private bool RecordPrepairing = false;
 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
-        thisEquipmentIdx = (short)this.gameObject.transform.GetSiblingIndex();
+        thisEquipmentIdx = (ushort)this.gameObject.transform.GetSiblingIndex();
 
         /// TEMP
-        thisBuildingInfo = new BuildingInfo
-        {
-            weaponClass = WeaponClass.Ray,
-            weaponType = WeaponType.Raygun,
-            buildingIdx = thisEquipmentIdx,
-            equipmentCategory = EquipmentCategory.Weapon,
-        };
+        //thisBuildingInfo = new BuildingInfo
+        //{
+        //    weaponClass = WeaponClass.Ray,
+        //    weaponType = WeaponType.Raygun,
+        //    buildingIdx = thisEquipmentIdx,
+        //    equipmentCategory = EquipmentCategory.Weapon,
+        //};
 
 
     }
 
     public void _selectThisEquipment()
     {
-        uiManager._SelectBuildingUI(thisEquipmentIdx, thisBuildingInfo);
-        //switch (thisEquipmentCategory)
-        //{
-        //    case EquipmentCategory.Weapon:
-        //        uiManager._SelectSynthUI(thisEquipmentIdx);
-        //        break;
-        //    case EquipmentCategory.DrumMachine:
-        //        uiManager._SelectMachineDrumUI(thisEquipmentIdx);
-        //        break;
-        //}
+        ///uiManager._SelectBuildingUI(thisEquipmentIdx, thisBuildingInfo);
+        
+        switch (thisEquipmentCategory)
+        {
+            case EquipmentCategory.Weapon:
+                uiManager._SelectSynthUI(thisEquipmentIdx);
+                break;
+            case EquipmentCategory.DrumMachine:
+                uiManager._SelectMachineDrumUI(thisEquipmentIdx);
+                break;
+        }
     }
-    public void _activateThisPlayback()
-    {
-        uiManager._ActivatePlayback(thisEquipmentIdx);
-    }
+    //public void _activateThisPlayback()
+    //{
+    //    uiManager._ActivatePlayback(thisEquipmentIdx);
+    //}
 
     public void _PrepairRecord()
     {
@@ -84,8 +87,8 @@ public class EquipmentUIelement : MonoBehaviour
         //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
         ///// Activate Stop button GB
         //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
-        StartCoroutine("RecordCountdown", thisEquipmentIdx);
-        RecordPrepairing = true;
+        StartCoroutine(nameof(RecordCountdown), thisEquipmentIdx);
+        ///RecordPrepairing = true;
     }
     public void _DisplayPrepairActivation()
     {
@@ -122,7 +125,7 @@ public class EquipmentUIelement : MonoBehaviour
     //    }
     //}
 
-    IEnumerator RecordCountdown(int synthIdx)
+    IEnumerator RecordCountdown(ushort equipmentIdx)
     {
         startCountdown.gameObject.SetActive(true);
         startCountdown.color = Color.red;
@@ -155,9 +158,9 @@ public class EquipmentUIelement : MonoBehaviour
         }
         //remainingTime -= Time.deltaTime;
 
-        uiManager._RecordPlayback(synthIdx, startingBeat);
+        uiManager._RecordPlayback(equipmentIdx, startingBeat);
         startCountdown.gameObject.SetActive(false);
-        RecordPrepairing = false;
+        ///RecordPrepairing = false;
 
         yield return null;
     }

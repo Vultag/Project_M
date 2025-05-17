@@ -139,7 +139,7 @@ public partial class WeaponSystem : SystemBase
         /// Move to Synth system all together ?
         /// foreach not necessary as 1 weapon controlled at a time ?
         /// Ray class weapon logic
-        foreach (var (rayData,entity) in SystemAPI.Query<RefRO<RayData>>().WithAll<ControledWeaponTag>().WithEntityAccess())
+        foreach (var (rayData,entity) in SystemAPI.Query<RefRO<RayData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
         {
             //Debug.Log(BeatProximity);
             //Debug.DrawLine(new Vector3(5, 0, 0), new Vector3(5, BeatProximity * 10, 0), Color.red);
@@ -507,7 +507,7 @@ public partial class WeaponSystem : SystemBase
         }
 
         /// Projectile class weapon logic
-        foreach (var (projectileData, entity) in SystemAPI.Query<RefRO<WeaponAmmoData>>().WithAll<ControledWeaponTag>().WithEntityAccess())
+        foreach (var (projectileData, entity) in SystemAPI.Query<RefRO<WeaponAmmoData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
         {
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);

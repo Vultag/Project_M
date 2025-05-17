@@ -58,7 +58,6 @@ public partial struct PlaybackSystem : ISystem
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
             //Vector2 rotatedDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
-
             /// OPTI ?
             while (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length
                 && AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].time < playback_data.ValueRO.PlaybackTime)
@@ -372,35 +371,35 @@ public partial struct PlaybackSystem : ISystem
             for (int i = playback_data.ValueRO.KeysPlayed; i < playbackKeyIndex; i++)
             {
                 PlaybackKey playbackKey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[i];
-                Vector2 dirLenght = playbackKey.dir;
+                Vector2 dirLenght = math.mul(parentTransform.Rotation, new float3(playbackKey.dir, 0)).xy;
+
+                //Debug.DrawRay(new float3(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y, -3), new Vector3(dirLenght.x,dirLenght.y,0),Color.red);
+
+                /// weapon rotation
+                trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(-playbackKey.dir.y, -playbackKey.dir.x) * Mathf.Rad2Deg);
 
                 /// Projectile instanciate
                 {
                     var projectileInstance = ecb.Instantiate(ProjectilePrefab);
                     ecb.SetComponent<Ocs1SinSawSquareFactorOverride>(projectileInstance, new Ocs1SinSawSquareFactorOverride { Value = ActiveSynth.Osc1SinSawSquareFactor });
                     ecb.SetComponent<Ocs2SinSawSquareFactorOverride>(projectileInstance, new Ocs2SinSawSquareFactorOverride { Value = ActiveSynth.Osc2SinSawSquareFactor });
-                    /// do default + right trans ?
-                    ecb.SetComponent<ShapeData>(projectileInstance, new ShapeData
-                    {
-                        Position = Wtrans.ValueRO.Position.xy,
-                        PreviousPosition = trans.ValueRO.Position.xy,
-                        Rotation = 0,
-                        collisionLayer = PhysicsUtilities.CollisionLayer.ProjectileLayer,
-                        HasDynamics = false,
-                        IsTrigger = true,
-                    });
+                  
+                    var projectileLTW = LocalTransform.FromPosition(new float3(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y, -3));
+                    ecb.SetComponent<LocalTransform>(projectileInstance, projectileLTW);
+
                     ecb.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
                     {
                         AngularDamp = 0,
                         LinearDamp = 0,
-                        Force = dirLenght.normalized * projectileData.ValueRO.Speed * 0.05f
+                        Velocity = dirLenght.normalized * projectileData.ValueRO.Speed
                     });
                    ecb.AddComponent<ProjectileInstanceData>(projectileInstance, new ProjectileInstanceData
                     {
-                        damage = projectileData.ValueRO.Damage,
-                        remainingLifeTime = projectileData.ValueRO.LifeTime,
-                        penetrationCapacity = 3
-                    });
+                       damage = projectileData.ValueRO.Damage,
+                       remainingLifeTime = projectileData.ValueRO.LifeTime,
+                       speed = projectileData.ValueRO.Speed,
+                       penetrationCapacity = 3
+                   });
                 }
 
                 SkeyBuffer.Add(new PlaybackSustainedKeyBufferData
@@ -415,7 +414,6 @@ public partial struct PlaybackSystem : ISystem
             }
 
 
-            Debug.Log("HERE");
             if (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime > AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration)
             {
                 AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.PlaybackIndex);
@@ -439,10 +437,10 @@ public partial struct PlaybackSystem : ISystem
                 //Vector2 dirLenght = ActiveSynth.Legato ? direction : SkeyBuffer[i].DirLenght;
                 Vector2 dirLenght = PhysicsUtilities.Rotatelerp(SkeyBuffer[i].StartDirLenght, SkeyBuffer[i].DirLenght, -Mathf.Log(ActiveSynth.Portomento / 3) * 0.01f + 0.03f);
                 //Vector2 localDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(dirLenght, 0)).xy;
-                /// set rotation of entity
-                {
-                    trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(-SkeyBuffer[i].DirLenght.y, -SkeyBuffer[i].DirLenght.x) * Mathf.Rad2Deg);
-                }
+                ///// set rotation of entity
+                //{
+                //    trans.ValueRW.Rotation = Quaternion.Euler(0, 0, Mathf.Atan2(-SkeyBuffer[i].DirLenght.y, -SkeyBuffer[i].DirLenght.x) * Mathf.Rad2Deg);
+                //}
 
                 float newDelta = SkeyBuffer[i].Delta + SystemAPI.Time.DeltaTime;
                 Filter newFilter = new Filter(0, 0);

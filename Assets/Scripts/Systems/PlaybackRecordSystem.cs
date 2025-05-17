@@ -1,15 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using MusicNamespace;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using static UnityEngine.EventSystems.EventTrigger;
 
 
 /// <summary>
@@ -73,7 +68,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
     protected override void OnCreate()
     {
-        RequireForUpdate<PlaybackRecordingData>();        // Find AudioManager once at the start
+        RequireForUpdate<SynthPlaybackRecordingData>();        // Find AudioManager once at the start
     }
 
     protected override void OnStartRunning()
@@ -85,7 +80,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
         BeatProximityThreshold = InputManager.BeatProximityThreshold;
         //float startTimeOffset = 0;
-        foreach (var recordData in SystemAPI.Query<RefRO<PlaybackRecordingData>>())
+        foreach (var recordData in SystemAPI.Query<RefRO<SynthPlaybackRecordingData>>())
         {
             PlaybackStartBeat = recordData.ValueRO.startBeat;
         }
@@ -130,7 +125,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
      
 
-        foreach (var (Wtrans, recordData, entity) in SystemAPI.Query<RefRO<LocalToWorld>,RefRW<PlaybackRecordingData>>().WithEntityAccess())
+        foreach (var (Wtrans, recordData, entity) in SystemAPI.Query<RefRO<LocalToWorld>,RefRW<SynthPlaybackRecordingData>>().WithEntityAccess())
         {
             //Debug.Log(Wtrans.ValueRO.Position);
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
@@ -176,7 +171,7 @@ public partial class PlaybackRecordSystem : SystemBase
             //Vector2 localWeaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
             //float currentFz = MusicUtils.DirectionToFrequency(weaponDirLenght);
 
-            SynthData ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[recordData.ValueRO.synthIndex];
+            SynthData ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[recordData.ValueRO.fEquipmentIdx.relativeIdx];
 
             var accumulator = SystemAPI.GetBuffer<PlaybackRecordingKeysBuffer>(entity);
         
@@ -426,6 +421,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
                 if (accumulatedMesureWeight >= 4)
                 {
+
                     ActiveMusicSheet.ElementsInMesure[MesureIdx] = ActiveMusicSheet.ElementsInMesure[MesureIdx] > (NoteIdx) ?
                                        ActiveMusicSheet.ElementsInMesure[MesureIdx] -1 : ActiveMusicSheet.ElementsInMesure[MesureIdx];
                     ///TEMP TEST 
@@ -478,11 +474,11 @@ public partial class PlaybackRecordSystem : SystemBase
 
                         /// carefull about disposing PlaybackAudioBundle and musicSheet -> used inside holder
                         // HERE -> make sure copy by  reference or figure out right  way to do it
-                        AudioManager.Instance.uiPlaybacksHolder._AddSynthPlaybackContainer(ref newPlaybackAudioBundle,ref ActiveMusicSheet,(short)recordData.ValueRO.synthIndex);
+                        AudioManager.Instance.uiPlaybacksHolder._AddSynthPlaybackContainer(ref newPlaybackAudioBundle,ref ActiveMusicSheet,recordData.ValueRO.fEquipmentIdx);
 
 
                         ecb.RemoveComponent<PlaybackRecordingKeysBuffer>(entity);
-                        ecb.RemoveComponent<PlaybackRecordingData>(entity);
+                        ecb.RemoveComponent<SynthPlaybackRecordingData>(entity);
 
                         //NoteIdx = 0;
                         //ActiveMusicSheet.ElementsInMesure[MesureIdx]--;

@@ -38,7 +38,7 @@ public class BuildingBlueprintUI : MonoBehaviour
         endSimulationECBSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>();
         Core_query = entityManager.CreateEntityQuery(typeof(MCoreData));
 
-        preInstancedTurretWeapon_query = entityManager.CreateEntityQuery(typeof(TurretWeaponTag), typeof(Disabled));
+        ////preInstancedTurretWeapon_query = entityManager.CreateEntityQuery(typeof(TurretWeaponTag), typeof(Disabled));
 
         Entity Core_entity = Core_query.GetSingletonEntity();
         var turretPrefab = entityManager.GetComponentData<MCoreData>(Core_entity).TurretPrefab;
@@ -123,7 +123,8 @@ public class BuildingBlueprintUI : MonoBehaviour
         Entity nextPreInstanced = ecb.Instantiate(weaponPrefab);
         ecb.AddComponent<Disabled>(nextPreInstanced);
 
-        AudioManager.TurretEquipmentEntities[buildingInfo.buildingIdx].Add(new_turret_weapon);
+        ///AudioManager.TurretEquipmentEntities[buildingInfo.buildingIdx].Add(new_turret_weapon);
+
         // Parent weapon to turret
         ecb.AddComponent(new_turret_weapon, new Parent { Value = new_turret });
 
@@ -158,7 +159,7 @@ public class BuildingBlueprintUI : MonoBehaviour
                 {
                     PlaybackIndex = buildingInfo.buildingIdx,
                 });
-                ecb.SetComponentEnabled<PlaybackData>(new_turret_weapon, false);
+                ///ecb.SetComponentEnabled<PlaybackData>(new_turret_weapon, false);
                 ecb.AddBuffer<PlaybackSustainedKeyBufferData>(new_turret_weapon);
                 ecb.AddBuffer<PlaybackReleasedKeyBufferData>(new_turret_weapon);
                 break;

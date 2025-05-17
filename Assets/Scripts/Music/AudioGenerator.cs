@@ -432,7 +432,6 @@ public class AudioGenerator : MonoBehaviour
                     ///Key already being released, check if repressed
                     if (activeKeys[y].amplitudeAtRelease != 0)
                     {
-
                         float newDelta = 0;
                         if(SynthsData[0].Legato)
                         {
@@ -650,6 +649,9 @@ public class AudioGenerator : MonoBehaviour
                 {
                     if (activeKeyNumber[z] < 12)
                     {
+                        ///safe
+                        //if (z > (keysBufferSlice.Length+1)) Debug.LogError("error from here");
+
                         activeKeys[(z * 12)+activeKeyNumber[z]] = new KeyData { 
                             frequency = keysBufferSlice[y], 
                             GlideStartFrenquency = SynthGlideBaseFz[z] 

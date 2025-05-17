@@ -9,7 +9,7 @@ using UnityEngine;
 /// <summary>
 ///  BE SURE TO COPY BY REFERENCE
 /// </summary>
-public struct FullPlaybackBundle
+public struct FullSynthPlaybackBundle
 {
     public PlaybackAudioBundle playbackAudioBundle;
     public MusicSheetData musicSheet;
@@ -30,7 +30,7 @@ public class UIPlaybacksHolder : MonoBehaviour
     /// DO NEW PREPAIR PLAY / RECORD HERE INSTEAD OF IN SYNTH UI ELEMENT ?
     /// </summary>
     [HideInInspector]
-    public List<FullPlaybackBundle>[] synthFullBundleLists = new List<FullPlaybackBundle>[6];
+    public List<FullSynthPlaybackBundle>[] synthFullBundleLists = new List<FullSynthPlaybackBundle>[6];
 
 
     void Start()
@@ -38,7 +38,7 @@ public class UIPlaybacksHolder : MonoBehaviour
         // Initialize each list
         for (int i = 0; i < synthFullBundleLists.Length; i++)
         {
-            synthFullBundleLists[i] = new List<FullPlaybackBundle>(8);
+            synthFullBundleLists[i] = new List<FullSynthPlaybackBundle>(8);
         }
     }
 
@@ -54,16 +54,19 @@ public class UIPlaybacksHolder : MonoBehaviour
         }
     }
 
-    public void _AddSynthPlaybackContainer(ref PlaybackAudioBundle newAudioBundle,ref MusicSheetData newSheetData, int synthIdx)
+    public void _AddSynthPlaybackContainer(ref PlaybackAudioBundle newAudioBundle,ref MusicSheetData newSheetData, FullEquipmentIdx fEquipmentIdx)
     {
 
-        synthFullBundleLists[synthIdx].Add(new FullPlaybackBundle { playbackAudioBundle = newAudioBundle, musicSheet = newSheetData });
+        synthFullBundleLists[fEquipmentIdx.relativeIdx].Add(new FullSynthPlaybackBundle { playbackAudioBundle = newAudioBundle, musicSheet = newSheetData });
 
-        PBholders[synthIdx]._AddContainerUI(new int2(synthIdx, synthFullBundleLists[synthIdx].ToArray().Length-1));
-        UIManager.Instance._SetSynthUItoSleep(synthIdx);
-
+        PBholders[fEquipmentIdx.absoluteIdx]._AddContainerUI(new int2(fEquipmentIdx.absoluteIdx, synthFullBundleLists[fEquipmentIdx.relativeIdx].ToArray().Length-1), fEquipmentIdx.relativeIdx);
+        UIManager.Instance._SetSynthUItoSleep(fEquipmentIdx.absoluteIdx);
+        /// reactivate rec button
+        UIManager.Instance.SynthToolBar.transform.GetChild(fEquipmentIdx.absoluteIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
 
     }
+
+    /// DO _AddDrumMachinePlaybackContainer ?
 
     public void _ArmPlaybackForActivation(int2 PBidx)
     {

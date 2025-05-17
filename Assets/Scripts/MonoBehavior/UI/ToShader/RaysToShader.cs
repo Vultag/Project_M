@@ -1,20 +1,10 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Numerics;
+
 using MusicNamespace;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.InputSystem;
-using Plane = UnityEngine.Plane;
-using Vector2 = UnityEngine.Vector2;
-using Vector3 = UnityEngine.Vector3;
-using Vector4 = UnityEngine.Vector4;
 
 public class RaysToShader : MonoBehaviour
 {
@@ -38,7 +28,7 @@ public class RaysToShader : MonoBehaviour
     [HideInInspector]
     public WeaponsData[] weaponsData;
 
-    EntityQuery ActivePlaybackBufferEntityQuery;
+    EntityQuery ActivePlaybackEntityQuery;
 
 
     //public EntityQuery ActiveWeapon_query;
@@ -79,7 +69,7 @@ public class RaysToShader : MonoBehaviour
         var world = World.DefaultGameObjectInjectionWorld;
         entityManager = world.EntityManager;
 
-        ActivePlaybackBufferEntityQuery = entityManager.CreateEntityQuery(typeof(PlaybackSustainedKeyBufferData));
+        ActivePlaybackEntityQuery = entityManager.CreateEntityQuery(typeof(PlaybackData));
 
     }
     private void LateUpdate()
@@ -93,11 +83,12 @@ public class RaysToShader : MonoBehaviour
 
         SignalCount = 0;
         int c = 0;
-        if (!audioManager.ControlledEquipment_query.IsEmpty)
+        if (!audioManager.ActiveWeapon_query.IsEmpty)
         {
             Entity controlledWeapon_entity = audioManager.ControlledEquipment_query.GetSingletonEntity();
+            Entity activeWeapon_entity = audioManager.ActiveWeapon_query.GetSingletonEntity();
 
-            if(entityManager.HasComponent<RayData>(controlledWeapon_entity))
+            if (entityManager.HasComponent<RayData>(activeWeapon_entity))
             {
                 DynamicBuffer<SustainedKeyBufferData> SkeyBuffer = entityManager.GetBuffer<SustainedKeyBufferData>(controlledWeapon_entity);
                 DynamicBuffer<ReleasedKeyBufferData> RkeyBuffer = entityManager.GetBuffer<ReleasedKeyBufferData>(controlledWeapon_entity);
@@ -139,7 +130,7 @@ public class RaysToShader : MonoBehaviour
         }
       
         // Populate the signals array with playback weapon signals
-        NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackBufferEntityQuery.ToEntityArray(Allocator.Temp);
+        NativeArray<Entity> PlaybackBufferEntities = ActivePlaybackEntityQuery.ToEntityArray(Allocator.Temp);
         for (int z = 0; z < PlaybackBufferEntities.Length; z++)
         {
             if (!entityManager.HasComponent<RayData>(PlaybackBufferEntities[z]))
@@ -150,7 +141,7 @@ public class RaysToShader : MonoBehaviour
             int weaponIdx = entityManager.GetComponentData<WeaponData>(PlaybackBufferEntities[z]).WeaponIdx;
 
             SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
-            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex];
+            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex]; 
             int a = 0;
             for (; a < PlaybackSkeyBuffer.Length; a++)
             {
@@ -178,12 +169,11 @@ public class RaysToShader : MonoBehaviour
 
         var main_weapon_trans = math.mul(playerTrans.Rotation(), new float3(0, 0.42f,0));
         weaponsData[0].weaponPos = new float2(main_weapon_trans.x + playerTrans.Translation().x, main_weapon_trans.y + playerTrans.Translation().y);
-        /// to fix
-        ////for (int w = 0; w < AudioManager.AuxillaryEquipmentEntities.Length; w++)
-        ////{
-        ////    float3 weapTrans = math.mul(playerTrans.Rotation(), entityManager.GetComponentData<LocalTransform>(AudioManager.AuxillaryEquipmentEntities[w]).Position);
-        ////    weaponsData[w+1].weaponPos = new float2(weapTrans.x+ playerTrans.Translation().x, weapTrans.y+ playerTrans.Translation().y);
-        ////}
+        for (int w = 0; w < AudioManager.AuxillaryEquipmentEntities.Length; w++)
+        {
+            float3 weapTrans = math.mul(playerTrans.Rotation(), entityManager.GetComponentData<LocalTransform>(AudioManager.AuxillaryEquipmentEntities[w]).Position);
+            weaponsData[w + 1].weaponPos = new float2(weapTrans.x + playerTrans.Translation().x, weapTrans.y + playerTrans.Translation().y);
+        }
 
 
 

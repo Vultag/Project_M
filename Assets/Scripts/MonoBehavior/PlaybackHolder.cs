@@ -26,7 +26,7 @@ public class PlaybackHolder : MonoBehaviour
     {
 
     }
-    public void _AddContainerUI(int2 PBidx)
+    public void _AddContainerUI(int2 PBidx,ushort relativeEquipmentIdx)
     {
         var uiManager = UIManager.Instance;
         uiManager.MusicSheetGB.SetActive(false);
@@ -51,6 +51,7 @@ public class PlaybackHolder : MonoBehaviour
         containerUI.associatedSprite = associatedSprite;
         containerUI.playbackHolder = GetComponent<PlaybackHolder>();
         containerUI.PBidx = PBidx;
+        containerUI.relativeEquipmentIdx = relativeEquipmentIdx;
         trackPlaybackItem.gameObject.SetActive(true);
         containerUI._ArmPlaybackItem(PBidx.y);
 
@@ -59,20 +60,20 @@ public class PlaybackHolder : MonoBehaviour
     /// Arm the synth for the next mesure
     public void _QuePlaybackUI()
     {
-        Debug.LogError("not supposed to happen");
-        //synthUIelement._DisplayPrepairActivation();
+        //Debug.LogError("not supposed to happen");
+        synthUIelement._DisplayPrepairActivation();
     }
     /// Arm the synth for immediate playback
     public void _ImmediatePlaybackActivate(int2 PBidx)
     {
-        Debug.LogError("not supposed to happen");
-        //UIManager.Instance._ActivatePlayback(PBidx);
+        //Debug.LogError("not supposed to happen");
+        UIManager.Instance._ActivatePlayback(PBidx);
     }
     /// Stop the no longer active current playback
-    public void _StopCurrentPlayback(int synthIdx)
+    public void _StopCurrentPlayback(int equipmentIdx)
     {
-        Debug.LogError("not supposed to happen");
-        ///UIManager.Instance._StopPlayback(synthIdx);
+        //Debug.LogError("not supposed to happen");
+        UIManager.Instance._StopPlayback(equipmentIdx);
     }
     public void _CancelPlaybackPrepair()
     {

@@ -7,10 +7,10 @@ using UnityEngine;
 //{
 
 //}
-//public struct ActiveSynthTag : IComponentData
-//{
+public struct ActiveSynthTag : IComponentData
+{
 
-//}
+}
 public struct ActiveDMachineTag : IComponentData
 {
 
@@ -21,4 +21,4 @@ public struct ControledWeaponTag : IComponentData
 
 }
 
-public struct TurretWeaponTag : IComponentData { }
+//public struct TurretWeaponTag : IComponentData { }
