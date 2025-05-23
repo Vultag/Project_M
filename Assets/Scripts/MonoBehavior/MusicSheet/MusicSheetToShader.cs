@@ -14,7 +14,11 @@ public class MusicSheetToShader : MonoBehaviour
 
     void Start()
     {
-
+        GetComponent<MusicSheetToShader>().enabled = false;
+    }
+    private void OnEnable()
+    {
+        this.GetComponent<Image>().material = MusicSheetMaterial;
     }
 
     private void LateUpdate()

@@ -28,15 +28,17 @@ public struct AudioLayoutStorage
     // PRIVATize SOME STUFF !
     ///change synthdata component to index value here?
     public NativeArray<SynthData> AuxillarySynthsData;
-    public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
+    public NativeArray<SynthPlaybackAudioBundle> PlaybackAudioBundles;
+
     public static int activeSynthIdx;
 
     public SynthData NewSynthData;
-    //public PlaybackAudioBundle NewPlaybackAudioBundle;
+    //public SynthPlaybackAudioBundle NewPlaybackAudioBundle;
     public int synthPlaybackIdx;
 
 
     public MusicSheetData ActiveMusicSheet;
+    public DrumPadSheetData ActiveDrumPadSheetData;
 
     public bool UpdateRequirement;
 
@@ -53,7 +55,7 @@ public struct AudioLayoutStorage
     /// the shrink/grow factor for the new Playbackcontext arrays unpon filter read
     /// </summary>
     public int UpdatedActivePlaybackWeight;
-    public NativeQueue<(int, PlaybackAudioBundle)> PlaybackWriteUpdateRequired;
+    public NativeQueue<(int, SynthPlaybackAudioBundle)> PlaybackWriteUpdateRequired;
     public NativeQueue<int> PlaybackActivationUpdateRequired;
     public NativeQueue<int> PlaybackDeactivationUpdateRequired;
 
@@ -61,7 +63,7 @@ public struct AudioLayoutStorage
     {
         NewSynthData = newSynthData;
         var newSynthsData = new NativeArray<SynthData>(AuxillarySynthsData.Length + 1, Allocator.Persistent);
-        var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length + 1, Allocator.Persistent);
+        var newPlaybackAudioBundles = new NativeArray<SynthPlaybackAudioBundle>(PlaybackAudioBundles.Length + 1, Allocator.Persistent);
         for (int i = 0; i < AuxillarySynthsData.Length; i++)
         {
             newSynthsData[i] = AuxillarySynthsData[i];
@@ -113,11 +115,11 @@ public struct AudioLayoutStorage
         PlaybackDeactivationUpdateRequired.Enqueue(synthIdx);
         UpdatedActivePlaybackWeight--;
     }
-    public void WritePlayback(PlaybackAudioBundle newPlaybackAudioBundle, int synthIdx)
+    public void WritePlayback(SynthPlaybackAudioBundle newPlaybackAudioBundle, int synthIdx)
     {
         PlaybackWriteUpdateRequired.Enqueue((synthIdx, newPlaybackAudioBundle));
         //    NewPlaybackAudioBundle = newPlaybackAudioBundle;
-        var newPlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+        var newPlaybackAudioBundles = new NativeArray<SynthPlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
         PlaybackAudioBundles.CopyTo(newPlaybackAudioBundles);
 
         newPlaybackAudioBundles[synthIdx] = newPlaybackAudioBundle;

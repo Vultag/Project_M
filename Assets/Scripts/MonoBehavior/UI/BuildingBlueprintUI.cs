@@ -128,45 +128,45 @@ public class BuildingBlueprintUI : MonoBehaviour
         // Parent weapon to turret
         ecb.AddComponent(new_turret_weapon, new Parent { Value = new_turret });
 
-        switch (buildingInfo.equipmentCategory)
-        {
-            case EquipmentCategory.Weapon:
-                switch (buildingInfo.weaponType)
-                {
-                    case WeaponType.Raygun:
-                        ecb.AddComponent(new_turret_weapon, new RayData
-                        {
+        ////switch (buildingInfo.equipmentCategory)
+        ////{
+        ////    case EquipmentCategory.Weapon:
+        ////        switch (buildingInfo.weaponType)
+        ////        {
+        ////            case WeaponType.Raygun:
+        ////                ecb.AddComponent(new_turret_weapon, new RayData
+        ////                {
 
-                        });
-                        break;
-                    case WeaponType.Canon:
-                        ecb.AddComponent(new_turret_weapon, new WeaponAmmoData
-                        {
-                            Damage = 6f,
-                            Speed = 0.05f,
-                            LifeTime = 3f,
-                            penetrationCapacity = 1
-                        });
-                        break;
-                }
-                ecb.AddComponent(new_turret_weapon, new WeaponData
-                {
-                    WeaponIdx = buildingInfo.buildingIdx,
-                    weaponClass = buildingInfo.weaponClass,
-                    weaponType = buildingInfo.weaponType,
-                });
-                ecb.AddComponent(new_turret_weapon, new PlaybackData
-                {
-                    PlaybackIndex = buildingInfo.buildingIdx,
-                });
-                ///ecb.SetComponentEnabled<PlaybackData>(new_turret_weapon, false);
-                ecb.AddBuffer<PlaybackSustainedKeyBufferData>(new_turret_weapon);
-                ecb.AddBuffer<PlaybackReleasedKeyBufferData>(new_turret_weapon);
-                break;
-            case EquipmentCategory.DrumMachine:
-                Debug.LogError("not implemented yet");
-                break;
-        }
+        ////                });
+        ////                break;
+        ////            case WeaponType.Canon:
+        ////                ecb.AddComponent(new_turret_weapon, new WeaponAmmoData
+        ////                {
+        ////                    Damage = 6f,
+        ////                    Speed = 0.05f,
+        ////                    LifeTime = 3f,
+        ////                    penetrationCapacity = 1
+        ////                });
+        ////                break;
+        ////        }
+        ////        ecb.AddComponent(new_turret_weapon, new WeaponData
+        ////        {
+        ////            WeaponIdx = buildingInfo.buildingIdx,
+        ////            weaponClass = buildingInfo.weaponClass,
+        ////            weaponType = buildingInfo.weaponType,
+        ////        });
+        ////        ecb.AddComponent(new_turret_weapon, new PlaybackData
+        ////        {
+        ////            PlaybackIndex = buildingInfo.buildingIdx,
+        ////        });
+        ////        ///ecb.SetComponentEnabled<PlaybackData>(new_turret_weapon, false);
+        ////        ecb.AddBuffer<PlaybackSustainedKeyBufferData>(new_turret_weapon);
+        ////        ecb.AddBuffer<PlaybackReleasedKeyBufferData>(new_turret_weapon);
+        ////        break;
+        ////    case EquipmentCategory.DrumMachine:
+        ////        Debug.LogError("not implemented yet");
+        ////        break;
+        ////}
 
    
 

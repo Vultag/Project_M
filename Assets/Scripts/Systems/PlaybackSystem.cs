@@ -1,4 +1,5 @@
 
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -10,7 +11,11 @@ public partial struct PlaybackSystem : ISystem
     /// Used to test keys upon removal to see if they had time to be addded;
     float PreviousFrameDelta;
 
+    /// REDONDANT ?
     private Entity damageEventEntity;
+    private EntityQuery damageEventEntityQuery;
+
+    private EntityQuery StunManagerEntityQuery;
 
     public void OnCreate(ref SystemState state)
     {
@@ -26,7 +31,11 @@ public partial struct PlaybackSystem : ISystem
             damageEventEntity = state.EntityManager.CreateEntity();
             state.EntityManager.AddBuffer<GlobalDamageEvent>(damageEventEntity); // Add the buffer to the new entity
         }
+        damageEventEntityQuery = state.EntityManager.CreateEntityQuery(typeof(GlobalDamageEvent));
+        StunManagerEntityQuery = state.EntityManager.CreateEntityQuery(typeof(StunEffectData));
+
         state.RequireForUpdate<ControledWeaponTag>();
+
     }
 
 
@@ -47,22 +56,22 @@ public partial struct PlaybackSystem : ISystem
         foreach (var (playback_data,rayData, Wtrans,trans, entity) in SystemAPI.Query<RefRW<PlaybackData>, RefRW<RayData>, RefRO<LocalToWorld>,RefRW<LocalTransform>>().WithEntityAccess())
         {
 
-            var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[playback_data.ValueRO.PlaybackIndex];
+            var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[playback_data.ValueRO.FullPlaybackIndex.x];
 
             DynamicBuffer<PlaybackSustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<PlaybackSustainedKeyBufferData>(entity);
             DynamicBuffer<PlaybackReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<PlaybackReleasedKeyBufferData>(entity);
 
-            int playbackKeyIndex = playback_data.ValueRO.PlaybackKeyIndex;
+            int playbackKeyIndex = playback_data.ValueRO.PlaybackElementIndex;
 
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
             //Vector2 rotatedDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
             /// OPTI ?
-            while (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length
-                && AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].time < playback_data.ValueRO.PlaybackTime)
+            while (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys.Length
+                && AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys[playbackKeyIndex].time < playback_data.ValueRO.PlaybackTime)
             {
-                PlaybackKey playbackkey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex];
+                PlaybackKey playbackkey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys[playbackKeyIndex];
                 /// went past the latest active key
                 if (playbackkey.time + playbackkey.lenght < playback_data.ValueRO.PlaybackTime)
                 {
@@ -86,13 +95,13 @@ public partial struct PlaybackSystem : ISystem
                     else
                         playback_data.ValueRW.KeysPlayed++;
                     playbackKeyIndex++;
-                    playback_data.ValueRW.PlaybackKeyIndex = playbackKeyIndex;
+                    playback_data.ValueRW.PlaybackElementIndex = playbackKeyIndex;
                 }
                 else
                 {
                     playbackKeyIndex++;
                 }
-                if (playbackKeyIndex >= AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length)
+                if (playbackKeyIndex >= AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys.Length)
                     break;
       
 
@@ -100,7 +109,7 @@ public partial struct PlaybackSystem : ISystem
 
             for (int i = playback_data.ValueRO.KeysPlayed; i < playbackKeyIndex; i++)
             {
-                PlaybackKey playbackKey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[i];
+                PlaybackKey playbackKey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys[i];
 
                 /// Check if the the legato glide over a released key
                 /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
@@ -123,12 +132,12 @@ public partial struct PlaybackSystem : ISystem
                 //Debug.Log(RkeyBuffer.Length);
             }
 
-            if (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime > AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration)
+            if (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime > AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackDuration)
             {
-                AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.PlaybackIndex);
+                AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.FullPlaybackIndex.x);
 
-                playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration;
-                playback_data.ValueRW.PlaybackKeyIndex = 0;
+                playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackDuration;
+                playback_data.ValueRW.PlaybackElementIndex = 0;
                 playback_data.ValueRW.KeysPlayed = 0;
                 SkeyBuffer.Clear();
                 RkeyBuffer.Clear();
@@ -317,22 +326,22 @@ public partial struct PlaybackSystem : ISystem
         foreach (var (playback_data, projectileData, Wtrans, trans, entity) in SystemAPI.Query<RefRW<PlaybackData>, RefRW<WeaponAmmoData>, RefRO<LocalToWorld>, RefRW<LocalTransform>>().WithEntityAccess())
         {
 
-            var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[playback_data.ValueRO.PlaybackIndex];
+            var ActiveSynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[playback_data.ValueRO.FullPlaybackIndex.x];
 
             DynamicBuffer<PlaybackSustainedKeyBufferData> SkeyBuffer = SystemAPI.GetBuffer<PlaybackSustainedKeyBufferData>(entity);
             DynamicBuffer<PlaybackReleasedKeyBufferData> RkeyBuffer = SystemAPI.GetBuffer<PlaybackReleasedKeyBufferData>(entity);
 
-            int playbackKeyIndex = playback_data.ValueRW.PlaybackKeyIndex;
+            int playbackKeyIndex = playback_data.ValueRW.PlaybackElementIndex;
 
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
             //Vector2 rotatedDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
             /// OPTI ?
-            while (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length
-                && AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex].time < playback_data.ValueRO.PlaybackTime)
+            while (playbackKeyIndex < AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys.Length
+                && AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys[playbackKeyIndex].time < playback_data.ValueRO.PlaybackTime)
             {
-                PlaybackKey playbackkey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[playbackKeyIndex];
+                PlaybackKey playbackkey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys[playbackKeyIndex];
                 /// went past the latest active key
                 if (playbackkey.time + playbackkey.lenght < playback_data.ValueRO.PlaybackTime)
                 {
@@ -356,13 +365,13 @@ public partial struct PlaybackSystem : ISystem
                     else
                         playback_data.ValueRW.KeysPlayed++;
                     playbackKeyIndex++;
-                    playback_data.ValueRW.PlaybackKeyIndex = playbackKeyIndex;
+                    playback_data.ValueRW.PlaybackElementIndex = playbackKeyIndex;
                 }
                 else
                 {
                     playbackKeyIndex++;
                 }
-                if (playbackKeyIndex >= AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys.Length)
+                if (playbackKeyIndex >= AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys.Length)
                     break;
 
 
@@ -370,7 +379,7 @@ public partial struct PlaybackSystem : ISystem
 
             for (int i = playback_data.ValueRO.KeysPlayed; i < playbackKeyIndex; i++)
             {
-                PlaybackKey playbackKey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackKeys[i];
+                PlaybackKey playbackKey = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackKeys[i];
                 Vector2 dirLenght = math.mul(parentTransform.Rotation, new float3(playbackKey.dir, 0)).xy;
 
                 //Debug.DrawRay(new float3(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y, -3), new Vector3(dirLenght.x,dirLenght.y,0),Color.red);
@@ -414,12 +423,12 @@ public partial struct PlaybackSystem : ISystem
             }
 
 
-            if (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime > AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration)
+            if (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime > AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackDuration)
             {
-                AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.PlaybackIndex);
+                AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired.Enqueue(playback_data.ValueRO.FullPlaybackIndex.x);
 
-                playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.PlaybackIndex].PlaybackDuration;
-                playback_data.ValueRW.PlaybackKeyIndex = 0;
+                playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles[playback_data.ValueRO.FullPlaybackIndex.x].PlaybackDuration;
+                playback_data.ValueRW.PlaybackElementIndex = 0;
                 playback_data.ValueRW.KeysPlayed = 0;
                 SkeyBuffer.Clear();
                 RkeyBuffer.Clear();
@@ -502,7 +511,53 @@ public partial struct PlaybackSystem : ISystem
 
         }
 
-        /// way to remove if playback is not on loop
+
+        /// OPTI ? allocation each frame
+        NativeList<(ushort, float)> drumMachineRequests = new NativeList<(ushort, float)>(3, Allocator.Temp);
+
+        foreach (var (playback_data, Wtrans, trans, drumMachineData, entity) in SystemAPI.Query<RefRW<PlaybackData>, RefRO<LocalToWorld>, RefRW<LocalTransform>, RefRO<DrumMachineData>>().WithEntityAccess().WithAll<DrumMachineData>())
+        {
+            int playbackPadIndex = playback_data.ValueRO.PlaybackElementIndex;
+
+            var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
+            var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
+
+            MachineDrumPlaybackAudioBundle playbackAudioBundle = AudioManager.Instance.uiPlaybacksHolder.machineDrumFullBundleLists[playback_data.ValueRO.FullPlaybackIndex.x][playback_data.ValueRO.FullPlaybackIndex.y].playbackAudioBundle;
+
+            /// OPTI ?
+            while (playbackPadIndex < playbackAudioBundle.PlaybackPads.Length
+                && playbackAudioBundle.PlaybackPads[playbackPadIndex].time < playback_data.ValueRO.PlaybackTime)
+            {
+                PlaybackPad playbackPad = playbackAudioBundle.PlaybackPads[playbackPadIndex];
+                /// went past the latest active key
+                
+                MachineDrumSystem.PlayDrumMachine(state.EntityManager, ecb, damageEventEntityQuery,StunManagerEntityQuery, 
+                    drumMachineRequests,playbackPad.instrumentIdx, parentTransform.Position.xy);
+
+                playbackPadIndex++;
+                    playback_data.ValueRW.PlaybackElementIndex = playbackPadIndex;
+                
+                if (playbackPadIndex >= playbackAudioBundle.PlaybackPads.Length)
+                    break;
+            }
+            if (playback_data.ValueRW.PlaybackTime + SystemAPI.Time.DeltaTime > playbackAudioBundle.PlaybackDuration)
+            {
+                playback_data.ValueRW.PlaybackTime = (playback_data.ValueRO.PlaybackTime + SystemAPI.Time.DeltaTime) - playbackAudioBundle.PlaybackDuration;
+                playback_data.ValueRW.PlaybackElementIndex = 0;
+                playback_data.ValueRW.KeysPlayed = 0;
+            }
+            else
+                playback_data.ValueRW.PlaybackTime += SystemAPI.Time.DeltaTime;
+            PreviousFrameDelta = SystemAPI.Time.DeltaTime;
+
+        }
+
+        AudioManager.Instance.PlayRequestedDMachineSounds(drumMachineRequests);
+        UIManager.Instance.PlayRequestedDMachineEffects(drumMachineRequests);
+
+        drumMachineRequests.Dispose();
+
+
 
     }
 }

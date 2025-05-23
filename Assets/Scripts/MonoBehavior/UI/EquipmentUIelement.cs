@@ -1,9 +1,7 @@
 using System.Collections;
-using System.Collections.Generic;
 using MusicNamespace;
 using TMPro;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 
 public enum EquipmentCategory
@@ -75,18 +73,19 @@ public class EquipmentUIelement : MonoBehaviour
     }
     //public void _activateThisPlayback()
     //{
-    //    uiManager._ActivatePlayback(thisEquipmentIdx);
+    //    uiManager._ActivateSynthPlayback(thisEquipmentIdx);
     //}
 
     public void _PrepairRecord()
     {
+        uiManager.curentlyRecording = true;
         uiManager._ResetPlayback(thisEquipmentIdx);
         /// Deactivate Rec button GB
-        uiManager.SynthToolBar.transform.GetChild(thisEquipmentIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
+        uiManager.equipmentToolBar.transform.GetChild(thisEquipmentIdx).GetChild(2).GetChild(0).gameObject.SetActive(false);
         ///// Deactivate Play button GB
-        //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
+        //uiManager.equipmentToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
         ///// Activate Stop button GB
-        //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
+        //uiManager.equipmentToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
         StartCoroutine(nameof(RecordCountdown), thisEquipmentIdx);
         ///RecordPrepairing = true;
     }
@@ -112,16 +111,16 @@ public class EquipmentUIelement : MonoBehaviour
     //        StopCoroutine("RecordCountdown");
     //        RecordPrepairing = false;
     //        ///// Deactivate Rec button GB
-    //        //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
+    //        //uiManager.equipmentToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(0).gameObject.SetActive(true);
     //        ///// Deactivate Play button GB
-    //        //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
+    //        //uiManager.equipmentToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
     //        ///// Activate Stop button GB
-    //        //uiManager.SynthToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+    //        //uiManager.equipmentToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
     //        startCountdown.gameObject.SetActive(false);
     //    }
     //    else
     //    {
-    //        uiManager._StopPlayback(thisSynthIdx);
+    //        uiManager._StopSynthPlayback(thisSynthIdx);
     //    }
     //}
 
@@ -158,7 +157,16 @@ public class EquipmentUIelement : MonoBehaviour
         }
         //remainingTime -= Time.deltaTime;
 
-        uiManager._RecordPlayback(equipmentIdx, startingBeat);
+        switch (thisEquipmentCategory)
+        {
+            case EquipmentCategory.Weapon:
+                uiManager._RecordSynthPlayback(equipmentIdx, startingBeat);
+                break;
+            case EquipmentCategory.DrumMachine:
+                uiManager._RecordDrumMachinePlayback(equipmentIdx, startingBeat);
+                break;
+        }
+
         startCountdown.gameObject.SetActive(false);
         ///RecordPrepairing = false;
 
@@ -188,7 +196,7 @@ public class EquipmentUIelement : MonoBehaviour
         }
         //remainingTime -= Time.deltaTime;
 
-        //uiManager._ActivatePlayback(PBidx);
+        //uiManager._ActivateSynthPlayback(PBidx);
         startCountdown.gameObject.SetActive(false);
 
         //Debug.Log("start");

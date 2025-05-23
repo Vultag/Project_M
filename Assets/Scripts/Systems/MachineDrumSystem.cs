@@ -5,10 +5,7 @@ using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
-using UnityEditor;
 using UnityEngine;
-using UnityEngine.Rendering;
-using static UnityEngine.EventSystems.EventTrigger;
 
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
@@ -116,107 +113,13 @@ public partial class MachineDrumSystem : SystemBase
 
             int PadIdx = Mathf.FloorToInt(normalizedRadian * numberOfInstruments);
 
-            int InstrumentsIdx = newDMachineData.InstrumentAddOrder[PadIdx];
+            ushort InstrumentsIdx = newDMachineData.InstrumentAddOrder[PadIdx];
 
             //Debug.Log("play");
             //Debug.Log(newDMachineData.InstrumentAddOrder[0]);
 
-
-            switch (InstrumentsIdx)
-            {
-                case 0:
-                    //Debug.Log("BaseDrum");
-
-                    //Debug.DrawLine(Wtrans.Position, Wtrans.Position+new float3(0,3f,0),Color.red,5);
-                    var KickColList = PhysicsCalls.CircleOverlapNode(
-                        Wtrans.Position.xy, 
-                        3f, 
-                        PhysicsUtilities.CollisionLayer.MonsterLayer | PhysicsUtilities.CollisionLayer.DynamicObstacleLayer
-                    );
-
-                    for (int i = 0; i < KickColList.Length; i++)
-                    {
-                        var entity = KickColList[i];
-                        var newPhyBody = EntityManager.GetComponentData<PhyBodyData>(entity);
-                        /// Redondant -> OPTI
-                        var kickDirLenght = (EntityManager.GetComponentData<ShapeData>(entity).Position - (Vector2)Wtrans.Position.xy);
-                        /// establish how much the effect denpends on the distance from the explosion
-                        float explosionConsentrationFactor = 0.45f;
-
-                        /// Disfonctional way to modify physics mid-frame ? overrides and gets overriden untill applyied
-                        newPhyBody.Force += ((kickDirLenght.normalized * (1-explosionConsentrationFactor)) + (kickDirLenght.normalized * explosionConsentrationFactor * Mathf.Min(1,1- kickDirLenght.magnitude/3))) * 0.22f;
-                        ECB.SetComponent<PhyBodyData>(entity,newPhyBody);
-                    }
-
-                    KickColList.Dispose();
-                    requests.Add((0,0));
-                    break;
-                case 1:
-                    //Debug.Log("SnareDrum");
-
-                    Vector2 snareDir = Vector2.up;
-
-                    var SnareColList = PhysicsCalls.CircleOverlapNode(
-                        Wtrans.Position.xy,
-                        3.5f,
-                        PhysicsUtilities.CollisionLayer.MonsterLayer
-                    );
-                    if(SnareColList.Length>0)
-                    {
-                        var mainSlotPos = EntityManager.GetComponentData<LocalToWorld>(SnareColList[0]).Value.Translation();
-
-                        snareDir = ((Vector2)(mainSlotPos.xy - Wtrans.Position.xy)).normalized;
-                     
-                        var SnareBaguetteColList = PhysicsCalls.CircleOverlapNode(
-                        
-                            (Vector2)Wtrans.Position.xy + (snareDir * 3.5f),
-                            0.25f,
-                            PhysicsUtilities.CollisionLayer.MonsterLayer
-                        );
-
-                        var damageEventEntity = damageEventEntityQuery.GetSingletonEntity();
-
-                        //Debug.DrawRay((Vector2)Wtrans.Position.xy + (snareDir * 3.5f), new Vector2(0, 0.25f), Color.red, 0.5f);
-                        //Debug.Log(SnareBaguetteColList.Length);
-                        for (int i = 0; i < SnareBaguetteColList.Length; i++)
-                        {
-                            SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
-                            {
-                                Target = SnareBaguetteColList[i],
-                                DamageValue = 6
-                            });
-                        }
-
-                        SnareBaguetteColList.Dispose();
-                    }
-                    SnareColList.Dispose();
-
-                    ///float localRadian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y)/Mathf.PI + 1)*0.5f;
-                    float radian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y)/Mathf.PI + 1)*0.5f;
-
-                    requests.Add((1, radian));
-                    break;
-                case 2:
-                    //Debug.Log("HighHat");
-
-                    var HitHatColList = PhysicsCalls.CircleOverlapNode(
-                    
-                        Wtrans.Position.xy,
-                        3.5f,
-                        PhysicsUtilities.CollisionLayer.MonsterLayer
-                    );
-
-                    for (int i = 0; i < HitHatColList.Length; i++)
-                    {
-                        var entity = HitHatColList[i];
-                        EffectUtils.ApplyStun(StunManagerEntityQuery.GetSingletonEntity(), EntityManager, ECB, entity,2);
-
-                    }
-                    HitHatColList.Dispose();
-
-                    requests.Add((2, 0));
-                    break;
-            }
+            PlayDrumMachine(EntityManager, ECB, damageEventEntityQuery, StunManagerEntityQuery,
+                requests, InstrumentsIdx, Wtrans.Position.xy);
 
         }
 
@@ -228,4 +131,107 @@ public partial class MachineDrumSystem : SystemBase
         requests.Dispose();
 
     }
+
+    // Static method accessible to other systems
+    internal static NativeList<(ushort, float)> PlayDrumMachine(EntityManager EntityManager, EntityCommandBuffer ECB, EntityQuery damageEventEntityQuery, EntityQuery StunManagerEntityQuery,
+        NativeList<(ushort, float)> requests, ushort InstrumentsIdx, float2 fromPosition)
+    {
+        switch (InstrumentsIdx)
+        {
+            case 0:
+                //Debug.Log("BaseDrum");
+
+                //Debug.DrawLine(Wtrans.Position, Wtrans.Position+new float3(0,3f,0),Color.red,5);
+                var KickColList = PhysicsCalls.CircleOverlapNode(
+                    fromPosition,
+                    3f,
+                    PhysicsUtilities.CollisionLayer.MonsterLayer | PhysicsUtilities.CollisionLayer.DynamicObstacleLayer
+                );
+
+                for (int i = 0; i < KickColList.Length; i++)
+                {
+                    var entity = KickColList[i];
+                    var newPhyBody = EntityManager.GetComponentData<PhyBodyData>(entity);
+                    /// Redondant -> OPTI
+                    var kickDirLenght = (EntityManager.GetComponentData<ShapeData>(entity).Position - (Vector2)fromPosition);
+                    /// establish how much the effect denpends on the distance from the explosion
+                    float explosionConsentrationFactor = 0.45f;
+
+                    /// Disfonctional way to modify physics mid-frame ? overrides and gets overriden untill applyied
+                    newPhyBody.Force += ((kickDirLenght.normalized * (1 - explosionConsentrationFactor)) + (kickDirLenght.normalized * explosionConsentrationFactor * Mathf.Min(1, 1 - kickDirLenght.magnitude / 3))) * 0.22f;
+                    ECB.SetComponent<PhyBodyData>(entity, newPhyBody);
+                }
+
+                KickColList.Dispose();
+                requests.Add((0, 0));
+                break;
+            case 1:
+                //Debug.Log("SnareDrum");
+
+                Vector2 snareDir = Vector2.up;
+
+                var SnareColList = PhysicsCalls.CircleOverlapNode(
+                    fromPosition,
+                    3.5f,
+                    PhysicsUtilities.CollisionLayer.MonsterLayer
+                );
+                if (SnareColList.Length > 0)
+                {
+                    var firstHitPos = EntityManager.GetComponentData<LocalToWorld>(SnareColList[0]).Value.Translation();
+
+                    snareDir = ((Vector2)(firstHitPos.xy - fromPosition)).normalized;
+
+                    var SnareBaguetteColList = PhysicsCalls.CircleOverlapNode(
+
+                        (Vector2)fromPosition + (snareDir * 3.5f),
+                        0.25f,
+                        PhysicsUtilities.CollisionLayer.MonsterLayer
+                    );
+
+                    var damageEventEntity = damageEventEntityQuery.GetSingletonEntity();
+
+                    //Debug.DrawRay((Vector2)Wtrans.Position.xy + (snareDir * 3.5f), new Vector2(0, 0.25f), Color.red, 0.5f);
+                    //Debug.Log(SnareBaguetteColList.Length);
+                    for (int i = 0; i < SnareBaguetteColList.Length; i++)
+                    {
+                        EntityManager.GetBuffer<GlobalDamageEvent>(damageEventEntity).Add(new GlobalDamageEvent
+                        {
+                            Target = SnareBaguetteColList[i],
+                            DamageValue = 6
+                        });
+                    }
+
+                    SnareBaguetteColList.Dispose();
+                }
+                SnareColList.Dispose();
+
+                ///float localRadian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y)/Mathf.PI + 1)*0.5f;
+                float radian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y) / Mathf.PI + 1) * 0.5f;
+
+                requests.Add((1, radian));
+                break;
+            case 2:
+                //Debug.Log("HighHat");
+
+                var HitHatColList = PhysicsCalls.CircleOverlapNode(
+
+                    fromPosition,
+                    3.5f,
+                    PhysicsUtilities.CollisionLayer.MonsterLayer
+                );
+
+                for (int i = 0; i < HitHatColList.Length; i++)
+                {
+                    var entity = HitHatColList[i];
+                    EffectUtils.ApplyStun(StunManagerEntityQuery.GetSingletonEntity(), EntityManager, ECB, entity, 2);
+
+                }
+                HitHatColList.Dispose();
+
+                requests.Add((2, 0));
+                break;
+        }
+        return requests;
+    }
+
 }

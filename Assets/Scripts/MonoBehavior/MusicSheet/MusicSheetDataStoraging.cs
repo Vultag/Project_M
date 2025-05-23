@@ -4,6 +4,9 @@ using Unity.Collections;
 using Unity.Entities.UniversalDelegates;
 using UnityEngine;
 
+/// <summary>
+/// RENAME FILE SheetDataStoraging
+/// </summary>
 
 public struct MusicSheetData
 {
@@ -45,25 +48,29 @@ public struct MusicSheetData
         NotesHeight.Dispose();
     }
 }
-
-
-public class MusicSheetDataStoraging : MonoBehaviour
+public struct DrumPadSheetData
 {
+    public ushort mesureNumber;
+    /// <summary>
+    /// Flatened 2D array for every possible subbeat DM element
+    /// </summary>
+    public NativeArray<bool> PadCheck;
 
-    private List<MusicSheetData> MusicSheetDataStorage;
-    //not needed ?
-    [SerializeField]
-    private MusicSheetToShader musicSheetToShader;
-
-
-    void Start()
+    public static DrumPadSheetData CreateDefault()
     {
-        
+        var DrumPadSheetData = new DrumPadSheetData
+        {
+            mesureNumber = 1,
+            // 192
+            PadCheck = new NativeArray<bool>(4*4*2/* max mesure nb*/*6/*max num of intruments*/,Allocator.Persistent),
+        };
+
+        return DrumPadSheetData;
     }
 
-    // Update is called once per frame
-    void Update()
+    public void _Dispose()
     {
-        
+        PadCheck.Dispose();
     }
 }
+

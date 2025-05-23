@@ -33,7 +33,19 @@ public struct PlaybackRecordingKeysBuffer : IBufferElementData
 }
 public struct PlaybackRecordingPadsBuffer : IBufferElementData
 {
-    public ushort padIdx;
+    public PlaybackPad playbackRecordingPad;
+}
+public struct MachineDrumPlaybackAudioBundle
+{
+    //make sure to dispose
+    public NativeArray<PlaybackPad> PlaybackPads;
+    public float PlaybackDuration;
+}
+public struct PlaybackPad
+{
+    public ushort instrumentIdx;
     public float time;
-    public float lenght;
+    /// no need for lenght cause no sustain/decay on machinedrum
+    ///public float lenght;
+
 }

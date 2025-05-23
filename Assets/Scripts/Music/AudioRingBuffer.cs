@@ -61,7 +61,7 @@ public struct PlaybackKey
     //public float draggedDelta;
 
 }
-public struct PlaybackAudioBundle
+public struct SynthPlaybackAudioBundle
 {
     //make sure to dispose
     public NativeArray<PlaybackKey> PlaybackKeys;

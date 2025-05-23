@@ -45,7 +45,7 @@ public class AudioGenerator : MonoBehaviour
     public NativeArray<FilterDelayElements> filterDelayElements;
     public NativeArray<float> SynthGlideBaseFz;
 
-    public NativeArray<PlaybackAudioBundle> PlaybackAudioBundles;
+    public NativeArray<SynthPlaybackAudioBundle> PlaybackAudioBundles;
     public NativeArray<PlaybackAudioBundleContext> PlaybackAudioBundlesContext;
 
 
@@ -72,7 +72,7 @@ public class AudioGenerator : MonoBehaviour
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackContextResetRequired = new NativeQueue<int>(Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackActivationUpdateRequired = new NativeQueue<int>(Allocator.Persistent);
         AudioLayoutStorageHolder.audioLayoutStorage.PlaybackDeactivationUpdateRequired = new NativeQueue<int>(Allocator.Persistent);
-        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired = new NativeQueue<(int,PlaybackAudioBundle)>(Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired = new NativeQueue<(int,SynthPlaybackAudioBundle)>(Allocator.Persistent);
 
         //Debug.Log(AudioSettings.outputSampleRate);
         /// TEST
@@ -116,11 +116,11 @@ public class AudioGenerator : MonoBehaviour
         ///// TEST AUDIO BUNDLE
         //SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
 
-        //PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        //PlaybackAudioBundles = new NativeArray<SynthPlaybackAudioBundle>(1, Allocator.Persistent);
         //PlaybackAudioBundlesContext = new NativeArray<PlaybackAudioBundleContext>(1, Allocator.Persistent);
         //for (int i = 0; i < PlaybackAudioBundles.Length; i++)
         //{
-        //    PlaybackAudioBundle audiobundle = PlaybackAudioBundles[i];
+        //    SynthPlaybackAudioBundle audiobundle = PlaybackAudioBundles[i];
 
         //    audiobundle.PlaybackKeys = new NativeArray<PlaybackKey>(6, Allocator.Persistent);
         //    for (int y = 0; y < 6; y++)
@@ -184,12 +184,12 @@ public class AudioGenerator : MonoBehaviour
         /// 1 or more synth active playback data are being updated
         if (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Count > 0)
         {
-            var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
+            var newPlaybackBundle = new NativeArray<SynthPlaybackAudioBundle>(PlaybackAudioBundles.Length, Allocator.Persistent);
             PlaybackAudioBundles.CopyTo(newPlaybackBundle);
 
             while (AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Count > 0)
             {
-                (int, PlaybackAudioBundle) updatedPlaybackInfo = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Dequeue();
+                (int, SynthPlaybackAudioBundle) updatedPlaybackInfo = AudioLayoutStorageHolder.audioLayoutStorage.PlaybackWriteUpdateRequired.Dequeue();
                 newPlaybackBundle[updatedPlaybackInfo.Item1] = updatedPlaybackInfo.Item2;
             }
             PlaybackAudioBundles.Dispose();
@@ -287,7 +287,7 @@ public class AudioGenerator : MonoBehaviour
             if (AudioLayoutStorageHolder.audioLayoutStorage.AddSynthUpdateRequirement)
             {
                 var newSynthsData = new NativeArray<SynthData>(SynthsData.Length+1, Allocator.Persistent);
-                var newPlaybackBundle = new NativeArray<PlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
+                var newPlaybackBundle = new NativeArray<SynthPlaybackAudioBundle>(PlaybackAudioBundles.Length+1, Allocator.Persistent);
                 /// 12 = max number of notes ; 4 = max number of unisson -> 48
                 var newfilterDelayElements = new NativeArray<FilterDelayElements>((PlaybackAudioBundles.Length + 2) * 48, Allocator.Persistent);
                 var newSynthGlideBaseFz = new NativeArray<float>(SynthGlideBaseFz.Length+1, Allocator.Persistent);

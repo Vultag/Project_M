@@ -15,6 +15,7 @@ public enum MachineDrumContent
 }
 public struct DrumMachineData : IComponentData
 {
+    public ushort equipmentIdx;
     public MachineDrumContent machineDrumContent;
     /// fixedArray for instrument add order ?
     public FixedList32Bytes<byte> InstrumentAddOrder;

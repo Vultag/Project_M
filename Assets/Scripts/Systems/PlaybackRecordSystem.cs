@@ -68,7 +68,13 @@ public partial class PlaybackRecordSystem : SystemBase
 
     protected override void OnCreate()
     {
-        RequireForUpdate<SynthPlaybackRecordingData>();        // Find AudioManager once at the start
+        /// Automatic OR interpretation
+        var query = GetEntityQuery(
+            ComponentType.ReadOnly<SynthPlaybackRecordingData>(),
+            ComponentType.ReadOnly<DrumMachinePlaybackRecordingData>()
+        );
+        RequireAnyForUpdate(GetEntityQuery(ComponentType.ReadOnly<SynthPlaybackRecordingData>()), GetEntityQuery(ComponentType.ReadOnly<DrumMachinePlaybackRecordingData>()));
+        //RequireForUpdate<DrumMachinePlaybackRecordingData>();        // Find AudioManager once at the start
     }
 
     protected override void OnStartRunning()
@@ -81,6 +87,10 @@ public partial class PlaybackRecordSystem : SystemBase
         BeatProximityThreshold = InputManager.BeatProximityThreshold;
         //float startTimeOffset = 0;
         foreach (var recordData in SystemAPI.Query<RefRO<SynthPlaybackRecordingData>>())
+        {
+            PlaybackStartBeat = recordData.ValueRO.startBeat;
+        }
+        foreach (var recordData in SystemAPI.Query<RefRO<DrumMachinePlaybackRecordingData>>())
         {
             PlaybackStartBeat = recordData.ValueRO.startBeat;
         }
@@ -111,8 +121,6 @@ public partial class PlaybackRecordSystem : SystemBase
 
         EntityCommandBuffer ecb = World.GetOrCreateSystemManaged<EndSimulationEntityCommandBufferSystem>().CreateCommandBuffer();
 
-        MusicSheetData ActiveMusicSheet = AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet;
-
         PlaybackTime = (float)MusicUtils.time - PlaybackStartBeat;
         //Debug.Log(PlaybackTime);
         float SclicedBeatTime = PlaybackTime * ((MusicUtils.BPM * 4)/60f);
@@ -123,10 +131,11 @@ public partial class PlaybackRecordSystem : SystemBase
 
         short newNoteSubBeatIdxOffseted = (short)(newNoteidxOffseted * 4 + Mathf.FloorToInt(Mathf.Abs(SclicedBeatTime-BeatProximityThreshold) % 4));
 
-     
 
         foreach (var (Wtrans, recordData, entity) in SystemAPI.Query<RefRO<LocalToWorld>,RefRW<SynthPlaybackRecordingData>>().WithEntityAccess())
         {
+            MusicSheetData ActiveMusicSheet = AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet;
+
             //Debug.Log(Wtrans.ValueRO.Position);
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
@@ -460,7 +469,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
                         var playbackKeys = new NativeArray<PlaybackKey>(accumulator.Length, Allocator.Persistent);
                         playbackKeys.CopyFrom(accumulator.AsNativeArray().Reinterpret<PlaybackKey>());
-                        PlaybackAudioBundle newPlaybackAudioBundle = new PlaybackAudioBundle
+                        SynthPlaybackAudioBundle newPlaybackAudioBundle = new SynthPlaybackAudioBundle
                         {
                             //IsLooping = true,
                             //IsPlaying = false,
@@ -472,7 +481,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
                         //Debug.Log("test");
 
-                        /// carefull about disposing PlaybackAudioBundle and musicSheet -> used inside holder
+                        /// carefull about disposing SynthPlaybackAudioBundle and musicSheet -> used inside holder
                         // HERE -> make sure copy by  reference or figure out right  way to do it
                         AudioManager.Instance.uiPlaybacksHolder._AddSynthPlaybackContainer(ref newPlaybackAudioBundle,ref ActiveMusicSheet,recordData.ValueRO.fEquipmentIdx);
 
@@ -489,6 +498,84 @@ public partial class PlaybackRecordSystem : SystemBase
 
 
         }
+
+        foreach (var(Wtrans, recordData, DMachineData, entity) in SystemAPI.Query<RefRO<LocalToWorld>, RefRO<DrumMachinePlaybackRecordingData>, RefRO<DrumMachineData>>().WithEntityAccess())
+        {
+            ref DrumPadSheetData ActiveDrumPadSheetData = ref AudioLayoutStorageHolder.audioLayoutStorage.ActiveDrumPadSheetData;
+
+            var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
+            var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
+            var mainWeaponTrans = SystemAPI.GetComponent<LocalToWorld>(SystemAPI.GetComponent<PlayerData>(parentEntity).MainCanon);
+
+            Vector2 direction = mousepos - new Vector2(mainWeaponTrans.Position.x, mainWeaponTrans.Position.y);
+
+            var accumulator = SystemAPI.GetBuffer<PlaybackRecordingPadsBuffer>(entity);
+
+            if (!UIInput.MouseOverUI)
+            {
+                  mouseDirection = mousepos - new Vector2(mainWeaponTrans.Position.x, mainWeaponTrans.Position.y);
+            }
+
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI)
+            {
+
+                //Debug.Log(newDMachineData.InstrumentAddOrder[0]);
+
+                //store it ?
+                int numberOfInstruments = math.countbits((int)DMachineData.ValueRO.machineDrumContent) + 1;  // Counts the number of set bits
+
+                float mouseRadian = PhysicsUtilities.DirectionToRadians(mouseDirection);
+                float side = Mathf.Sign(mouseRadian);
+                mouseRadian = mouseRadian * side + (side * 0.5f + 0.5f) * Mathf.PI;
+                float normalizedRadian = (mouseRadian / Mathf.PI) * 0.5f;
+
+                int PadIdx = Mathf.FloorToInt(normalizedRadian * numberOfInstruments);
+
+                ushort InstrumentsIdx = DMachineData.ValueRO.InstrumentAddOrder[PadIdx];
+
+                accumulator.Add(new PlaybackRecordingPadsBuffer
+                {
+                    playbackRecordingPad = new PlaybackPad
+                    {
+                        instrumentIdx = InstrumentsIdx,
+                        time = PlaybackTime
+                    }
+                });
+
+                //Debug.Log(newNoteSubBeatIdxOffseted);
+                ActiveDrumPadSheetData.PadCheck[InstrumentsIdx * (16 * 1/*mesure nb*/) + newNoteSubBeatIdxOffseted] = true;
+
+            }
+
+            if (PlaybackTime >= 4)
+            {
+
+                /// IF MESURE LENGHT REATCHED 
+                {
+                    var playbackPads = new NativeArray<PlaybackPad>(accumulator.Length, Allocator.Persistent);
+                    playbackPads.CopyFrom(accumulator.AsNativeArray().Reinterpret<PlaybackPad>());
+                    MachineDrumPlaybackAudioBundle newPlaybackAudioBundle = new MachineDrumPlaybackAudioBundle
+                    {
+                        PlaybackDuration = recordData.ValueRO.duration,
+                        PlaybackPads = playbackPads
+                    };
+
+                    /// carefull about disposing PlaybackAudioBundle and musicSheet -> used inside holder
+                    // HERE -> make sure copy by  reference or figure out right  way to do it
+                    AudioManager.Instance.uiPlaybacksHolder._AddDrumMachinePlaybackContainer(ref newPlaybackAudioBundle, in ActiveDrumPadSheetData, recordData.ValueRO.fEquipmentIdx);
+
+
+                    ecb.RemoveComponent<PlaybackRecordingPadsBuffer>(entity);
+                    ecb.RemoveComponent<DrumMachinePlaybackRecordingData>(entity);
+
+                    //NoteIdx = 0;
+                    //ActiveMusicSheet.ElementsInMesure[MesureIdx]--;
+                }
+            }
+
+
+        }
+
 
     }
 

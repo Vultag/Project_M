@@ -141,7 +141,7 @@ public class RaysToShader : MonoBehaviour
             int weaponIdx = entityManager.GetComponentData<WeaponData>(PlaybackBufferEntities[z]).WeaponIdx;
 
             SignalCount += PlaybackSkeyBuffer.Length + PlaybackRkeyBuffer.Length;
-            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).PlaybackIndex]; 
+            SynthData PlaybackData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[entityManager.GetComponentData<PlaybackData>(PlaybackBufferEntities[z]).FullPlaybackIndex.x]; 
             int a = 0;
             for (; a < PlaybackSkeyBuffer.Length; a++)
             {

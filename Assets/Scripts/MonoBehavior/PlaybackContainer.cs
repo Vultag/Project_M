@@ -9,7 +9,7 @@ using UnityEngine.UI;
 public class PlaybackContainer : MonoBehaviour
 {
 
-    //public PlaybackAudioBundle playbackAudioBundle;
+    //public SynthPlaybackAudioBundle playbackAudioBundle;
     //public MusicSheetData musicSheet;
 
     //[HideInInspector]

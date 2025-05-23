@@ -68,9 +68,19 @@ public class PlaybackContainerUI : MonoBehaviour, IPointerClickHandler, IPointer
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        /// reactivate it if PB is recording ?
+        if(playbackHolder.equipmentCategory == EquipmentCategory.Weapon)
+        {
+            AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = this.transform.parent.parent.GetComponent<UIPlaybacksHolder>().synthFullBundleLists[relativeEquipmentIdx][PBidx.y].musicSheet;
+            UIManager.Instance.MusicSheetGB.GetComponent<MusicSheetToShader>().enabled = true;
+            UIManager.Instance.MusicSheetGB.GetComponent<DrumPadSheetToShader>().enabled = false;
+        }
+        else
+        {
+            AudioLayoutStorageHolder.audioLayoutStorage.ActiveDrumPadSheetData = this.transform.parent.parent.GetComponent<UIPlaybacksHolder>().machineDrumFullBundleLists[relativeEquipmentIdx][PBidx.y].drumPadSheet;
+            UIManager.Instance.MusicSheetGB.GetComponent<DrumPadSheetToShader>().enabled = true;
+            UIManager.Instance.MusicSheetGB.GetComponent<MusicSheetToShader>().enabled = false;
+        }
         UIManager.Instance.MusicSheetGB.SetActive(true);
-        AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = this.transform.parent.parent.GetComponent<UIPlaybacksHolder>().synthFullBundleLists[relativeEquipmentIdx][PBidx.y].musicSheet;
         isShowingSheet = true;
     }
 }

@@ -18,6 +18,8 @@ public class PlaybackHolder : MonoBehaviour
 
     [SerializeField]
     Sprite associatedSprite;
+    [HideInInspector]
+    public EquipmentCategory equipmentCategory;
 
     private int ContainerNumber = 0;
     private int colorIteration = 0;
@@ -36,8 +38,6 @@ public class PlaybackHolder : MonoBehaviour
         PBcontainerInstance.GetComponent<RectTransform>().anchoredPosition = new Vector2(14.5f* ContainerNumber, -11.8f);
 
         var containerUI = PBcontainerInstance.GetComponent<PlaybackContainerUI>();
-        //container.playbackAudioBundle = newAudioBundle;
-        //container.musicSheet = newSheetData;
 
         /// arbitrary 3 -> set number of remaining playback use
         containerUI.GetComponentInChildren<TextMeshProUGUI>().text = "3";
@@ -66,14 +66,19 @@ public class PlaybackHolder : MonoBehaviour
     /// Arm the synth for immediate playback
     public void _ImmediatePlaybackActivate(int2 PBidx)
     {
-        //Debug.LogError("not supposed to happen");
-        UIManager.Instance._ActivatePlayback(PBidx);
+        if(equipmentCategory == EquipmentCategory.Weapon)
+            UIManager.Instance._ActivateSynthPlayback(PBidx);
+        else
+            UIManager.Instance._ActivateDrumMachinePlayback(PBidx);
     }
     /// Stop the no longer active current playback
     public void _StopCurrentPlayback(int equipmentIdx)
     {
-        //Debug.LogError("not supposed to happen");
-        UIManager.Instance._StopPlayback(equipmentIdx);
+        if (equipmentCategory == EquipmentCategory.Weapon)
+            UIManager.Instance._StopSynthPlayback(equipmentIdx);
+        else
+            UIManager.Instance._StopDrumMachinePlayback(equipmentIdx);
+
     }
     public void _CancelPlaybackPrepair()
     {

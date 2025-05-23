@@ -83,7 +83,7 @@ public class AudioManager : MonoBehaviour
         //AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         ///// Placeholder for the Audiogenerator Start ?
         //AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[0] = SynthData.CreateDefault(WeaponType.Canon);
-        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        AudioLayoutStorageHolder.audioLayoutStorage.PlaybackAudioBundles = new NativeArray<SynthPlaybackAudioBundle>(1, Allocator.Persistent);
         //AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet = MusicSheetData.CreateDefault();
         activeEquipmentIDX = -1;
     }
@@ -130,7 +130,7 @@ public class AudioManager : MonoBehaviour
         ///audioGenerator.SynthsData = new NativeArray<SynthData>(1, Allocator.Persistent);
         audioGenerator.activeSynthsIdx = new NativeArray<int>(1, Allocator.Persistent);
         ///audioGenerator.SynthsData[0] = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[0];
-        audioGenerator.PlaybackAudioBundles = new NativeArray<PlaybackAudioBundle>(1, Allocator.Persistent);
+        audioGenerator.PlaybackAudioBundles = new NativeArray<SynthPlaybackAudioBundle>(1, Allocator.Persistent);
     }
     private void OnDestroy()
     {
@@ -511,6 +511,7 @@ public class AudioManager : MonoBehaviour
 
         ecb.AddComponent<DrumMachineData>(new_DMachine, new DrumMachineData
         {
+            equipmentIdx = (ushort)NumOfEquipments,
             machineDrumContent = MachineDrumContent.SnareDrum | MachineDrumContent.BaseDrum | MachineDrumContent.HighHat,
             InstrumentAddOrder = new FixedList32Bytes<byte> { 2,1,0 }
         });

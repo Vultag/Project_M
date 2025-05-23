@@ -1778,8 +1778,8 @@ MonoBehaviour:
   PBcontainerPrefab: {fileID: 3474286145566572946, guid: 2432f5f4897fe954c96848a4cf5f2e06, type: 3}
   synthUIelement: {fileID: 244176162}
   trackPlaybackItem: {fileID: 300618870}
-  uiManager: {fileID: 0}
   associatedSprite: {fileID: -2200815024699734509, guid: 2dba9d67f7a4be64fa1d9ba84be3eca2, type: 3}
+  equipmentCategory: 0
 --- !u!1 &154932111
 GameObject:
   m_ObjectHideFlags: 0
@@ -3842,8 +3842,8 @@ MonoBehaviour:
   PBcontainerPrefab: {fileID: 3474286145566572946, guid: 2432f5f4897fe954c96848a4cf5f2e06, type: 3}
   synthUIelement: {fileID: 509363673}
   trackPlaybackItem: {fileID: 1585540888}
-  uiManager: {fileID: 0}
   associatedSprite: {fileID: 187839400716230643, guid: 18b34e50da6f8474d9feda81d7e885b4, type: 3}
+  equipmentCategory: 0
 --- !u!1 &286446005
 GameObject:
   m_ObjectHideFlags: 0
@@ -5150,8 +5150,8 @@ MonoBehaviour:
   PBcontainerPrefab: {fileID: 3474286145566572946, guid: 2432f5f4897fe954c96848a4cf5f2e06, type: 3}
   synthUIelement: {fileID: 1418592041}
   trackPlaybackItem: {fileID: 1066771118}
-  uiManager: {fileID: 0}
   associatedSprite: {fileID: 2410422667571644583, guid: fad23aa7fe17c1545b1aa3063276e2eb, type: 3}
+  equipmentCategory: 0
 --- !u!1 &447919236
 GameObject:
   m_ObjectHideFlags: 0
@@ -6013,6 +6013,7 @@ GameObject:
   - component: {fileID: 560385731}
   - component: {fileID: 560385733}
   - component: {fileID: 560385734}
+  - component: {fileID: 560385735}
   m_Layer: 5
   m_Name: MusicSheet
   m_TagString: Untagged
@@ -6084,12 +6085,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 560385729}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ccf786630208e4c4785b550a32661fa7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  material: {fileID: 2100000, guid: e02e4a7bbbc9cee4b8b54b3b66674424, type: 2}
+  equipmentTested: 0
+  musicMaterial: {fileID: 2100000, guid: e02e4a7bbbc9cee4b8b54b3b66674424, type: 2}
+  padMaterial: {fileID: 2100000, guid: d1fadb0754d1c6a4891b60518ff58d4e, type: 2}
 --- !u!114 &560385734
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6097,12 +6100,25 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 560385729}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 79ce6e4f224cd2f4aba483cc41fc635e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   MusicSheetMaterial: {fileID: 2100000, guid: e02e4a7bbbc9cee4b8b54b3b66674424, type: 2}
+--- !u!114 &560385735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 560385729}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f48a2e392947374bbcdf71f53b6d70e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  DrumPadSheetMaterial: {fileID: 2100000, guid: d1fadb0754d1c6a4891b60518ff58d4e, type: 2}
 --- !u!1 &561809977
 GameObject:
   m_ObjectHideFlags: 0
@@ -7022,17 +7038,18 @@ MonoBehaviour:
   MusicSheetGB: {fileID: 560385729}
   MusicTrackGB: {fileID: 21208967}
   KeyboardShaderGB: {fileID: 1993908872}
-  DrumPadShaderGB: {fileID: 701969568}
+  DrumPadShaderGB: {fileID: 1255433158}
   drumPadVFX: {fileID: 1798080524}
   simplexSlider: {fileID: 0}
   toolTip: {fileID: 406741879}
   BuildingBlueprintGB: {fileID: 1355037725}
   canvas: {fileID: 108835076}
   MaxEquipmentNum: 0
-  SynthToolBar: {fileID: 702861294}
+  equipmentToolBar: {fileID: 702861294}
   NumOfEquipments: 0
   NumOfDMachines: 0
   NumOfSynths: 0
+  curentlyRecording: 0
 --- !u!1 &666720612
 GameObject:
   m_ObjectHideFlags: 0
@@ -7519,7 +7536,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &701969569
 Transform:
   m_ObjectHideFlags: 0
@@ -10349,8 +10366,8 @@ MonoBehaviour:
   PBcontainerPrefab: {fileID: 3474286145566572946, guid: 2432f5f4897fe954c96848a4cf5f2e06, type: 3}
   synthUIelement: {fileID: 700275960}
   trackPlaybackItem: {fileID: 177085602}
-  uiManager: {fileID: 0}
   associatedSprite: {fileID: -8004987900333774559, guid: 2655bb166021df940b920d5ae9e88e0e, type: 3}
+  equipmentCategory: 0
 --- !u!1 &1127628597
 GameObject:
   m_ObjectHideFlags: 0
@@ -11577,7 +11594,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1255433159
 Transform:
   m_ObjectHideFlags: 0
@@ -13939,8 +13956,8 @@ MonoBehaviour:
   PBcontainerPrefab: {fileID: 3474286145566572946, guid: 2432f5f4897fe954c96848a4cf5f2e06, type: 3}
   synthUIelement: {fileID: 6075665279298787936}
   trackPlaybackItem: {fileID: 1977710386}
-  uiManager: {fileID: 0}
   associatedSprite: {fileID: 32793804765794350, guid: 279ef3e7f574f0049827f1ea47f8080e, type: 3}
+  equipmentCategory: 0
 --- !u!114 &1506272441
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16003,8 +16020,8 @@ MonoBehaviour:
   PBcontainerPrefab: {fileID: 3474286145566572946, guid: 2432f5f4897fe954c96848a4cf5f2e06, type: 3}
   synthUIelement: {fileID: 1437849325}
   trackPlaybackItem: {fileID: 9917454}
-  uiManager: {fileID: 0}
   associatedSprite: {fileID: -4891249455422163236, guid: 81d82696746f6314299a75fd8cd58d5a, type: 3}
+  equipmentCategory: 0
 --- !u!1 &1658133888
 GameObject:
   m_ObjectHideFlags: 0
