@@ -126,12 +126,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c64f51471ded0945a1faac65391b66f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playbackHolder: {fileID: 0}
   PBidx:
     x: 0
     y: 0
+  containerCharges: 0
+  relativeEquipmentIdx: 0
   associatedSprite: {fileID: 0}
   associatedColor: {r: 0, g: 0, b: 0, a: 0}
   itemImage: {fileID: 2279774781685883476}
+  ContainerNumText: {fileID: 2101768761151137314}
 --- !u!1 &6182941248189471669
 GameObject:
   m_ObjectHideFlags: 0
@@ -220,7 +224,7 @@ GameObject:
   - component: {fileID: 254693712294230192}
   - component: {fileID: 2101768761151137314}
   m_Layer: 5
-  m_Name: Name
+  m_Name: ContainerNumText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

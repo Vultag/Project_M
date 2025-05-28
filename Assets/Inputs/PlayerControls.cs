@@ -235,6 +235,87 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Space"",
+                    ""type"": ""Button"",
+                    ""id"": ""46d5c90a-382a-4063-b870-dd7ee63cf4d4"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""R"",
+                    ""type"": ""Button"",
+                    ""id"": ""abc9a5e0-3477-434e-8f01-8890db2f7d2c"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""1"",
+                    ""type"": ""Button"",
+                    ""id"": ""f2c58011-3482-422f-8a7b-b7437de8ac60"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""2"",
+                    ""type"": ""Button"",
+                    ""id"": ""28905137-7235-4b5b-9154-62281250856b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""3"",
+                    ""type"": ""Button"",
+                    ""id"": ""993b041e-5639-4fa1-83b1-81564311751a"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""4"",
+                    ""type"": ""Button"",
+                    ""id"": ""9a34efe0-596c-43b4-a50e-7ef1d8e324cc"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""5"",
+                    ""type"": ""Button"",
+                    ""id"": ""55539d68-bbaa-4b0f-ab8a-42af48ba5752"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""6"",
+                    ""type"": ""Button"",
+                    ""id"": ""09fac722-81d1-4ad8-8b3d-3f343656b309"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""7"",
+                    ""type"": ""Button"",
+                    ""id"": ""e48f0d15-0357-49ff-9be2-f2b201d1ecef"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -292,6 +373,105 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""Zoom"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2181a2f5-21e7-4c10-af08-62c00717b0f8"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Space"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d754309d-0bcf-4639-b289-bc31daa13738"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""R"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7d1a99d4-61f1-42fe-9eae-175b7d5bbf91"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""027eca86-06e1-4493-bebc-964a53e48be5"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""64c1d0eb-1913-4760-b002-f651d6fbbeea"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""11b13d5a-69b3-4356-9871-5d9619070455"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""4"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""faf19490-f08b-4eb4-8324-0b91da369163"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""5"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e141af9a-9ce7-4027-8207-c5c03f49d429"",
+                    ""path"": ""<Keyboard>/6"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""6"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d21f4ab5-692b-4e2e-b575-8ebd6505f9a8"",
+                    ""path"": ""<Keyboard>/7"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""7"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -312,6 +492,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_UI_Map_Tabulation = m_UI_Map.FindAction("Tabulation", throwIfNotFound: true);
         m_UI_Map_TEMPO = m_UI_Map.FindAction("TEMPO", throwIfNotFound: true);
         m_UI_Map_Zoom = m_UI_Map.FindAction("Zoom", throwIfNotFound: true);
+        m_UI_Map_Space = m_UI_Map.FindAction("Space", throwIfNotFound: true);
+        m_UI_Map_R = m_UI_Map.FindAction("R", throwIfNotFound: true);
+        m_UI_Map__1 = m_UI_Map.FindAction("1", throwIfNotFound: true);
+        m_UI_Map__2 = m_UI_Map.FindAction("2", throwIfNotFound: true);
+        m_UI_Map__3 = m_UI_Map.FindAction("3", throwIfNotFound: true);
+        m_UI_Map__4 = m_UI_Map.FindAction("4", throwIfNotFound: true);
+        m_UI_Map__5 = m_UI_Map.FindAction("5", throwIfNotFound: true);
+        m_UI_Map__6 = m_UI_Map.FindAction("6", throwIfNotFound: true);
+        m_UI_Map__7 = m_UI_Map.FindAction("7", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -492,6 +681,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_UI_Map_Tabulation;
     private readonly InputAction m_UI_Map_TEMPO;
     private readonly InputAction m_UI_Map_Zoom;
+    private readonly InputAction m_UI_Map_Space;
+    private readonly InputAction m_UI_Map_R;
+    private readonly InputAction m_UI_Map__1;
+    private readonly InputAction m_UI_Map__2;
+    private readonly InputAction m_UI_Map__3;
+    private readonly InputAction m_UI_Map__4;
+    private readonly InputAction m_UI_Map__5;
+    private readonly InputAction m_UI_Map__6;
+    private readonly InputAction m_UI_Map__7;
     public struct UI_MapActions
     {
         private @PlayerControls m_Wrapper;
@@ -499,6 +697,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         public InputAction @Tabulation => m_Wrapper.m_UI_Map_Tabulation;
         public InputAction @TEMPO => m_Wrapper.m_UI_Map_TEMPO;
         public InputAction @Zoom => m_Wrapper.m_UI_Map_Zoom;
+        public InputAction @Space => m_Wrapper.m_UI_Map_Space;
+        public InputAction @R => m_Wrapper.m_UI_Map_R;
+        public InputAction @_1 => m_Wrapper.m_UI_Map__1;
+        public InputAction @_2 => m_Wrapper.m_UI_Map__2;
+        public InputAction @_3 => m_Wrapper.m_UI_Map__3;
+        public InputAction @_4 => m_Wrapper.m_UI_Map__4;
+        public InputAction @_5 => m_Wrapper.m_UI_Map__5;
+        public InputAction @_6 => m_Wrapper.m_UI_Map__6;
+        public InputAction @_7 => m_Wrapper.m_UI_Map__7;
         public InputActionMap Get() { return m_Wrapper.m_UI_Map; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -517,6 +724,33 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Zoom.started += instance.OnZoom;
             @Zoom.performed += instance.OnZoom;
             @Zoom.canceled += instance.OnZoom;
+            @Space.started += instance.OnSpace;
+            @Space.performed += instance.OnSpace;
+            @Space.canceled += instance.OnSpace;
+            @R.started += instance.OnR;
+            @R.performed += instance.OnR;
+            @R.canceled += instance.OnR;
+            @_1.started += instance.On_1;
+            @_1.performed += instance.On_1;
+            @_1.canceled += instance.On_1;
+            @_2.started += instance.On_2;
+            @_2.performed += instance.On_2;
+            @_2.canceled += instance.On_2;
+            @_3.started += instance.On_3;
+            @_3.performed += instance.On_3;
+            @_3.canceled += instance.On_3;
+            @_4.started += instance.On_4;
+            @_4.performed += instance.On_4;
+            @_4.canceled += instance.On_4;
+            @_5.started += instance.On_5;
+            @_5.performed += instance.On_5;
+            @_5.canceled += instance.On_5;
+            @_6.started += instance.On_6;
+            @_6.performed += instance.On_6;
+            @_6.canceled += instance.On_6;
+            @_7.started += instance.On_7;
+            @_7.performed += instance.On_7;
+            @_7.canceled += instance.On_7;
         }
 
         private void UnregisterCallbacks(IUI_MapActions instance)
@@ -530,6 +764,33 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Zoom.started -= instance.OnZoom;
             @Zoom.performed -= instance.OnZoom;
             @Zoom.canceled -= instance.OnZoom;
+            @Space.started -= instance.OnSpace;
+            @Space.performed -= instance.OnSpace;
+            @Space.canceled -= instance.OnSpace;
+            @R.started -= instance.OnR;
+            @R.performed -= instance.OnR;
+            @R.canceled -= instance.OnR;
+            @_1.started -= instance.On_1;
+            @_1.performed -= instance.On_1;
+            @_1.canceled -= instance.On_1;
+            @_2.started -= instance.On_2;
+            @_2.performed -= instance.On_2;
+            @_2.canceled -= instance.On_2;
+            @_3.started -= instance.On_3;
+            @_3.performed -= instance.On_3;
+            @_3.canceled -= instance.On_3;
+            @_4.started -= instance.On_4;
+            @_4.performed -= instance.On_4;
+            @_4.canceled -= instance.On_4;
+            @_5.started -= instance.On_5;
+            @_5.performed -= instance.On_5;
+            @_5.canceled -= instance.On_5;
+            @_6.started -= instance.On_6;
+            @_6.performed -= instance.On_6;
+            @_6.canceled -= instance.On_6;
+            @_7.started -= instance.On_7;
+            @_7.performed -= instance.On_7;
+            @_7.canceled -= instance.On_7;
         }
 
         public void RemoveCallbacks(IUI_MapActions instance)
@@ -563,5 +824,14 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         void OnTabulation(InputAction.CallbackContext context);
         void OnTEMPO(InputAction.CallbackContext context);
         void OnZoom(InputAction.CallbackContext context);
+        void OnSpace(InputAction.CallbackContext context);
+        void OnR(InputAction.CallbackContext context);
+        void On_1(InputAction.CallbackContext context);
+        void On_2(InputAction.CallbackContext context);
+        void On_3(InputAction.CallbackContext context);
+        void On_4(InputAction.CallbackContext context);
+        void On_5(InputAction.CallbackContext context);
+        void On_6(InputAction.CallbackContext context);
+        void On_7(InputAction.CallbackContext context);
     }
 }

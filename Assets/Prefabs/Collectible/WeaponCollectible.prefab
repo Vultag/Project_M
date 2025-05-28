@@ -97,11 +97,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13a9c0a3f669be94287fb7375c76a5e8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Mass: 0
   shapeType: 0
   dimentions: {x: 0, y: 0}
   radius: 0.51
   HasDynamics: 0
+  IsStaticBody: 0
+  Mass: 0
+  restitution: 0
   IsTrigger: 1
   triggerType: 2
   collisionLayer: 8
@@ -117,6 +119,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bfeef09c2a4ca3c429b6f962fde123b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  collectibleType: 255
+  collectibleType: 0
   weaponClass: 0
   weaponType: 0

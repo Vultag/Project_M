@@ -121,8 +121,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 9001739692880858251}
-        m_TargetAssemblyTypeName: SynthUIelement, Assembly-CSharp
-        m_MethodName: _activateThisPlayback
+        m_TargetAssemblyTypeName: EquipmentUIelement, Assembly-CSharp
+        m_MethodName: _StartAutoPlay
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -253,8 +253,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 9001739692880858251}
-        m_TargetAssemblyTypeName: SynthUIelement, Assembly-CSharp
-        m_MethodName: _StopRecordOrPlayback
+        m_TargetAssemblyTypeName: EquipmentUIelement, Assembly-CSharp
+        m_MethodName: _StopAutoPlay
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

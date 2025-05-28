@@ -13,7 +13,6 @@ using UnityEngine.EventSystems;
 using System.Linq;
 using Unity.Transforms;
 using Unity.Collections;
-using UnityEngine.Rendering;
 
 /*
  Break on window dimention change --> TO FIX
@@ -56,8 +55,7 @@ public class UIManager : MonoBehaviour
     [SerializeField]
     private VoicesUI voicesUI;
 
-    [SerializeField]
-    private UIPlaybacksHolder UIplaybacksHolder;
+    public UIPlaybacksHolder UIplaybacksHolder;
     public GameObject MusicSheetGB;
     public GameObject MusicTrackGB;
 
@@ -95,7 +93,7 @@ public class UIManager : MonoBehaviour
     /// Same
     int activeUIDrumMachineIdx = -1;
 
-    short activeEquipmentIdx = -1;
+    public short activeEquipmentIdx = -1;
     [HideInInspector]
     public bool curentlyRecording = false;
 
@@ -563,7 +561,7 @@ public class UIManager : MonoBehaviour
 
         /// unessesary if same playback recording being reset ?
         AudioLayoutStorageHolder.audioLayoutStorage.WritePlayback(
-            UIplaybacksHolder.synthFullBundleLists[relativeEquipmentIdx][PBidx.y].playbackAudioBundle,
+            UIplaybacksHolder.synthFullBundleLists[relativeEquipmentIdx][PBidx.y].Item1.playbackAudioBundle,
             relativeEquipmentIdx);
 
         var slider = equipmentToolBar.transform.GetChild(PBidx.x).gameObject.GetComponentInChildren<Slider>();
@@ -656,6 +654,27 @@ public class UIManager : MonoBehaviour
         }
 
     }
+    /// Porly optimized -> rework
+    public bool _ConsumePlaybackContainer(EquipmentCategory equipmentCategory, ushort equipmentIdx, ushort PBcontainerIdx)
+    {
+        bool emptyedContainer = false;
+        if(equipmentCategory == EquipmentCategory.Weapon)
+        {
+            ushort relativeEquipmentIdx = (ushort)EquipmentIdxToSynthDataIdx[equipmentIdx];
+            emptyedContainer = UIplaybacksHolder._ConsumeContainerCharge(equipmentCategory, new FullEquipmentIdx { absoluteIdx= equipmentIdx ,relativeIdx= relativeEquipmentIdx}, PBcontainerIdx);
+        }
+        else
+        {
+            ushort relativeEquipmentIdx = 0;
+            emptyedContainer = UIplaybacksHolder._ConsumeContainerCharge(equipmentCategory, new FullEquipmentIdx { absoluteIdx = equipmentIdx, relativeIdx = relativeEquipmentIdx }, PBcontainerIdx);
+        }
+        if (UIplaybacksHolder.PBholders[equipmentIdx].ContainerNumber ==0)
+        {
+            /// Deactivate Stop button GB
+            equipmentToolBar.transform.GetChild(equipmentIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+        }
+        return emptyedContainer;
+    }
     /// <summary>
     /// OPTI : PASS ECB INSTEAD OF CREATING ONE EVERY TIME
     /// </summary>
@@ -727,6 +746,31 @@ public class UIManager : MonoBehaviour
         ecb.RemoveComponent<PlaybackData>(weapon_entity);
 
     }  
+    public void _StartAutoPlay(ushort equipmentIdx)
+    {
+        /// Deactivate Play button GB
+        equipmentToolBar.transform.GetChild(equipmentIdx).GetChild(2).GetChild(1).gameObject.SetActive(false);
+        /// Activate Stop button GB
+        equipmentToolBar.transform.GetChild(equipmentIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
+
+        UIplaybacksHolder.PBholders[equipmentIdx].AutoPlayOn = true;
+    }
+    public void _StopAutoPlay(ushort equipmentIdx)
+    {
+        UIplaybacksHolder.PBholders[equipmentIdx].AutoPlayOn = false;
+        if(UIplaybacksHolder.PBholders[equipmentIdx].ContainerNumber>0)
+        {
+            /// OPTI
+            if (UIplaybacksHolder.PBholders[equipmentIdx].transform.GetChild(0).GetComponent<PlaybackContainerUI>().containerCharges>1)
+            {
+                /// Activate Play button GB
+                equipmentToolBar.transform.GetChild(equipmentIdx).GetChild(2).GetChild(1).gameObject.SetActive(true);
+            }
+        }
+        /// Deactivate Stop button GB
+        equipmentToolBar.transform.GetChild(equipmentIdx).GetChild(2).GetChild(2).gameObject.SetActive(false);
+    }
+
     /// <summary>
     /// OPTI : PASS ECB INSTEAD OF CREATING ONE EVERY TIME
     /// </summary>

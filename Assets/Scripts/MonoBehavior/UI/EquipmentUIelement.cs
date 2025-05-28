@@ -38,7 +38,8 @@ public class EquipmentUIelement : MonoBehaviour
     public EquipmentCategory thisEquipmentCategory;
     [HideInInspector]
     ///public BuildingInfo thisBuildingInfo;
-    ///private bool RecordPrepairing = false;
+    private bool RecordPrepairing = false;
+    public bool ActivationPrepairing = false;
 
     void Start()
     {
@@ -78,6 +79,8 @@ public class EquipmentUIelement : MonoBehaviour
 
     public void _PrepairRecord()
     {
+        if (uiManager.curentlyRecording)
+            return;
         uiManager.curentlyRecording = true;
         uiManager._ResetPlayback(thisEquipmentIdx);
         /// Deactivate Rec button GB
@@ -87,7 +90,7 @@ public class EquipmentUIelement : MonoBehaviour
         ///// Activate Stop button GB
         //uiManager.equipmentToolBar.transform.GetChild(thisSynthIdx).GetChild(2).GetChild(2).gameObject.SetActive(true);
         StartCoroutine(nameof(RecordCountdown), thisEquipmentIdx);
-        ///RecordPrepairing = true;
+        RecordPrepairing = true;
     }
     public void _DisplayPrepairActivation()
     {
@@ -123,6 +126,26 @@ public class EquipmentUIelement : MonoBehaviour
     //        uiManager._StopSynthPlayback(thisSynthIdx);
     //    }
     //}
+
+    /// <summary>
+    /// cancel auto play for now
+    /// </summary>
+    public void _StopAutoPlay()
+    {
+        uiManager._StopAutoPlay(thisEquipmentIdx);
+    }
+    public void _StartAutoPlay()
+    {
+        if(!ActivationPrepairing)
+        {
+            uiManager._StartAutoPlay(thisEquipmentIdx);
+            StartCoroutine(nameof(ActivationCountdown));
+        }
+        else
+        {
+            Debug.LogError("already ActivationPrepairing");
+        }
+    }
 
     IEnumerator RecordCountdown(ushort equipmentIdx)
     {
@@ -174,6 +197,8 @@ public class EquipmentUIelement : MonoBehaviour
     }
     IEnumerator ActivationCountdown()
     {
+        ActivationPrepairing = true;
+
         startCountdown.gameObject.SetActive(true);
         startCountdown.color = Color.green;
 
@@ -200,6 +225,7 @@ public class EquipmentUIelement : MonoBehaviour
         startCountdown.gameObject.SetActive(false);
 
         //Debug.Log("start");
+        ActivationPrepairing = false;
 
         yield return null;
     }

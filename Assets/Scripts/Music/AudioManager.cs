@@ -343,7 +343,7 @@ public class AudioManager : MonoBehaviour
                 ecb.AddComponent(start_weapon, new WeaponAmmoData
                 {
                     Damage = 6f,
-                    Speed = 0.05f,
+                    Speed = 0.03f,
                     LifeTime = 3f,
                     penetrationCapacity = 1
                 });
@@ -428,7 +428,7 @@ public class AudioManager : MonoBehaviour
             ecb.AddComponent(new_weapon, new WeaponAmmoData
             {
                 Damage = 6f,
-                Speed = 0.05f,
+                Speed = 0.03f,
                 LifeTime = 3f,
                 penetrationCapacity = 1
             });

@@ -396,14 +396,15 @@ public partial struct PlaybackSystem : ISystem
                     var projectileLTW = LocalTransform.FromPosition(new float3(Wtrans.ValueRO.Position.x, Wtrans.ValueRO.Position.y, -3));
                     ecb.SetComponent<LocalTransform>(projectileInstance, projectileLTW);
 
-                    ecb.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
-                    {
-                        AngularDamp = 0,
-                        LinearDamp = 0,
-                        Velocity = dirLenght.normalized * projectileData.ValueRO.Speed
-                    });
+                    //ecb.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
+                    //{
+                    //    AngularDamp = 0,
+                    //    LinearDamp = 0,
+                    //    Velocity = dirLenght.normalized * projectileData.ValueRO.Speed
+                    //});
                    ecb.AddComponent<ProjectileInstanceData>(projectileInstance, new ProjectileInstanceData
                     {
+                       direction = dirLenght.normalized,
                        damage = projectileData.ValueRO.Damage,
                        remainingLifeTime = projectileData.ValueRO.LifeTime,
                        speed = projectileData.ValueRO.Speed,
@@ -522,7 +523,7 @@ public partial struct PlaybackSystem : ISystem
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
 
-            MachineDrumPlaybackAudioBundle playbackAudioBundle = AudioManager.Instance.uiPlaybacksHolder.machineDrumFullBundleLists[playback_data.ValueRO.FullPlaybackIndex.x][playback_data.ValueRO.FullPlaybackIndex.y].playbackAudioBundle;
+            MachineDrumPlaybackAudioBundle playbackAudioBundle = AudioManager.Instance.uiPlaybacksHolder.machineDrumFullBundleLists[playback_data.ValueRO.FullPlaybackIndex.x][playback_data.ValueRO.FullPlaybackIndex.y].Item1.playbackAudioBundle;
 
             /// OPTI ?
             while (playbackPadIndex < playbackAudioBundle.PlaybackPads.Length

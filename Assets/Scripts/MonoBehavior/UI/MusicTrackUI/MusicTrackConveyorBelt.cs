@@ -1,11 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using MusicNamespace;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.InputSystem.InputSettings;
+using Random = UnityEngine.Random;
 using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
 using Vector4 = UnityEngine.Vector4;
@@ -35,6 +34,8 @@ public class MusicTrackConveyorBelt : MonoBehaviour
     //private bool[,] TrackSlotsGridOBS;
     int mesurePassed;
 
+    bool autoPlayStopOrder;
+
     /// <summary>
     /// Flattened 2D array to pass directly to the shader
     /// Only the first two values are used for TrackCoords
@@ -53,9 +54,13 @@ public class MusicTrackConveyorBelt : MonoBehaviour
     /// -1 = inactive ; 0+ = containerIdx;
     private short[] ActiveContainers;
 
+    [SerializeField]
+    private UIPlaybacksHolder PBsHolder;
 
-    [HideInInspector]
-    public Dictionary<int2, float3> indexToColorMap = new();
+
+    /// reimplement someway later
+    ////[HideInInspector]
+    ////public Dictionary<int2, float3> indexToColorMap = new();
 
     private void Start()
     {
@@ -134,12 +139,12 @@ public class MusicTrackConveyorBelt : MonoBehaviour
 
             int2 spriteIdx = new int2(Xindex % 3, (Xindex / 3));
             TrackSlotsGrid[flatenedIdx] = new Vector4(spriteIdx.x, spriteIdx.y, draggedObjectPBidx.y, 0);
-            indexToColorMap.TryGetValue(draggedObjectPBidx, out float3 color);
-            //float3 color = ;//UnpackFloat3ToInt16Bit(draggedObjectPBidx.y);
-            TrackSlotsGridColor[flatenedIdx] = new Vector4(color.x, color.y, color.z, 0);
+            ///indexToColorMap.TryGetValue(draggedObjectPBidx, out float3 color);
+            ///TrackSlotsGridColor[flatenedIdx] = new Vector4(color.x, color.y, color.z, 0);
+            TrackSlotsGridColor[flatenedIdx] = new Vector4(1, 1, 1, 0);
 
             /// Insert in next mesure -> prepair playback
-            if(Yindex==1 && TrackSlotsGrid[Xindex].x==99)
+            if (Yindex==1 && TrackSlotsGrid[Xindex].x==99)
             {
 
                 ///GetComponent<MusicTrack>().PlaybackHolderArray[Xindex]._QuePlaybackUI();
@@ -217,8 +222,49 @@ public class MusicTrackConveyorBelt : MonoBehaviour
 
         for (ushort x = 0; x < ThreadNum; x++)
         {
+            /// Experimental auto shuffeld play
+            
+            if(!(musicTrack.PlaybackHolderArray[x].AutoPlayOn))
+            {
+                if (ActiveContainers[x] != -1)
+                {
+                    UIManager.Instance._ConsumePlaybackContainer(musicTrack.PlaybackHolderArray[x].equipmentCategory, x, (ushort)ActiveContainers[x]);
+                    musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
+                    ActiveContainers[x] = -1;
+                }
+            }
+            else
+            {
+                if (ActiveContainers[x] != -1)
+                {
+                    if (UIManager.Instance._ConsumePlaybackContainer(musicTrack.PlaybackHolderArray[x].equipmentCategory, x, (ushort)ActiveContainers[x]))
+                    {
+                        if (!(musicTrack.PlaybackHolderArray[x].ContainerNumber > 0))
+                        {
+                            musicTrack.PlaybackHolderArray[x]._StopCurrentPlayback(x);
+                            /// Stop auto play when PB holder is emptyed
+                            UIManager.Instance._StopAutoPlay(x);
+                        }
+                    }
+                    ActiveContainers[x] = -1;
+                }
+                ushort containerNum = musicTrack.PlaybackHolderArray[x].ContainerNumber;
+                if (containerNum > 0)
+                {
+                    ushort newActiveContainer = (ushort)Random.Range(0, containerNum);
+                    if (newActiveContainer != ActiveContainers[x])
+                    {
+                        musicTrack.PlaybackHolderArray[x]._ImmediatePlaybackActivate(new int2(x, newActiveContainer));
+                        ActiveContainers[x] = (short)newActiveContainer;
+                    }
+                }
+                else
+                    ActiveContainers[x] = -1;
+            }
 
+      
 
+            /* Paused for experimental testing of auto shuffeld play
             for (int y = 0; y < ThreadElementNum; y++)
             {
                 /// Icrement slots downward to keep up with the continuous displacement
@@ -254,6 +300,7 @@ public class MusicTrackConveyorBelt : MonoBehaviour
                 }
              
             }
+            */
         }
 
         TrackSlotsGrid[60] = new Vector4(99, 99, 99, 0);

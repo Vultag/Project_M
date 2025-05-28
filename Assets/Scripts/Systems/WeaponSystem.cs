@@ -536,14 +536,15 @@ public partial class WeaponSystem : SystemBase
                     var projectileLTW = LocalTransform.FromPosition(new float3(Wtrans.Position.x, Wtrans.Position.y, -3));
                     ECB.SetComponent<LocalTransform>(projectileInstance, projectileLTW);
 
-                    ECB.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
-                    {
-                        AngularDamp = 0,
-                        LinearDamp = 0,
-                        Velocity = mouseDirection.normalized * projectileData.ValueRO.Speed,
-                    });
+                    //ECB.SetComponent<PhyBodyData>(projectileInstance, new PhyBodyData
+                    //{
+                    //    AngularDamp = 0,
+                    //    LinearDamp = 0,
+                    //    Velocity = mouseDirection.normalized * projectileData.ValueRO.Speed,
+                    //});
                     ECB.AddComponent<ProjectileInstanceData>(projectileInstance, new ProjectileInstanceData
                     {
+                        direction = mouseDirection.normalized,
                         damage = projectileData.ValueRO.Damage,
                         remainingLifeTime = projectileData.ValueRO.LifeTime,
                         speed = projectileData.ValueRO.Speed,

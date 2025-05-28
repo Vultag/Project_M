@@ -80,7 +80,6 @@ public partial struct TriggerProcessingSystem : ISystem
             switch (triggerType)
             {
                 case TriggerType.DamageEffect:
-                    //Debug.Log("damage");
                     ProjectileInstanceData newProjectileData = state.EntityManager.GetComponentData<ProjectileInstanceData>(emitterEntity);
                     if (!state.EntityManager.HasComponent<HealthData>(reciverEntity))
                     {

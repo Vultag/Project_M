@@ -50,7 +50,7 @@ MonoBehaviour:
   shapeType: 0
   dimentions: {x: 0, y: 0}
   radius: 0.5
-  HasDynamics: 1
+  HasDynamics: 0
   IsStaticBody: 0
   Mass: 1
   restitution: 0

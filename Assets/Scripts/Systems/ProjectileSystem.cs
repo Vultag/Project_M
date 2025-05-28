@@ -20,8 +20,11 @@ public partial struct ProjectileSystem : ISystem
         var ecbSingleton = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
 
-        foreach (var (projectileData,body,entity) in SystemAPI.Query<RefRW<ProjectileInstanceData>,RefRW<PhyBodyData>>().WithEntityAccess())
+        foreach (var (projectileData,shape,trans,entity) in SystemAPI.Query<RefRW<ProjectileInstanceData>,RefRW<ShapeData>, RefRW<LocalTransform>>().WithEntityAccess())
         {
+            shape.ValueRW.PreviousPosition = shape.ValueRO.Position;
+            shape.ValueRW.Position += (Vector2)(projectileData.ValueRO.direction * projectileData.ValueRO.speed);
+            trans.ValueRW.Position.xy = shape.ValueRO.Position;
             //body.ValueRW.Velocity = body.ValueRO.Velocity.normalized * projectileData.ValueRO.speed;
             projectileData.ValueRW.remainingLifeTime -= SystemAPI.Time.DeltaTime;
             if(projectileData.ValueRO.remainingLifeTime < 0)
