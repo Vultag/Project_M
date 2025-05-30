@@ -29,12 +29,13 @@ public partial struct TreeInsersionSystem : ISystem { }
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 public partial struct ProjectileSystem : ISystem { }
 
-[UpdateInGroup(typeof(GameSimulationSystemGroup))]
-public partial class WeaponSystem : SystemBase { }
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
-[UpdateAfter(typeof(WeaponSystem))]
 public partial class PlaybackRecordSystem : SystemBase { }
+
+[UpdateAfter(typeof(PlaybackRecordSystem))]
+[UpdateInGroup(typeof(GameSimulationSystemGroup))]
+public partial class WeaponSystem : SystemBase { }
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
 [UpdateAfter(typeof(PlaybackRecordSystem))]

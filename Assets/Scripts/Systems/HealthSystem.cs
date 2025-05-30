@@ -15,6 +15,7 @@ using UnityEngine;
 public partial struct HealthSystem : ISystem
 {
     private Entity damageEventEntity;
+    private EntityQuery XpEntityQuery;
 
     public void OnCreate(ref SystemState state)
     {
@@ -31,11 +32,15 @@ public partial struct HealthSystem : ISystem
             state.EntityManager.AddBuffer<GlobalDamageEvent>(damageEventEntity); // Add the buffer to the new entity
         }
 
+        XpEntityQuery = state.EntityManager.CreateEntityQuery(typeof(XpData));
+
     }
     public void OnUpdate(ref SystemState state)
     {
         var ecbSingleton = SystemAPI.GetSingleton<BeginFixedStepSimulationEntityCommandBufferSystem.Singleton>();
         var ecb = ecbSingleton.CreateCommandBuffer(state.WorldUnmanaged);
+
+        float cumulatedXPfromMonster = 0;
 
         var globalDamageBuffer = SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity);
 
@@ -61,16 +66,26 @@ public partial struct HealthSystem : ISystem
             }
             else
             {
+                /// HC
+                cumulatedXPfromMonster += 17.5f;
                 //Debug.Log("called");
                 /// Assumes every entity with health is also physic
                 PhysicsCalls.DestroyPhysicsEntity(ecb, damageGroup.Key);
             }
         }
-
-
         entityDamageMap.Dispose();
         // Clear damage events after processing
         globalDamageBuffer.Clear();
+
+        if(cumulatedXPfromMonster>0)
+        {
+            var xpDataE = XpEntityQuery.GetSingletonEntity();
+            var newXpData = state.EntityManager.GetComponentData<XpData>(xpDataE);
+            newXpData.ThisFrameXP = cumulatedXPfromMonster;
+            state.EntityManager.SetComponentData<XpData>(xpDataE, newXpData);
+            UIManager.Instance._UpdateXpPanel(newXpData.currentXP+newXpData.ThisFrameXP, newXpData.XPtillNextLVL);
+        }
+
     }
     
 }

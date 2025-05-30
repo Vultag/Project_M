@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Transforms;
@@ -139,7 +138,7 @@ public partial class WeaponSystem : SystemBase
         /// Move to Synth system all together ?
         /// foreach not necessary as 1 weapon controlled at a time ?
         /// Ray class weapon logic
-        foreach (var (rayData,entity) in SystemAPI.Query<RefRO<RayData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
+        foreach (var (rayData, energy,entity) in SystemAPI.Query<RefRO<RayData>,RefRW<EquipmentEnergyData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
         {
             //Debug.Log(BeatProximity);
             //Debug.DrawLine(new Vector3(5, 0, 0), new Vector3(5, BeatProximity * 10, 0), Color.red);
@@ -193,14 +192,16 @@ public partial class WeaponSystem : SystemBase
             Vector2 weaponDirLenght = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
             float weaponFz = MusicUtils.DirectionToFrequency(weaponDirLenght);
 
-            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz>0 && energy.ValueRO.energyLevel > energy.ValueRO.energyConsumptionRate)
             {
                 //Debug.LogError("test");
                 //InputManager.BeatNotYetPlayed = false;
                 //var localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
                 float radian = PhysicsUtilities.DirectionToRadians(weaponDirLenght);
                 int note = MusicUtils.radiansToNoteIndex(radian);
-                   
+
+                energy.ValueRW.energyLevel -= energy.ValueRO.energyConsumptionRate;
+
                 // 0 = not exist : 1 = exist in Rkeybuffer
                 short noteExist = 0;
                 int i;
@@ -267,8 +268,8 @@ public partial class WeaponSystem : SystemBase
                 IsShooting = true;
             }
 
-
-            if (inputs.shootJustReleased)
+            /// temp HC 0.35 -> sustain energy cost
+            if ((inputs.shootJustReleased | (energy.ValueRO.energyLevel- energy.ValueRO.energyConsumptionRate* 0.35f * SystemAPI.Time.DeltaTime) <0) && IsShooting)
             {
                 //if (weaponData.ValueRO.weaponClass == WeaponClass.Ray)
                 {
@@ -313,6 +314,9 @@ public partial class WeaponSystem : SystemBase
                 {
                     Vector2 targetDirLenght = SkeyBuffer[i].TargetDirLenght;
                     float dirFrequency = MusicUtils.DirectionToFrequency(targetDirLenght);
+                    /// temp HC 0.35 -> sustain energy cost
+                    energy.ValueRW.energyLevel -= energy.ValueRO.energyConsumptionRate * 0.35f * SystemAPI.Time.DeltaTime;
+
                     if (activeLegatoFz > 0 && localCurrentFz>0)
                     {
                         //Debug.Log(activeLegatoFz);
@@ -507,7 +511,7 @@ public partial class WeaponSystem : SystemBase
         }
 
         /// Projectile class weapon logic
-        foreach (var (projectileData, entity) in SystemAPI.Query<RefRO<WeaponAmmoData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
+        foreach (var (projectileData, energy, entity) in SystemAPI.Query<RefRO<WeaponAmmoData>, RefRW<EquipmentEnergyData>>().WithAll<ActiveSynthTag>().WithEntityAccess())
         {
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
@@ -525,8 +529,9 @@ public partial class WeaponSystem : SystemBase
                 trans.Rotation = math.mul(math.inverse(parentTransform.Rotation), newLocalRot);
                 ECB.SetComponent<LocalTransform>(MainWeapon, trans);
             }
-            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz>0)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz>0 && energy.ValueRO.energyLevel > energy.ValueRO.energyConsumptionRate)
             {
+                energy.ValueRW.energyLevel -= energy.ValueRO.energyConsumptionRate;
                 /// Projectile instanciate
                 {
                     var projectileInstance = ECB.Instantiate(ProjectilePrefab);

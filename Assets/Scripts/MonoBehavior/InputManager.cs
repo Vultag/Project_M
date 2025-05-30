@@ -16,18 +16,6 @@ public struct CentralizedInputData : IComponentData
     public Vector2 playerMouvements;
     public bool shootJustPressed;
     public bool shootJustReleased;
-
-    public bool space;
-
-    public bool R;
-
-    public bool one;
-    public bool two;
-    public bool three;
-    public bool four;
-    public bool five;
-    public bool six;
-    public bool seven;
 }
 /// <summary>
 /// For Mono world

@@ -1668,6 +1668,7 @@ GameObject:
   - component: {fileID: 1748953740}
   - component: {fileID: 1748953744}
   - component: {fileID: 1748953745}
+  - component: {fileID: 1748953746}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -1750,6 +1751,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ProjectilePrefab: {fileID: 8003013826123241441, guid: bdf57872db6fada468fb1db9d3a82b93, type: 3}
+--- !u!114 &1748953746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1748953737}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 66141101dab740f479dd8fbd37f40b47, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  active: 1
+  SpawnRate: 3
+  SpawnRangeRadius: 10
+  MonsterPrefab: {fileID: 3505441550876786229, guid: e4dd871981676b24bbfe2b95dab246f6, type: 3}
 --- !u!1001 &1788238682
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1978,8 +1995,6 @@ GameObject:
   - component: {fileID: 1973514708}
   - component: {fileID: 1973514707}
   - component: {fileID: 1973514706}
-  - component: {fileID: 1973514709}
-  - component: {fileID: 1973514710}
   m_Layer: 0
   m_Name: CORE
   m_TagString: Untagged
@@ -2029,7 +2044,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: -6231044458718751821, guid: 016c9d7453bfd824fb1d04025f0ce0d9, type: 3}
-  m_Color: {r: 0.9137255, g: 1, b: 0, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -2076,36 +2091,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1973514709
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1973514705}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 66141101dab740f479dd8fbd37f40b47, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  active: 1
-  SpawnRate: 3
-  SpawnRangeRadius: 10
-  MonsterPrefab: {fileID: 3505441550876786229, guid: e4dd871981676b24bbfe2b95dab246f6, type: 3}
---- !u!114 &1973514710
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1973514705}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: efbd81d9e2ac34e4db73032378dc6652, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Health: 100
-  TurretPrefab: {fileID: 4513537682764308621, guid: 9382cef2d20126a47b316e9658a28413, type: 3}
 --- !u!1 &1992075261
 GameObject:
   m_ObjectHideFlags: 0

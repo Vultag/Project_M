@@ -5,12 +5,15 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 
 /// <summary>
 /// Currently otimized for 1 record at a time
 /// -> REVIEW AND OPTIMIZE IF NEED SYMULTANEOUS
+/// 
 /// -> REMOVE COMPLETELY TO BE HANDLED BY WeaponSystem ?
+/// 
 /// </summary>
 public partial class PlaybackRecordSystem : SystemBase
 {
@@ -132,10 +135,12 @@ public partial class PlaybackRecordSystem : SystemBase
         short newNoteSubBeatIdxOffseted = (short)(newNoteidxOffseted * 4 + Mathf.FloorToInt(Mathf.Abs(SclicedBeatTime-BeatProximityThreshold) % 4));
 
 
-        foreach (var (Wtrans, recordData, entity) in SystemAPI.Query<RefRO<LocalToWorld>,RefRW<SynthPlaybackRecordingData>>().WithEntityAccess())
+        foreach (var (Wtrans, recordData, entity) in SystemAPI.Query<RefRO<LocalToWorld>, RefRW<SynthPlaybackRecordingData>>().WithEntityAccess())
         {
             MusicSheetData ActiveMusicSheet = AudioLayoutStorageHolder.audioLayoutStorage.ActiveMusicSheet;
 
+            EquipmentEnergyData energy = SystemAPI.GetComponent<EquipmentEnergyData>(AudioManager.AuxillaryEquipmentEntities[recordData.ValueRO.fEquipmentIdx.absoluteIdx]);
+            
             //Debug.Log(Wtrans.ValueRO.Position);
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
@@ -154,7 +159,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
             //Debug.Log(localMouseDirection);
 
-            if (!UIInput.MouseOverUI && localCurrentFz > 0)
+            if (!UIInput.MouseOverUI && localCurrentFz > 0 )
             {
                 if (recordData.ValueRO.activeLegatoFz == 0)
                 {
@@ -289,7 +294,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 }
             }
 
-            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz > 0)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && localCurrentFz > 0 && energy.energyLevel > energy.energyConsumptionRate)
             {
                 //float randian = Mathf.Abs(PhysicsUtilities.DirectionToRadians(direction));
                 //int note = MusicUtils.radiansToNote(randian);
@@ -350,39 +355,37 @@ public partial class PlaybackRecordSystem : SystemBase
             }
             else
             {
-
-                if (inputs.shootJustReleased)
+                /// temp HC 0.35 -> sustain energy cost
+                if ((inputs.shootJustReleased | ((energy.energyLevel - energy.energyConsumptionRate * 0.35f * SystemAPI.Time.DeltaTime) <0)) && AudioKeyActive)
                 {
-                    if(AudioKeyActive)
+
+                    accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
                     {
-                        accumulator[accumulator.Length - 1] = new PlaybackRecordingKeysBuffer
+                        playbackRecordingKey = new PlaybackKey
                         {
-                            playbackRecordingKey = new PlaybackKey
-                            {
-                                dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
-                                startDir = accumulator[accumulator.Length - 1].playbackRecordingKey.startDir,
-                                time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
-                                lenght = PlaybackTime - accumulator[accumulator.Length - 1].playbackRecordingKey.time,
-                                /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
-                                //keyCutIdx = accumulator[accumulator.Length - 1].playbackRecordingKey.keyCutIdx,
-                            }
-                        };
-                        recordData.ValueRW.activeLegatoFz = 0;
-                        AudioKeyActive = false;
-
-                        /// Sheet
-
-                        //Debug.Log(CurrentBeatProcessingLevel);
-
-                        if (!KeyYetToBeProcessedOnce && CurrentBeatProcessingLevel != 0f)
-                        {
-                            NoteIdx++;
+                            dir = accumulator[accumulator.Length - 1].playbackRecordingKey.dir,
+                            startDir = accumulator[accumulator.Length - 1].playbackRecordingKey.startDir,
+                            time = accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                            lenght = PlaybackTime - accumulator[accumulator.Length - 1].playbackRecordingKey.time,
+                            /// REMOVED AS RAYS DONT CURRENTLY LEAVE RELEASEKEY IN LEGATO
+                            //keyCutIdx = accumulator[accumulator.Length - 1].playbackRecordingKey.keyCutIdx,
                         }
+                    };
+                    recordData.ValueRW.activeLegatoFz = 0;
+                    AudioKeyActive = false;
 
-                        CurrentBeatProcessingLevel = 0;
-                        PressedKeyIdx = 0;
+                    /// Sheet
 
+                    //Debug.Log(CurrentBeatProcessingLevel);
+
+                    if (!KeyYetToBeProcessedOnce && CurrentBeatProcessingLevel != 0f)
+                    {
+                        NoteIdx++;
                     }
+
+                    CurrentBeatProcessingLevel = 0;
+                    PressedKeyIdx = 0;
+
                 }
             }
 
@@ -503,6 +506,8 @@ public partial class PlaybackRecordSystem : SystemBase
         {
             ref DrumPadSheetData ActiveDrumPadSheetData = ref AudioLayoutStorageHolder.audioLayoutStorage.ActiveDrumPadSheetData;
 
+            EquipmentEnergyData energy = SystemAPI.GetComponent<EquipmentEnergyData>(AudioManager.AuxillaryEquipmentEntities[recordData.ValueRO.fEquipmentIdx.absoluteIdx]);
+
             var parentEntity = SystemAPI.GetComponent<Parent>(entity).Value;
             var parentTransform = SystemAPI.GetComponent<LocalToWorld>(parentEntity);
             var mainWeaponTrans = SystemAPI.GetComponent<LocalToWorld>(SystemAPI.GetComponent<PlayerData>(parentEntity).MainCanon);
@@ -516,7 +521,7 @@ public partial class PlaybackRecordSystem : SystemBase
                   mouseDirection = mousepos - new Vector2(mainWeaponTrans.Position.x, mainWeaponTrans.Position.y);
             }
 
-            if (inputs.shootJustPressed && !UIInput.MouseOverUI)
+            if (inputs.shootJustPressed && !UIInput.MouseOverUI && energy.energyLevel > energy.energyConsumptionRate)
             {
 
                 //Debug.Log(newDMachineData.InstrumentAddOrder[0]);

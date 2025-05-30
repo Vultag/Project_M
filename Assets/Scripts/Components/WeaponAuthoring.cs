@@ -35,6 +35,9 @@ public struct WeaponData : IComponentData
 public struct RayData:IComponentData
 {
     /// to do
+
+    //public float energyConsumptionRate;
+    //public float energyRecoveryRate;
 }
 public struct WeaponAmmoData :IComponentData
 {
@@ -42,6 +45,16 @@ public struct WeaponAmmoData :IComponentData
     public float Speed;
     public float LifeTime;
     public int penetrationCapacity;
+
+    //public float energyConsumptionRate;
+    //public float energyRecoveryRate;
+}
+public struct EquipmentEnergyData : IComponentData
+{
+    public float energyConsumptionRate;
+    public float energyRecoveryRate;
+    public float energyLevel;
+    public float maxEnergy;
 }
 
 public class WeaponAuthoring : MonoBehaviour

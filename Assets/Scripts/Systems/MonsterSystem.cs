@@ -26,7 +26,7 @@ public partial struct MonsterSystem : ISystem
     {
         EntityCommandBuffer ecb = SystemAPI.GetSingleton<BeginSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
         //MOUVEMENT
-        var player_trans = SystemAPI.GetComponent<LocalTransform>(SystemAPI.GetSingletonEntity<MCoreData>());
+        var player_trans = SystemAPI.GetComponent<LocalTransform>(SystemAPI.GetSingletonEntity<PlayerData>());
 
         foreach (var (monster_data, trans, body) in SystemAPI.Query<RefRO<MonsterData>, RefRO<LocalTransform>, RefRW<PhyBodyData>>())
         {

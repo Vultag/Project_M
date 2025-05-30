@@ -3,6 +3,7 @@ using MusicNamespace;
 using TMPro;
 using Unity.Entities;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum EquipmentCategory
 {
@@ -36,28 +37,42 @@ public class EquipmentUIelement : MonoBehaviour
     public ushort thisEquipmentIdx;
     [HideInInspector]
     public EquipmentCategory thisEquipmentCategory;
+
     [HideInInspector]
+    public Entity thisEquipmentE;
+    [SerializeField]
+    Slider energySlider;
+
     ///public BuildingInfo thisBuildingInfo;
     private bool RecordPrepairing = false;
     public bool ActivationPrepairing = false;
+
+    /// <summary>
+    /// used to delay slider update by 1 frame
+    /// </summary>
+    bool delayEneryActivation = true;
 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
         thisEquipmentIdx = (ushort)this.gameObject.transform.GetSiblingIndex();
 
-        /// TEMP
-        //thisBuildingInfo = new BuildingInfo
-        //{
-        //    weaponClass = WeaponClass.Ray,
-        //    weaponType = WeaponType.Raygun,
-        //    buildingIdx = thisEquipmentIdx,
-        //    equipmentCategory = EquipmentCategory.Weapon,
-        //};
-
-
     }
 
+
+    private void LateUpdate()
+    {
+        /// Suboptimal but need to delay by 1 frame bc entityManager's thisEquipmentE not ready yet
+        if (delayEneryActivation)
+        {
+            delayEneryActivation = false;
+            return;
+        }
+        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
+        EquipmentEnergyData energyData = entityManager.GetComponentData<EquipmentEnergyData>(thisEquipmentE);
+        energySlider.value = energyData.energyLevel / energyData.maxEnergy;
+
+    }
     public void _selectThisEquipment()
     {
         ///uiManager._SelectBuildingUI(thisEquipmentIdx, thisBuildingInfo);
@@ -132,6 +147,8 @@ public class EquipmentUIelement : MonoBehaviour
     /// </summary>
     public void _StopAutoPlay()
     {
+        if (!RecordPrepairing)
+            startCountdown.gameObject.SetActive(false);
         uiManager._StopAutoPlay(thisEquipmentIdx);
     }
     public void _StartAutoPlay()
@@ -191,7 +208,7 @@ public class EquipmentUIelement : MonoBehaviour
         }
 
         startCountdown.gameObject.SetActive(false);
-        ///RecordPrepairing = false;
+        RecordPrepairing = false;
 
         yield return null;
     }

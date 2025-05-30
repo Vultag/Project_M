@@ -430,11 +430,19 @@ public class AudioManager : MonoBehaviour
                 Damage = 6f,
                 Speed = 0.03f,
                 LifeTime = 3f,
-                penetrationCapacity = 1
+                penetrationCapacity = 1,
             });
         }
+        ecb.AddComponent(new_weapon, new EquipmentEnergyData
+        {
+            energyLevel = 100,
+            maxEnergy = 100,
+            energyConsumptionRate = 20,
+            energyRecoveryRate = 10f,
+        });
         ecb.AddBuffer<PlaybackSustainedKeyBufferData>(new_weapon);
         ecb.AddBuffer<PlaybackReleasedKeyBufferData>(new_weapon);
+        UIManager.Instance.equipmentToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentE = new_weapon;
 
         //ecb.AddComponent<WeaponData>(new_weapon, new WeaponData
         //{
@@ -508,14 +516,21 @@ public class AudioManager : MonoBehaviour
         }
 
         ecb.AddComponent(new_DMachine, newDMachineLTW);
-
+        ecb.AddComponent(new_DMachine, new EquipmentEnergyData
+        {
+            energyLevel = 100,
+            maxEnergy = 100,
+            energyConsumptionRate = 10f,
+            energyRecoveryRate = 5f,
+        });
         ecb.AddComponent<DrumMachineData>(new_DMachine, new DrumMachineData
         {
             equipmentIdx = (ushort)NumOfEquipments,
             machineDrumContent = MachineDrumContent.SnareDrum | MachineDrumContent.BaseDrum | MachineDrumContent.HighHat,
-            InstrumentAddOrder = new FixedList32Bytes<byte> { 2,1,0 }
+            InstrumentAddOrder = new FixedList32Bytes<byte> { 2,1,0 },
         });
-        
+        UIManager.Instance.equipmentToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentE = new_DMachine;
+
     }
 
     public void PlayRequestedDMachineSounds(NativeList<(ushort, float)> requests)

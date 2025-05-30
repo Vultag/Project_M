@@ -6,6 +6,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using static UnityEngine.EventSystems.EventTrigger;
 
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
@@ -93,15 +94,19 @@ public partial class MachineDrumSystem : SystemBase
 
         Entity activeDMachineEntity = ActiveDMachineEntityQuery.GetSingletonEntity();
         DrumMachineData newDMachineData = EntityManager.GetComponentData<DrumMachineData>(activeDMachineEntity);
+        EquipmentEnergyData newEnergyData = EntityManager.GetComponentData<EquipmentEnergyData>(activeDMachineEntity);
 
         Vector2 mouseDirection = mousepos - new Vector2(Wtrans.Position.x, Wtrans.Position.y);
         ///Vector2 localMouseDirection = math.mul(math.inverse(parentTransform.Rotation), new float3(mouseDirection.x, mouseDirection.y, 0)).xy;
 
         /// Do game logic and store audio call in a nativestack ?
 
-        if (inputs.shootJustPressed && !UIInput.MouseOverUI)
+        if (inputs.shootJustPressed && !UIInput.MouseOverUI && newEnergyData.energyLevel > newEnergyData.energyConsumptionRate)
         {
-            //Debug.Log(newDMachineData.InstrumentAddOrder[0]);
+
+            newEnergyData.energyLevel -= newEnergyData.energyConsumptionRate;
+
+            //Debug.Log(newDMachineData.energyConsumptionRate);
 
             //store it ?
             int numberOfInstruments = math.countbits((int)newDMachineData.machineDrumContent)+1;  // Counts the number of set bits
@@ -127,6 +132,8 @@ public partial class MachineDrumSystem : SystemBase
         AudioManager.Instance.PlayRequestedDMachineSounds(requests);
         //Debug.Log(requests[0].Item1);
         UIManager.Instance.PlayRequestedDMachineEffects(requests);
+
+        ECB.SetComponent<EquipmentEnergyData>(activeDMachineEntity,newEnergyData);
 
         requests.Dispose();
 
