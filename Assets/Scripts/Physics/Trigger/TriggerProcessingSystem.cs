@@ -77,6 +77,7 @@ public partial struct TriggerProcessingSystem : ISystem
             var triggerType = state.EntityManager.GetComponentData<TriggerData>(emitterEntity).triggerType;
 
             var uiManager = UIManager.Instance;
+            /// OPTI : switch on non contiguous enum(flag) : no jump table (bad)
             switch (triggerType)
             {
                 case TriggerType.DamageEffect:

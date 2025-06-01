@@ -43,17 +43,19 @@ public class UIManager : MonoBehaviour
     private GameObject SynthEditPanel;
 
     [SerializeField]
-    private OscillatorUI oscillatorUI;
+    public OscillatorUI oscillatorUI;
     [SerializeField]
     private ADSRUI volumeAdsrUI;
     [SerializeField]
-    private ADSRUI filterAdsrUI;
+    public ADSRUI filterAdsrUI;
     [SerializeField]
-    private FilterUI filterUI;
+    public FilterUI filterUI;
     [SerializeField]
-    private UnissonUI unissonUI;
+    public UnissonUI unissonUI;
     [SerializeField]
-    private VoicesUI voicesUI;
+    public VoicesUI voicesUI;
+    [SerializeField]
+    private GameObject XpProgressGB;
     [SerializeField]
     private GameObject XpPanelGB;
 
@@ -134,6 +136,11 @@ public class UIManager : MonoBehaviour
 
         activeUIEquipment = new List<(short, bool, bool)>();
         EquipmentIdxToSynthDataIdx = new List<short>();
+
+        var equipmentUpgradeManager = equipmentToolBar.transform.GetComponent<EquipmentUpgradeManager>();
+        equipmentUpgradeManager.synthEquipmentsUpgradeOptions = new List<List<SynthUpgrade>>();
+        equipmentUpgradeManager.synthsActivatedFeatures = new List<bool[]>();
+        EquipmentUpgradeManager.numOfPossibleUpgrades =  (ushort)(Enum.GetValues(typeof(SynthUpgrade)).Length);
 
         ///ConstructUIsurface();
 
@@ -238,11 +245,20 @@ public class UIManager : MonoBehaviour
         SynthEditPanel.SetActive(true);
         short synthDataIdx = EquipmentIdxToSynthDataIdx[equipmentIndex];
         SynthData selectedSynthData = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[synthDataIdx];
+
+        UpdateSynthFeatures(synthDataIdx);
+
         UpdateSynthUI(
             in selectedSynthData,
             entityManager.GetComponentData<WeaponData>(AudioManager.AuxillaryEquipmentEntities[equipmentIndex]).weaponType
             );
 
+        /// disable upgrade on previous
+        if (activeEquipmentIdx!=-1) 
+            equipmentToolBar.transform.GetChild(activeEquipmentIdx).GetComponent<EquipmentUIelement>().upgradeButtonGB.SetActive(false);
+        /// activate on selected if available
+        equipmentToolBar.transform.GetChild(equipmentIndex).GetComponent<EquipmentUIelement>().upgradeButtonGB.SetActive(equipmentToolBar.GetComponent<EquipmentUpgradeManager>().numOfAvailableUpgrades > 0);
+        
         activeEquipmentIdx = (short)equipmentIndex;
 
         KeyboardShaderGB.SetActive(true);
@@ -315,6 +331,9 @@ public class UIManager : MonoBehaviour
         var synthUI = equipmentToolBar.transform.GetChild(NumOfEquipments).gameObject;
 
         synthUI.GetComponent<EquipmentUIelement>().thisEquipmentIdx = NumOfEquipments;
+        synthUI.GetComponent<EquipmentUIelement>().thisRelativeEquipmentIdx = (ushort)NumOfSynths;
+        equipmentToolBar.GetComponent<EquipmentUpgradeManager>().synthEquipmentsUpgradeOptions.Add(EquipmentUpgradeManager.BaseSynthUpgradeOption.ToList());
+        equipmentToolBar.GetComponent<EquipmentUpgradeManager>().synthsActivatedFeatures.Add(new bool[EquipmentUpgradeManager.numOfPossibleUpgrades]);
         synthUI.GetComponentInChildren<TextMeshProUGUI>().text = "Synth " + (NumOfSynths + 1);
 
         NumOfSynths++;
@@ -348,6 +367,10 @@ public class UIManager : MonoBehaviour
         var synthUI = equipmentToolBar.transform.GetChild(NumOfEquipments).gameObject;
         synthUI.SetActive(true);
         synthUI.GetComponent<EquipmentUIelement>().thisEquipmentIdx = NumOfEquipments;
+        synthUI.GetComponent<EquipmentUIelement>().thisRelativeEquipmentIdx = (ushort)NumOfDMachines;
+        Debug.Log("add DM upgraded options");
+        ///synthUI.GetComponent<EquipmentUIelement>().transform.parent.GetComponent<EquipmentUpgradeManager>().synthEquipmentsUpgradeOptions.Add(EquipmentUpgradeManager.BaseSynthUpgradeOption.ToList());
+
         synthUI.GetComponentInChildren<TextMeshProUGUI>().text = "Drum Machine " + (NumOfDMachines + 1);
 
         NumOfDMachines++;
@@ -372,7 +395,19 @@ public class UIManager : MonoBehaviour
         //}
 
     }
-
+    /// Update the synth edit pannel to correspond with the synth's current upgrades
+    void UpdateSynthFeatures(short synthIdx)
+    {
+        bool[] activatedFeatures = equipmentToolBar.GetComponent<EquipmentUpgradeManager>().synthsActivatedFeatures[synthIdx];
+        oscillatorUI.ReviewActivatedFeatures(activatedFeatures);
+        filterUI.gameObject.SetActive(activatedFeatures[3]);
+        filterUI.ReviewActivatedFeatures(activatedFeatures);
+        unissonUI.gameObject.SetActive(activatedFeatures[6]);
+        unissonUI.ReviewActivatedFeatures(activatedFeatures);
+        voicesUI.gameObject.SetActive(activatedFeatures[8]);
+        /// enable/disable upgrade button -> not nessesary for now as upgrade charges are global
+        ///equipmentToolBar.transform.GetChild(UIManager.Instance.activeEquipmentIdx).GetComponent<EquipmentUIelement>().upgradeButtonGB.SetActive(equipmentToolBar.GetComponent<EquipmentUpgradeManager>().numOfAvailableUpgrades > 0);
+    }
     void UpdateSynthUI(in SynthData synthData, WeaponType weaponType)
     {
         //var synthData = AudioManager.audioGenerator.SynthsData[activeUISynthIdx];
@@ -825,13 +860,14 @@ public class UIManager : MonoBehaviour
 
     public void _UpdateXpPanel(float newCurrentXP,float XPtillNextLVL)
     {
-        XpPanelGB.transform.GetChild(1).GetComponent<Slider>().value = newCurrentXP / XPtillNextLVL;
+        XpProgressGB.transform.GetChild(1).GetComponent<Slider>().value = newCurrentXP / XPtillNextLVL;
     }
     public void _UpdateXpPanel(float currentXP,float XPtillNextLVL, ushort LVL)
     {
-        XpPanelGB.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Level : " + LVL;
-        XpPanelGB.transform.GetChild(1).GetComponent<Slider>().value = currentXP / XPtillNextLVL;
-
+        XpProgressGB.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Level : " + LVL;
+        XpProgressGB.transform.GetChild(1).GetComponent<Slider>().value = currentXP / XPtillNextLVL;
+        XpPanelGB.SetActive(true);
+        XpPanelGB.GetComponent<LevelUpUI>().numOfLvlUp++;
     }
 
 

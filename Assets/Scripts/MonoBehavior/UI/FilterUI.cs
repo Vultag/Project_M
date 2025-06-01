@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using static UnityEngine.Rendering.DebugUI;
 using Quaternion = UnityEngine.Quaternion;
+using Random = UnityEngine.Random;
 using Vector3 = UnityEngine.Vector3;
 
 public class FilterUI : MonoBehaviour,IKnobController
@@ -35,7 +36,7 @@ public class FilterUI : MonoBehaviour,IKnobController
 
     UIManager IKnobController.uiManager => uiManager;
 
-    void Start()
+    void Awake()
     {
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         filterCutoff = 1;
@@ -56,7 +57,66 @@ public class FilterUI : MonoBehaviour,IKnobController
         filterResonanceKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - synthData.filter.Resonance));
         filterCutoffKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.0}", (1 - synthData.filterEnvelopeAmount));
     }
+    public void InitiateFilter()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
 
+        var newFilterType = (short)Random.Range(0, 3);
+        var newCutoff = Random.Range(0f, 1f);
+
+        filterCutoff = newCutoff;
+        filterResonance = 0;
+        filterEnvelope = 0;
+        newsynth.filter.Cutoff = filterCutoff;
+        newsynth.filter.Resonance = filterResonance;
+        newsynth.filterEnvelopeAmount = 0;
+        newsynth.filterType = newFilterType;
+        filterCutoffKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filter.Cutoff) - 0.5f) * 2f * 145f);
+        filterResonanceKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filter.Resonance) - 0.5f) * 2f * 145f);
+        filterEnvelopeAmountKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filterEnvelopeAmount) - 0.5f) * 2f * 145f);
+        filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
+        float3 color = GetColorFromFilter(filterCutoff, filterResonance, newsynth.filterType);
+        FilterColorImage.color = new Color { r = color.x, g = color.y, b = color.z, a = 1.0f };
+
+        filterToShader.SwitchFilterShader(newFilterType);
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+    }
+    public void ReviewActivatedFeatures(bool[] activatedFeatues)
+    {
+        filterResonanceKnob.parent.gameObject.SetActive(activatedFeatues[4]);
+        filterEnvelopeAmountKnob.parent.gameObject.SetActive(activatedFeatues[5]);
+    }
+    public void ActivateFilterResonance()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+
+        var newResonanceFactor = Random.Range(0f, 0.5f);
+
+        filterResonance = newResonanceFactor;
+        filterCutoff = newsynth.filter.Cutoff;
+        newsynth.filter.Resonance = filterResonance;
+        filterResonanceKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filter.Resonance) - 0.5f) * 2f * 145f);
+        filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
+        float3 color = GetColorFromFilter(filterCutoff, filterResonance, newsynth.filterType);
+        FilterColorImage.color = new Color { r = color.x, g = color.y, b = color.z, a = 1.0f };
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+        filterResonanceKnob.parent.gameObject.SetActive(true);
+    }
+    public void ActivateFilterEnveloppe()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+
+        var newEnveloppeFactor = Random.Range(0f, 1f);
+
+        filterEnvelope = newEnveloppeFactor;
+        newsynth.filterEnvelopeAmount = filterEnvelope;
+        filterEnvelopeAmountKnob.rotation = Quaternion.Euler(0, 0, ((1 - newsynth.filterEnvelopeAmount) - 0.5f) * 2f * 145f);
+        filterToShader.ModifyFilter(filterCutoff, filterResonance, filterEnvelope);
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+        filterEnvelopeAmountKnob.parent.gameObject.SetActive(true);
+    }
     public void ChangeFilterTypeUI(TMP_Dropdown dropdown)
     {
         SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];

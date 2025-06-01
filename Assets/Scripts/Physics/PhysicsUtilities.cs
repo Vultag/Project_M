@@ -22,6 +22,9 @@ public struct RayCastHit
 
 public struct PhysicsUtilities
 {
+    /// <summary>
+    /// NOT CONTIGUOUS, DONT USE SWITCH
+    /// </summary>
     [Flags]
     public enum CollisionLayer
     {

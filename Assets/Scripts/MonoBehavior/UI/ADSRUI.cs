@@ -5,6 +5,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static UnityEngine.Rendering.DebugUI;
 
 public enum ADSRChangeType
 {
@@ -191,5 +192,21 @@ public class ADSRUI : MonoBehaviour
         return string.Format("{0:0.0}", value);
     }
 
+    public void UIADSRnewRandom()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+
+        var newADSR = ADSREnvelope.RandomADSRfromLimits(ThisADSRLimits[0], ThisADSRLimits[1], ThisADSRLimits[2], ThisADSRLimits[3]);
+        newsynth.filterADSR = newADSR;
+
+        float halfBackgroundLimits = 23;
+
+        Aslider.localPosition = new Vector3(Aslider.localPosition.x, (newADSR.Attack * 0.25f - 0.5f) * 2f * halfBackgroundLimits, Aslider.localPosition.z);
+        Dslider.localPosition = new Vector3(Dslider.localPosition.x, (newADSR.Decay * 0.25f - 0.5f) * 2f * halfBackgroundLimits, Dslider.localPosition.z);
+        Sslider.localPosition = new Vector3(Sslider.localPosition.x, (newADSR.Sustain - 0.5f) * 2f * halfBackgroundLimits, Sslider.localPosition.z);
+        Rslider.localPosition = new Vector3(Rslider.localPosition.x, (newADSR.Release * 0.25f - 0.5f) * 2f * halfBackgroundLimits, Rslider.localPosition.z);
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+    }
 
 }

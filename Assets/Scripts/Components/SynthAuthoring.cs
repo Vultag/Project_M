@@ -1,9 +1,5 @@
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using JetBrains.Annotations;
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
@@ -23,6 +19,16 @@ public struct ADSREnvelope
         Decay = decay;
         Sustain = sustain;
         Release = release;
+    }
+    public static ADSREnvelope RandomADSRfromLimits(float2 AttackLimits, float2 DecayLimits, float2 Sustainimits, float2 ReleaseLimits)
+    {
+        return new ADSREnvelope
+        {
+            Attack = UnityEngine.Random.Range(AttackLimits.x, AttackLimits.y),
+            Decay = UnityEngine.Random.Range(DecayLimits.x, DecayLimits.y),
+            Sustain = UnityEngine.Random.Range(Sustainimits.x+ 0.000001f, Sustainimits.y),
+            Release = UnityEngine.Random.Range(ReleaseLimits.x+0.000001f, ReleaseLimits.y),
+        };
     }
 }
 public struct ADSRlimits
@@ -57,8 +63,8 @@ public struct ADSRlimits
         {
             AttackLimits = new float2(0, 0.05f),
             DecayLimits = new float2(0.05f, 0.2f),
-            Sustainimits = new float2(0f, 0f),
-            ReleaseLimits = new float2(0f, 0.3f),
+            Sustainimits = new float2(0.000001f, 0f),
+            ReleaseLimits = new float2(0.000001f, 0.3f),
         };
     }
     public static ADSRlimits GetWeaponADSRlimits(WeaponType weaponType)
@@ -286,20 +292,29 @@ public struct PlaybackReleasedKeyBufferData : IBufferElementData
 //unsafe
 public struct SynthData
 {
+    public static float3[] OCSvalueMap = new float3[]
+    {
+    new float3(1, 0, 0),
+    new float3(0, 1, 0),
+    new float3(0, 0, 1),
+    };
     // Default values initializer
     public static SynthData CreateDefault(WeaponType weaponType)
     {
         ADSRlimits limits = ADSRlimits.GetWeaponADSRlimits(weaponType);
-        ADSREnvelope adsr = new ADSREnvelope { 
-            Attack = (limits.AttackLimits.x + limits.AttackLimits.y) * 0.5f *4f,
-            Decay = (limits.DecayLimits.x + limits.DecayLimits.y) * 0.5f * 4f,
-            Sustain = (limits.Sustainimits.x + limits.Sustainimits.y) * 0.5f,
-            Release = (limits.ReleaseLimits.x + limits.ReleaseLimits.y) * 0.5f * 4f,
+        ADSREnvelope adsr = ADSREnvelope.RandomADSRfromLimits(limits.AttackLimits, limits.DecayLimits, limits.Sustainimits, limits.ReleaseLimits);
+        adsr = new ADSREnvelope
+        {
+            Attack = adsr.Attack * 4f,
+            Decay = adsr.Decay * 4f,
+            Sustain = adsr.Sustain,
+            Release = adsr.Release * 4f,
         };
+        float3 wave = OCSvalueMap[UnityEngine.Random.Range(0, 2)];
         return new SynthData {
             amplitude = 0.2f,
-            Osc1SinSawSquareFactor = new float3(0.5f, 0, 0),
-            Osc2SinSawSquareFactor = new float3(0.5f, 0, 0),
+            Osc1SinSawSquareFactor = wave,
+            Osc2SinSawSquareFactor = new float3(0, 0, 0),
             Osc1PW = 0.25f,
             Osc2PW = 0.25f,
             ADSR = adsr,

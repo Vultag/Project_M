@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using MusicNamespace;
 using TMPro;
 using Unity.Entities;
@@ -36,12 +37,16 @@ public class EquipmentUIelement : MonoBehaviour
     [HideInInspector]
     public ushort thisEquipmentIdx;
     [HideInInspector]
+    public ushort thisRelativeEquipmentIdx;
+    [HideInInspector]
     public EquipmentCategory thisEquipmentCategory;
 
     [HideInInspector]
     public Entity thisEquipmentE;
     [SerializeField]
     Slider energySlider;
+
+    public GameObject upgradeButtonGB;
 
     ///public BuildingInfo thisBuildingInfo;
     private bool RecordPrepairing = false;
@@ -50,28 +55,121 @@ public class EquipmentUIelement : MonoBehaviour
     /// <summary>
     /// used to delay slider update by 1 frame
     /// </summary>
-    bool delayEneryActivation = true;
+    bool delayEnergyActivation = true;
 
+    /// hapens mid way through runtime 
     void Start()
     {
         uiManager = Object.FindAnyObjectByType<UIManager>();
         thisEquipmentIdx = (ushort)this.gameObject.transform.GetSiblingIndex();
-
     }
 
 
     private void LateUpdate()
     {
         /// Suboptimal but need to delay by 1 frame bc entityManager's thisEquipmentE not ready yet
-        if (delayEneryActivation)
+        if (delayEnergyActivation)
         {
-            delayEneryActivation = false;
+            delayEnergyActivation = false;
             return;
         }
         var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         EquipmentEnergyData energyData = entityManager.GetComponentData<EquipmentEnergyData>(thisEquipmentE);
         energySlider.value = energyData.energyLevel / energyData.maxEnergy;
 
+    }
+
+    public void _upgradeEquipment()
+    {
+        if (thisEquipmentCategory == EquipmentCategory.DrumMachine)
+            return;
+        switch (thisEquipmentCategory)
+        {
+            case EquipmentCategory.Weapon:
+
+                List<SynthUpgrade> synthEquipmentUpgradeOptions  = this.transform.parent.GetComponent<EquipmentUpgradeManager>().synthEquipmentsUpgradeOptions[thisRelativeEquipmentIdx];
+                /// nothing to further upgrade
+                if(synthEquipmentUpgradeOptions.Count<1)
+                {
+                    return;
+                }
+                bool[] synthActivatedFeatues = this.transform.parent.GetComponent<EquipmentUpgradeManager>().synthsActivatedFeatures[thisRelativeEquipmentIdx];
+
+                var upgrade = PopRandomUnordered(synthEquipmentUpgradeOptions, (short)Random.Range(0, synthEquipmentUpgradeOptions.Count));
+                switch (upgrade)
+                {
+                    case SynthUpgrade.SecondOscillator:
+                        uiManager.oscillatorUI.ActivateSecondOSC();
+                        synthActivatedFeatues[0] = true;
+                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.SecondOscillatorFineTune);
+                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.SecondOscillatorSemiTune);
+                        break;
+
+                    case SynthUpgrade.SecondOscillatorSemiTune:
+                        synthActivatedFeatues[1] = true;
+                        uiManager.oscillatorUI.ActivateSemiTones();
+                        break;
+
+                    case SynthUpgrade.SecondOscillatorFineTune:
+                        synthActivatedFeatues[2] = true;
+                        uiManager.oscillatorUI.ActivateDetune();
+                        break;
+
+                    case SynthUpgrade.Filter:
+                        synthActivatedFeatues[3] = true;
+                        uiManager.filterUI.gameObject.SetActive(true);
+                        uiManager.filterUI.InitiateFilter();
+                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.FilterResonance);
+                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.FilterEnveloppe);
+                        break;
+
+                    case SynthUpgrade.FilterResonance:
+                        synthActivatedFeatues[4] = true;
+                        uiManager.filterUI.ActivateFilterResonance();
+                        break;
+
+                    case SynthUpgrade.FilterEnveloppe:
+                        synthActivatedFeatues[5] = true;
+                        uiManager.filterAdsrUI.gameObject.SetActive(true);
+                        uiManager.filterAdsrUI.UIADSRnewRandom();
+                        uiManager.filterUI.ActivateFilterEnveloppe();
+                        break;
+
+                    case SynthUpgrade.Unisson:
+                        synthActivatedFeatues[6] = true;
+                        uiManager.unissonUI.gameObject.SetActive(true);
+                        uiManager.unissonUI.InitiateUnison();
+                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.UnissonSpread);
+                        break;
+
+                    case SynthUpgrade.UnissonSpread:
+                        synthActivatedFeatues[7] = true;
+                        uiManager.unissonUI.ActivateUnisonSpread();
+                        break;
+
+                    case SynthUpgrade.Voices:
+                        synthActivatedFeatues[8] = true;
+                        uiManager.voicesUI.InitializeVoices();
+                        uiManager.voicesUI.gameObject.SetActive(true);
+                        break;
+                }
+
+                break;
+            case EquipmentCategory.DrumMachine:
+                Debug.Log("to do");
+                break;
+        }
+        var remainingUpgradeNum = --this.transform.parent.GetComponent<EquipmentUpgradeManager>().numOfAvailableUpgrades;
+        if (remainingUpgradeNum < 1)
+            upgradeButtonGB.SetActive(false);
+    }
+    public SynthUpgrade PopRandomUnordered(List<SynthUpgrade> upgradePool, short idx)
+    {
+        SynthUpgrade value = upgradePool[idx];
+        int last = upgradePool.Count - 1;
+        upgradePool[idx] = upgradePool[last]; // move last element into the hole
+        upgradePool.RemoveAt(last);      // O(1) remove at end
+        return value;
     }
     public void _selectThisEquipment()
     {

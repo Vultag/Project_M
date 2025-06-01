@@ -17,7 +17,7 @@ public class FliterToShader : MonoBehaviour
 
 
 
-    void Start()
+    void Awake()
     {
         // Create RenderTexture with desired dimensions
         //renderTexture = new RenderTexture(145 * 2, 45 * 2, 24);
@@ -28,6 +28,7 @@ public class FliterToShader : MonoBehaviour
         lowpassShader = Shader.Find("Unlit/LowpassFilterScreenShader");
         highpassShader = Shader.Find("Unlit/HighpassFilterScreenShader");
         bandpassShader = Shader.Find("Unlit/BandpassFilterScreenShader");
+
         activeShader = lowpassShader;
         ModifyFilter(1,0, 0);
         //BakeShaderToTexture();

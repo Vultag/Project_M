@@ -14,10 +14,12 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using Unity.Transforms;
 using Unity.VisualScripting;
+using UnityEditor.Search;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using static UnityEngine.EventSystems.EventTrigger;
+using static UnityEngine.Rendering.DebugUI;
 using static UnityEngine.Rendering.ProbeTouchupVolume;
 using Color = UnityEngine.Color;
 
@@ -142,6 +144,7 @@ public partial struct PhyResolutionSystem : ISystem//, ISystemStartStop
             var shapeB = phyShapesLookUp.GetRefRO(pair.EntityB).ValueRO.shapeType;
 
             // Create dispatch key (sorted or unsorted depending on symmetry)
+            /// Map pair to int and use flat switch (int) -> This gives you true jump - table dispatch, which is often faster. (int shapeCombo = ((int)shapeA << 2) | (int)shapeB;)
             switch ((shapeA, shapeB))
             {
                 case (ShapeType.Circle, ShapeType.Circle):

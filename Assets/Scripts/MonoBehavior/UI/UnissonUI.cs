@@ -1,8 +1,11 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
+using Quaternion = UnityEngine.Quaternion;
+using Random = UnityEngine.Random;
 
 public class UnissonUI : MonoBehaviour, IKnobController
 {
@@ -23,9 +26,8 @@ public class UnissonUI : MonoBehaviour, IKnobController
 
     UIManager IKnobController.uiManager => uiManager;
 
-    void Start()
+    void Awake()
     {
-
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
         unissonVoices = 1;
         Detune = 0.26f;
@@ -45,7 +47,40 @@ public class UnissonUI : MonoBehaviour, IKnobController
         DetuneKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0}{1}", Mathf.RoundToInt(synthData.UnissonDetune).ToString(), " semi");
         SpreadKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.00}", synthData.UnissonSpread);
     }
+    public void InitiateUnison()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
 
+        short state = (short)Random.Range(1,4);
+        var newDetuneFactor = Random.Range(0.25f, 0.75f);
+
+        newsynth.UnissonVoices = state;
+        newsynth.UnissonDetune = Mathf.Lerp(0.02f, 0.5f, 1 - newDetuneFactor) * 100f;
+        unissonVoices = state;
+        Detune = newsynth.UnissonDetune;
+
+        UpdateUI(newsynth);
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+    }
+    public void ReviewActivatedFeatures(bool[] activatedFeatues)
+    {
+        SpreadKnob.parent.gameObject.SetActive(activatedFeatues[7]);
+    }
+    public void ActivateUnisonSpread()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+
+        var newSpreadFactor = Random.Range(0.1f, 1f);
+        newsynth.UnissonSpread = (1 - newSpreadFactor);
+        Spread = newsynth.UnissonSpread;
+
+        UpdateUI(newsynth);
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+
+        SpreadKnob.parent.gameObject.SetActive(true);
+    }
 
     public string UIknobChange(KnobChangeType knobChangeType, float newRot)
     {

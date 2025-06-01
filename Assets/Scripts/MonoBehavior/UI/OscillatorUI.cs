@@ -1,14 +1,13 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Numerics;
 using TMPro;
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
+using Quaternion = UnityEngine.Quaternion;
+using Random = UnityEngine.Random;
+using Vector3 = UnityEngine.Vector3;
 
 
 public class OscillatorUI : MonoBehaviour, IKnobController
@@ -32,9 +31,6 @@ public class OscillatorUI : MonoBehaviour, IKnobController
 
     public UIManager uiManager;
 
-    private float3 OSC1wavetable;
-    private float3 OSC2wavetable;
-
     private EntityManager entityManager;
 
     UIManager IKnobController.uiManager => uiManager;
@@ -42,8 +38,8 @@ public class OscillatorUI : MonoBehaviour, IKnobController
     void Start()
     {
         //uiManager = FindFirstObjectByType<UIManager>().GetComponent<UIManager>();
-        OSC1wavetable = new float3(1,0,0);
-        OSC2wavetable = new float3(1, 0, 0);
+        OCS1wavetable.value = 0;
+        OCS2wavetable.value = 0;
         entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;
     }
 
@@ -87,6 +83,8 @@ public class OscillatorUI : MonoBehaviour, IKnobController
         OCS2pwKnob.GetComponent<KnobMono>().displayedValue = string.Format("{0:0.00}", synthData.Osc2PW);
     }
 
+    /// UpdateUIfeatures()
+
     /// <summary>
     /// Currenty only deal with sin, saw and square tables
     /// </summary>
@@ -101,21 +99,21 @@ public class OscillatorUI : MonoBehaviour, IKnobController
 
                 OCS1pwKnob.transform.parent.gameObject.SetActive(false);
 
-                OSC1wavetable = new float3(1, 0, 0);
+                OCS1wavetable.value = 0;
                 break;
             case 1:
                 newsynth.Osc1SinSawSquareFactor = new float3(0, dropdownItemValue, 0);
 
                 OCS1pwKnob.transform.parent.gameObject.SetActive(false);
 
-                OSC1wavetable = new float3(0, 1, 0);
+                OCS1wavetable.value = 1;
                 break;
             case 2:
                 newsynth.Osc1SinSawSquareFactor = new float3(0, 0, dropdownItemValue);
 
                 OCS1pwKnob.transform.parent.gameObject.SetActive(true);
 
-                OSC1wavetable = new float3(0, 0, 1);
+                OCS1wavetable.value = 2;
                 break;
 
         }
@@ -133,21 +131,21 @@ public class OscillatorUI : MonoBehaviour, IKnobController
 
                 OCS2pwKnob.transform.parent.gameObject.SetActive(false);
 
-                OSC2wavetable = new float3(1, 0, 0);
+                OCS2wavetable.value = 0;
                 break;
             case 1:
                 newsynth.Osc2SinSawSquareFactor = new float3(0, dropdownItemValue, 0);
-           
+
                 OCS2pwKnob.transform.parent.gameObject.SetActive(false);
-                
-                OSC2wavetable = new float3(0, 1, 0);
+
+                OCS2wavetable.value = 1;
                 break;
             case 2:
                 newsynth.Osc2SinSawSquareFactor = new float3(0, 0, dropdownItemValue);
               
                 OCS2pwKnob.transform.parent.gameObject.SetActive(true);
-                
-                OSC2wavetable = new float3(0, 0, 1);
+
+                OCS2wavetable.value = 2;
                 break;
 
         }
@@ -165,8 +163,8 @@ public class OscillatorUI : MonoBehaviour, IKnobController
         {
             case KnobChangeType.OCSmix:
                 //Debug.Log((-Mathf.Sign(-newsynth.Osc1SinSawSquareFactor.x) + 1) * 0.5f);
-                newsynth.Osc1SinSawSquareFactor = OSC1wavetable * factor;
-                newsynth.Osc2SinSawSquareFactor = OSC2wavetable * (1 - factor);
+                newsynth.Osc1SinSawSquareFactor = SynthData.OCSvalueMap[OCS1wavetable.value] * factor;
+                newsynth.Osc2SinSawSquareFactor = SynthData.OCSvalueMap[OCS2wavetable.value] * (1 - factor);
                 displayedValue = string.Format("{0}% - {1}%",Mathf.RoundToInt(((Vector3)newsynth.Osc1SinSawSquareFactor * 100).magnitude),Mathf.RoundToInt(((Vector3)newsynth.Osc2SinSawSquareFactor).magnitude * 100));
                 break;
             case KnobChangeType.OCS1fine:
@@ -204,5 +202,85 @@ public class OscillatorUI : MonoBehaviour, IKnobController
         return displayedValue;
     }
 
+    public void ReviewActivatedFeatures(bool[] activatedFeatures)
+    {
+        OCS2wavetable.gameObject.SetActive(activatedFeatures[0]);
+        MixKnob.parent.gameObject.SetActive(activatedFeatures[0]);
+        OCSsemiKnob.parent.gameObject.SetActive(activatedFeatures[1]);
+        OCS1fineKnob.parent.gameObject.SetActive(activatedFeatures[2]);
+        OCS2fineKnob.parent.gameObject.SetActive(activatedFeatures[2]);
+    }
+
+    public void ActivateSecondOSC()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+        float dropdownItemValue = newsynth.Osc2SinSawSquareFactor.x + newsynth.Osc2SinSawSquareFactor.y + newsynth.Osc2SinSawSquareFactor.z;
+
+        var newWavetrable = Random.Range(0, 3);
+        var newMixFactor = Random.Range(0.25f, 0.75f);
+
+        switch (newWavetrable)
+        {
+            case 0:
+                newsynth.Osc2SinSawSquareFactor = new float3(dropdownItemValue, 0, 0);
+
+                OCS2pwKnob.transform.parent.gameObject.SetActive(false);
+
+                OCS2wavetable.value = 0;
+                break;
+            case 1:
+                newsynth.Osc2SinSawSquareFactor = new float3(0, dropdownItemValue, 0);
+
+                OCS2pwKnob.transform.parent.gameObject.SetActive(false);
+
+                OCS2wavetable.value = 1;
+                break;
+            case 2:
+                newsynth.Osc2SinSawSquareFactor = new float3(0, 0, dropdownItemValue);
+
+                OCS2pwKnob.transform.parent.gameObject.SetActive(true);
+
+                OCS2wavetable.value = 2;
+                break;
+
+        }
+        newsynth.Osc1SinSawSquareFactor = SynthData.OCSvalueMap[OCS1wavetable.value] * newMixFactor;
+        newsynth.Osc2SinSawSquareFactor = SynthData.OCSvalueMap[OCS2wavetable.value] * (1 - newMixFactor);
+        MixKnob.rotation = Quaternion.Euler(0, 0, (newMixFactor - 0.5f) * 2f * 145f);
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+
+        OCS2wavetable.gameObject.SetActive(true);
+        MixKnob.parent.gameObject.SetActive(true);
+    }
+    public void ActivateDetune()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+        
+        float increment = Mathf.Round((Random.Range(0.2f, 0.8f) - 0.5f) * 2f * 30);
+        newsynth.Osc1Fine = increment;
+        newsynth.Osc2Fine = -increment;
+        OCS1fineKnob.rotation = Quaternion.Euler(0, 0, (increment / 30) * 145f);
+        OCS2fineKnob.rotation = Quaternion.Euler(0, 0, (-increment / 30) * 145f);
+           
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+
+        OCS1fineKnob.parent.gameObject.SetActive(true);
+        OCS2fineKnob.parent.gameObject.SetActive(true);
+    }
+    public void ActivateSemiTones()
+    {
+        SynthData newsynth = AudioLayoutStorageHolder.audioLayoutStorage.AuxillarySynthsData[AudioLayoutStorage.activeSynthIdx];
+
+        float increment = Mathf.Round(MathF.Abs((Random.Range(0.2f, 0.8f) * 36) - 36f));
+        newsynth.Osc2Semi = increment;
+        OCSsemiKnob.rotation = Quaternion.Euler(0, 0, 145f - (increment / 36) * 290f);
+
+
+        AudioLayoutStorageHolder.audioLayoutStorage.WriteModifySynth(newsynth);
+
+        OCSsemiKnob.parent.gameObject.SetActive(true);
+    }
 
 }
