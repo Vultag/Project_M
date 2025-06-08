@@ -3,6 +3,7 @@ Shader "Unlit/DrumPadShader"
     Properties
     {
         _MouseInfo ("Mouse radianNormalized_Sign_pressInertia", Vector) = (0, 0, 0, 0)
+        _InstrumentNumber ("InstrumentNumber", Float) = 0
     }
     SubShader
     {
@@ -48,6 +49,7 @@ Shader "Unlit/DrumPadShader"
 
 
             float4 _MouseInfo;
+            float _InstrumentNumber;
 
 
             v2f vert (appdata v)
@@ -61,11 +63,9 @@ Shader "Unlit/DrumPadShader"
             fixed4 frag (v2f i) : SV_Target
             {
                 float2 uv = float2(i.uv.y,i.uv.x);
-                
-                float testNumberOfInstruments = 3;
 
-                float InstrumentProportion = (2/testNumberOfInstruments);
-                float stripeEdgeThickness = 0.005 * sign(testNumberOfInstruments-1);
+                float InstrumentProportion = (2/_InstrumentNumber);
+                float stripeEdgeThickness = 0.005 * sign(_InstrumentNumber-1);
 
                 // Center the UVs around (0,0)
                 float2 centeredUV = uv * 2.0 - 1.0; // Shifts (0,1) UVs to (-1,1)
@@ -81,10 +81,10 @@ Shader "Unlit/DrumPadShader"
                 
                 // normalized radian mouse dir
                 float MouseX = _MouseInfo.x;
-                float MouseXzoneIdx = floor(MouseX*testNumberOfInstruments);
-                float UVXzoneIdx = floor(PolUvs.x*0.5*testNumberOfInstruments);
+                float MouseXzoneIdx = floor(MouseX*_InstrumentNumber);
+                float UVXzoneIdx = floor(PolUvs.x*0.5*_InstrumentNumber);
                 // 1 in mouse zone, 0 on others
-                float mouse = 1-ceil(abs((UVXzoneIdx/testNumberOfInstruments)-(MouseXzoneIdx/testNumberOfInstruments)));
+                float mouse = 1-ceil(abs((UVXzoneIdx/_InstrumentNumber)-(MouseXzoneIdx/_InstrumentNumber)));
 
                 //min useless ?
                 float result = max(0,1-Box(PolUvs,float2(2,0.23),500,500));

@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.Collections;
+using Unity.Entities;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using Random = UnityEngine.Random;
@@ -11,9 +13,9 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField]
     private GameObject LevelingProgressUI;
     [SerializeField]
+    private EquipmentUpgradeManager equipmentUpgradeManager;
+    [SerializeField]
     private GameObject ChoicePanel;
-    [HideInInspector]
-    public short numOfLvlUp = 0;
     ushort totalLvlUpEffectNum = 0;
 
     List<LvlUpEffect> possibleEffectPool;
@@ -29,14 +31,18 @@ public class LevelUpUI : MonoBehaviour
     [SerializeField]
     TextMeshProUGUI tempPick2txt;
 
+    EntityManager entityManager;
+    EntityQuery energyDataQuery;
+    EntityQuery playerDataQuery;
+
     public enum LvlUpEffect
     {
         Gain3EquipmentsUpgrade,
         Effect1,
         Effect2,
         Effect3,
-        Effect4,
-        Effect5,
+        StarshipMobilityUpgrade,
+        EquipmentsEnergyUpgrade,
     }
 
     void Start()
@@ -47,6 +53,11 @@ public class LevelUpUI : MonoBehaviour
         {
             possibleEffectPool.Add((LvlUpEffect)i);
         }
+
+        var world = World.DefaultGameObjectInjectionWorld;
+        entityManager = world.EntityManager;
+        energyDataQuery = entityManager.CreateEntityQuery(typeof(EquipmentEnergyData));
+        playerDataQuery = entityManager.CreateEntityQuery(typeof(PlayerData));
     }
     public void OpenChocies()
     {
@@ -92,29 +103,47 @@ public class LevelUpUI : MonoBehaviour
         switch (effect)
         {
             case LvlUpEffect.Gain3EquipmentsUpgrade:
-                UIManager.Instance.equipmentToolBar.GetComponent<EquipmentUpgradeManager>().numOfAvailableUpgrades += 3;
+                equipmentUpgradeManager.numOfAvailableUpgrades += 3;
                 UIManager.Instance.equipmentToolBar.transform.GetChild(UIManager.Instance.activeEquipmentIdx).GetComponent<EquipmentUIelement>().upgradeButtonGB.SetActive(true);
                 break;
             case LvlUpEffect.Effect1:
-                Debug.Log("effect 1");
+                Debug.Log("TO DO 1");
                 break;
             case LvlUpEffect.Effect2:
-                Debug.Log("effect 2");
+                Debug.Log("TO DO 2");
                 break;
             case LvlUpEffect.Effect3:
-                Debug.Log("effect 3");
+                Debug.Log("TO DO 3");
                 break;
-            case LvlUpEffect.Effect4:
-                Debug.Log("effect 4");
+            case LvlUpEffect.StarshipMobilityUpgrade:
+
+                var playerData = playerDataQuery.GetSingletonRW<PlayerData>();
+                playerData.ValueRW.propellerMaxStrenght *= 1.7f;
+                playerData.ValueRW.rotate_speed *= 1.5f;
+
                 break;
-            case LvlUpEffect.Effect5:
-                Debug.Log("effect 5");
+
+            case LvlUpEffect.EquipmentsEnergyUpgrade:
+
+                var EquipmentEs = energyDataQuery.ToEntityArray(Allocator.Temp);
+                var EquipmentsDatas = energyDataQuery.ToComponentDataArray<EquipmentEnergyData>(Allocator.Temp);
+
+                for (int i = 0; i < EquipmentEs.Length; i++)
+                {
+                    Entity entity = EquipmentEs[i];
+                    EquipmentEnergyData energyData = EquipmentsDatas[i];
+                    energyData.maxEnergy *= 1.3f;
+                    energyData.energyRecoveryRate *= 1.3f;
+                    entityManager.SetComponentData(entity, energyData);
+                }
+
                 break;
         }
         ChoicePanel.SetActive(false);
-        numOfLvlUp--;
+        var numOfLvlUp = --equipmentUpgradeManager.numOfLvlUp;
         if (numOfLvlUp < 1)
             this.gameObject.SetActive(false);
+        equipmentUpgradeManager.UpdateUpgradeCounters();
     }
 
 

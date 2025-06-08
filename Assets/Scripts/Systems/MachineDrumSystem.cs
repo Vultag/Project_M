@@ -108,8 +108,7 @@ public partial class MachineDrumSystem : SystemBase
 
             //Debug.Log(newDMachineData.energyConsumptionRate);
 
-            //store it ?
-            int numberOfInstruments = math.countbits((int)newDMachineData.machineDrumContent)+1;  // Counts the number of set bits
+            int numberOfInstruments = newDMachineData.InstrumentsInAddOrder.Length;  // Counts the number of set bits
 
             float mouseRadian = PhysicsUtilities.DirectionToRadians(mouseDirection);
             float side = Mathf.Sign(mouseRadian);
@@ -118,7 +117,7 @@ public partial class MachineDrumSystem : SystemBase
 
             int PadIdx = Mathf.FloorToInt(normalizedRadian * numberOfInstruments);
 
-            ushort InstrumentsIdx = newDMachineData.InstrumentAddOrder[PadIdx];
+            ushort InstrumentsIdx = newDMachineData.InstrumentsInAddOrder[PadIdx];
 
             //Debug.Log("play");
             //Debug.Log(newDMachineData.InstrumentAddOrder[0]);
@@ -171,7 +170,7 @@ public partial class MachineDrumSystem : SystemBase
 
                 KickColList.Dispose();
                 requests.Add((0, 0));
-                break;
+                break; /// Kick
             case 1:
                 //Debug.Log("SnareDrum");
 
@@ -216,7 +215,7 @@ public partial class MachineDrumSystem : SystemBase
                 float radian = Mathf.Abs(Mathf.Atan2(snareDir.x, snareDir.y) / Mathf.PI + 1) * 0.5f;
 
                 requests.Add((1, radian));
-                break;
+                break; /// Snare
             case 2:
                 //Debug.Log("HighHat");
 
@@ -236,7 +235,31 @@ public partial class MachineDrumSystem : SystemBase
                 HitHatColList.Dispose();
 
                 requests.Add((2, 0));
-                break;
+                break; /// HighHat
+            case 3:
+                Debug.Log("Implement  LowerTom gameplay");
+                requests.Add((InstrumentsIdx, 0));
+                break; /// LowerTom
+            case 4:
+                Debug.Log("Implement  MidTom gameplay");
+                requests.Add((InstrumentsIdx, 0));
+                break; /// MidTom
+            case 5:
+                Debug.Log("Implement  HighTom gameplay");
+                requests.Add((InstrumentsIdx, 0));
+                break; /// HighTom
+            case 6:
+                Debug.Log("Implement Clap gameplay");
+                requests.Add((InstrumentsIdx, 0));
+                break; /// Clap
+            case 7:
+                Debug.Log("Implement Cymbal gameplay");
+                requests.Add((InstrumentsIdx, 0));
+                break; /// Cymbal
+            case 8:
+                Debug.Log("Implement EggShaker gameplay");
+                requests.Add((InstrumentsIdx, 0));
+                break; /// EggShaker
         }
         return requests;
     }

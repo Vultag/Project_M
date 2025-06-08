@@ -5,18 +5,27 @@ using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
-[Flags]
+/// <summary>
+/// [Flags]
+/// </summary>
 public enum MachineDrumContent
 {
-    SnareDrum,
-    BaseDrum,
-    HighHat
+    //None, // 0
+    SnareDrum, 
+    BaseDrum, 
+    HighHat,
+    LowerTom,
+    MidTom,
+    HighTom,
+    Clap,
+    Cymbal,
+    EggShaker,
 
 }
 public struct DrumMachineData : IComponentData
 {
     public ushort equipmentIdx;
-    public MachineDrumContent machineDrumContent;
+    ///public MachineDrumContent machineDrumContent;
     /// fixedArray for instrument add order ?
-    public FixedList32Bytes<byte> InstrumentAddOrder;
+    public FixedList32Bytes<byte> InstrumentsInAddOrder;
 }

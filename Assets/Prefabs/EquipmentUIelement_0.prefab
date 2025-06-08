@@ -831,7 +831,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 0.6664482, b: 0, a: 1}
+  m_Color: {r: 0.9811321, g: 0.9166458, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -894,7 +894,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 9001739692880858251}
         m_TargetAssemblyTypeName: EquipmentUIelement, Assembly-CSharp
-        m_MethodName: _upgradeEquipment
+        m_MethodName: _UIupgradeEquipment
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

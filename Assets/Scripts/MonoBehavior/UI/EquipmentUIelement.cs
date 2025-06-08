@@ -79,87 +79,9 @@ public class EquipmentUIelement : MonoBehaviour
 
     }
 
-    public void _upgradeEquipment()
+    public void _UIupgradeEquipment()
     {
-        if (thisEquipmentCategory == EquipmentCategory.DrumMachine)
-            return;
-        switch (thisEquipmentCategory)
-        {
-            case EquipmentCategory.Weapon:
-
-                List<SynthUpgrade> synthEquipmentUpgradeOptions  = this.transform.parent.GetComponent<EquipmentUpgradeManager>().synthEquipmentsUpgradeOptions[thisRelativeEquipmentIdx];
-                /// nothing to further upgrade
-                if(synthEquipmentUpgradeOptions.Count<1)
-                {
-                    return;
-                }
-                bool[] synthActivatedFeatues = this.transform.parent.GetComponent<EquipmentUpgradeManager>().synthsActivatedFeatures[thisRelativeEquipmentIdx];
-
-                var upgrade = PopRandomUnordered(synthEquipmentUpgradeOptions, (short)Random.Range(0, synthEquipmentUpgradeOptions.Count));
-                switch (upgrade)
-                {
-                    case SynthUpgrade.SecondOscillator:
-                        uiManager.oscillatorUI.ActivateSecondOSC();
-                        synthActivatedFeatues[0] = true;
-                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.SecondOscillatorFineTune);
-                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.SecondOscillatorSemiTune);
-                        break;
-
-                    case SynthUpgrade.SecondOscillatorSemiTune:
-                        synthActivatedFeatues[1] = true;
-                        uiManager.oscillatorUI.ActivateSemiTones();
-                        break;
-
-                    case SynthUpgrade.SecondOscillatorFineTune:
-                        synthActivatedFeatues[2] = true;
-                        uiManager.oscillatorUI.ActivateDetune();
-                        break;
-
-                    case SynthUpgrade.Filter:
-                        synthActivatedFeatues[3] = true;
-                        uiManager.filterUI.gameObject.SetActive(true);
-                        uiManager.filterUI.InitiateFilter();
-                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.FilterResonance);
-                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.FilterEnveloppe);
-                        break;
-
-                    case SynthUpgrade.FilterResonance:
-                        synthActivatedFeatues[4] = true;
-                        uiManager.filterUI.ActivateFilterResonance();
-                        break;
-
-                    case SynthUpgrade.FilterEnveloppe:
-                        synthActivatedFeatues[5] = true;
-                        uiManager.filterAdsrUI.gameObject.SetActive(true);
-                        uiManager.filterAdsrUI.UIADSRnewRandom();
-                        uiManager.filterUI.ActivateFilterEnveloppe();
-                        break;
-
-                    case SynthUpgrade.Unisson:
-                        synthActivatedFeatues[6] = true;
-                        uiManager.unissonUI.gameObject.SetActive(true);
-                        uiManager.unissonUI.InitiateUnison();
-                        synthEquipmentUpgradeOptions.Add(SynthUpgrade.UnissonSpread);
-                        break;
-
-                    case SynthUpgrade.UnissonSpread:
-                        synthActivatedFeatues[7] = true;
-                        uiManager.unissonUI.ActivateUnisonSpread();
-                        break;
-
-                    case SynthUpgrade.Voices:
-                        synthActivatedFeatues[8] = true;
-                        uiManager.voicesUI.InitializeVoices();
-                        uiManager.voicesUI.gameObject.SetActive(true);
-                        break;
-                }
-
-                break;
-            case EquipmentCategory.DrumMachine:
-                Debug.Log("to do");
-                break;
-        }
-        var remainingUpgradeNum = --this.transform.parent.GetComponent<EquipmentUpgradeManager>().numOfAvailableUpgrades;
+        var remainingUpgradeNum = this.transform.parent.GetComponent<EquipmentUpgradeManager>().upgradeEquipment(thisEquipmentCategory, thisEquipmentIdx, thisRelativeEquipmentIdx);
         if (remainingUpgradeNum < 1)
             upgradeButtonGB.SetActive(false);
     }

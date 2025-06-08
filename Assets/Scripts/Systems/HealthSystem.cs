@@ -83,7 +83,8 @@ public partial struct HealthSystem : ISystem
             var newXpData = state.EntityManager.GetComponentData<XpData>(xpDataE);
             newXpData.ThisFrameXP = cumulatedXPfromMonster;
             state.EntityManager.SetComponentData<XpData>(xpDataE, newXpData);
-            UIManager.Instance._UpdateXpPanel(newXpData.currentXP+newXpData.ThisFrameXP, newXpData.XPtillNextLVL);
+
+            //UIManager.Instance._UpdateXpPanel(newXpData.currentXP+newXpData.ThisFrameXP, newXpData.XPtillNextLVL);
         }
 
     }

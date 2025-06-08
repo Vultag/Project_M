@@ -527,7 +527,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 //Debug.Log(newDMachineData.InstrumentAddOrder[0]);
 
                 //store it ?
-                int numberOfInstruments = math.countbits((int)DMachineData.ValueRO.machineDrumContent) + 1;  // Counts the number of set bits
+                int numberOfInstruments = (int)DMachineData.ValueRO.InstrumentsInAddOrder.Length;  // Counts the number of set bits
 
                 float mouseRadian = PhysicsUtilities.DirectionToRadians(mouseDirection);
                 float side = Mathf.Sign(mouseRadian);
@@ -536,7 +536,7 @@ public partial class PlaybackRecordSystem : SystemBase
 
                 int PadIdx = Mathf.FloorToInt(normalizedRadian * numberOfInstruments);
 
-                ushort InstrumentsIdx = DMachineData.ValueRO.InstrumentAddOrder[PadIdx];
+                ushort InstrumentsIdx = DMachineData.ValueRO.InstrumentsInAddOrder[PadIdx];
 
                 accumulator.Add(new PlaybackRecordingPadsBuffer
                 {
@@ -548,7 +548,7 @@ public partial class PlaybackRecordSystem : SystemBase
                 });
 
                 //Debug.Log(newNoteSubBeatIdxOffseted);
-                ActiveDrumPadSheetData.PadCheck[InstrumentsIdx * (16 * 1/*mesure nb*/) + newNoteSubBeatIdxOffseted] = true;
+                ActiveDrumPadSheetData.PadCheck[PadIdx * (16 * 1/*mesure nb*/) + newNoteSubBeatIdxOffseted] = true;
 
             }
 

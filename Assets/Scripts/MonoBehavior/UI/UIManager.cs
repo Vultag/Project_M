@@ -13,6 +13,7 @@ using UnityEngine.EventSystems;
 using System.Linq;
 using Unity.Transforms;
 using Unity.Collections;
+using Random = UnityEngine.Random;
 
 /*
  Break on window dimention change --> TO FIX
@@ -54,10 +55,8 @@ public class UIManager : MonoBehaviour
     public UnissonUI unissonUI;
     [SerializeField]
     public VoicesUI voicesUI;
-    [SerializeField]
-    private GameObject XpProgressGB;
-    [SerializeField]
-    private GameObject XpPanelGB;
+    //[HideInInspector]
+    //public EquipmentUpgradeManager equipmentUpgradeManager;
 
     public UIPlaybacksHolder UIplaybacksHolder;
     public GameObject MusicSheetGB;
@@ -67,8 +66,7 @@ public class UIManager : MonoBehaviour
     private GameObject KeyboardShaderGB;
     [SerializeField]
     private GameObject DrumPadShaderGB;
-    [SerializeField]
-    private DrumPadVFX drumPadVFX;
+    public DrumPadVFX drumPadVFX;
 
     [SerializeField]
     SliderMono simplexSlider;
@@ -136,11 +134,6 @@ public class UIManager : MonoBehaviour
 
         activeUIEquipment = new List<(short, bool, bool)>();
         EquipmentIdxToSynthDataIdx = new List<short>();
-
-        var equipmentUpgradeManager = equipmentToolBar.transform.GetComponent<EquipmentUpgradeManager>();
-        equipmentUpgradeManager.synthEquipmentsUpgradeOptions = new List<List<SynthUpgrade>>();
-        equipmentUpgradeManager.synthsActivatedFeatures = new List<bool[]>();
-        EquipmentUpgradeManager.numOfPossibleUpgrades =  (ushort)(Enum.GetValues(typeof(SynthUpgrade)).Length);
 
         ///ConstructUIsurface();
 
@@ -298,10 +291,18 @@ public class UIManager : MonoBehaviour
             { return; }
         }
 
+        /// disable upgrade on previous
+        if (activeEquipmentIdx != -1)
+            equipmentToolBar.transform.GetChild(activeEquipmentIdx).GetComponent<EquipmentUIelement>().upgradeButtonGB.SetActive(false);
+        /// activate on selected if available
+        equipmentToolBar.transform.GetChild(equipmentIndex).GetComponent<EquipmentUIelement>().upgradeButtonGB.SetActive(equipmentToolBar.GetComponent<EquipmentUpgradeManager>().numOfAvailableUpgrades > 0);
+
+
         activeEquipmentIdx = (short)equipmentIndex;
 
         DrumPadShaderGB.SetActive(true);
         SynthEditPanel.SetActive(false);
+
         /// activate Rec button GB for new synth and deactivate for the old one
         if (activeUISynthIdx != -1)
         {
@@ -333,7 +334,7 @@ public class UIManager : MonoBehaviour
         synthUI.GetComponent<EquipmentUIelement>().thisEquipmentIdx = NumOfEquipments;
         synthUI.GetComponent<EquipmentUIelement>().thisRelativeEquipmentIdx = (ushort)NumOfSynths;
         equipmentToolBar.GetComponent<EquipmentUpgradeManager>().synthEquipmentsUpgradeOptions.Add(EquipmentUpgradeManager.BaseSynthUpgradeOption.ToList());
-        equipmentToolBar.GetComponent<EquipmentUpgradeManager>().synthsActivatedFeatures.Add(new bool[EquipmentUpgradeManager.numOfPossibleUpgrades]);
+        equipmentToolBar.GetComponent<EquipmentUpgradeManager>().synthsActivatedFeatures.Add(new bool[EquipmentUpgradeManager.totalNumOfSynthUpgrades]);
         synthUI.GetComponentInChildren<TextMeshProUGUI>().text = "Synth " + (NumOfSynths + 1);
 
         NumOfSynths++;
@@ -367,8 +368,12 @@ public class UIManager : MonoBehaviour
         var synthUI = equipmentToolBar.transform.GetChild(NumOfEquipments).gameObject;
         synthUI.SetActive(true);
         synthUI.GetComponent<EquipmentUIelement>().thisEquipmentIdx = NumOfEquipments;
+
+        var drumMachineUpgradeOptions = equipmentToolBar.GetComponent<EquipmentUpgradeManager>().drumMachineUpgradeOptions;
+        MachineDrumContent randomMachineDrumContent = drumMachineUpgradeOptions[Random.Range(0, drumMachineUpgradeOptions.Count)];
+        drumMachineUpgradeOptions.Remove(randomMachineDrumContent);
+        ////equipmentToolBar.GetComponent<EquipmentUpgradeManager>().drumMachineActivatedFeatures.Add(new bool[EquipmentUpgradeManager.totalNumOfDMinstruments]);
         synthUI.GetComponent<EquipmentUIelement>().thisRelativeEquipmentIdx = (ushort)NumOfDMachines;
-        Debug.Log("add DM upgraded options");
         ///synthUI.GetComponent<EquipmentUIelement>().transform.parent.GetComponent<EquipmentUpgradeManager>().synthEquipmentsUpgradeOptions.Add(EquipmentUpgradeManager.BaseSynthUpgradeOption.ToList());
 
         synthUI.GetComponentInChildren<TextMeshProUGUI>().text = "Drum Machine " + (NumOfDMachines + 1);
@@ -383,7 +388,7 @@ public class UIManager : MonoBehaviour
 
         //SynthData newSynthData = SynthData.CreateDefault(weaponType);
 
-        audioManager.AddDrumMachine(NumOfEquipments);
+        audioManager.AddDrumMachine(NumOfEquipments, randomMachineDrumContent);
 
         //if (NumOfEquipments == 1)
         //{
@@ -857,20 +862,6 @@ public class UIManager : MonoBehaviour
 
 
     #endregion
-
-    public void _UpdateXpPanel(float newCurrentXP,float XPtillNextLVL)
-    {
-        XpProgressGB.transform.GetChild(1).GetComponent<Slider>().value = newCurrentXP / XPtillNextLVL;
-    }
-    public void _UpdateXpPanel(float currentXP,float XPtillNextLVL, ushort LVL)
-    {
-        XpProgressGB.transform.GetChild(0).GetComponent<TextMeshProUGUI>().text = "Level : " + LVL;
-        XpProgressGB.transform.GetChild(1).GetComponent<Slider>().value = currentXP / XPtillNextLVL;
-        XpPanelGB.SetActive(true);
-        XpPanelGB.GetComponent<LevelUpUI>().numOfLvlUp++;
-    }
-
-
 
     //void ConstructUIsurface()
     //{

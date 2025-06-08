@@ -42,7 +42,7 @@ public partial struct XpSystem : ISystem
             newXpData.XPtillNextLVL *= 1.25f;
             newXpData.LVL++;
             //Debug.Log("lvl up !");
-            UIManager.Instance._UpdateXpPanel(cumulatedXP, newXpData.XPtillNextLVL, newXpData.LVL);
+            //UIManager.Instance.equipmentUpgradeManager._UpdateXpPanel(cumulatedXP, newXpData.XPtillNextLVL, newXpData.LVL);
         }
         newXpData.currentXP = cumulatedXP;
         newXpData.ThisFrameXP = 0;

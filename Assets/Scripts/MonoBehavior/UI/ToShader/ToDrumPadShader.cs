@@ -27,6 +27,7 @@ public class ToDrumPadShader : MonoBehaviour
         entityManager = world.EntityManager;
         Controlled_Weapon_query = entityManager.CreateEntityQuery(typeof(ControledWeaponTag));
         CentralizedInputDataQuery = entityManager.CreateEntityQuery(typeof(CentralizedInputData));
+        UpdateInstrumentCount(1);
     }
     private void LateUpdate()
     {
@@ -61,5 +62,12 @@ public class ToDrumPadShader : MonoBehaviour
         //Debug.Log((mouseNormRadian + 1) * 0.5f);
 
         DrumPadMaterial.SetVector("_MouseInfo", new Vector4((mouseNormRadian+1)*0.5f, Mathf.Sign(mouseNormRadian), pressInertia, 0));
+
+
+    }
+
+    public void UpdateInstrumentCount(int instrumentnumber)
+    {
+        DrumPadMaterial.SetFloat("_InstrumentNumber", instrumentnumber);
     }
 }

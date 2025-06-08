@@ -6,6 +6,7 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 public class AudioManager : MonoBehaviour
 {
@@ -456,9 +457,9 @@ public class AudioManager : MonoBehaviour
     /// <summary>
     ///  INSTANCIATING WITH ENTITY MANAGER -> REWORK
     /// </summary>
-    public void AddDrumMachine(int NumOfEquipments)
+    public void AddDrumMachine(int NumOfEquipments, MachineDrumContent startingMachineDrumContent)
     {
-        
+
         var ecb = beginSimulationECBSystem.CreateCommandBuffer();
 
         Entity player_entity = Player_query.GetSingletonEntity();
@@ -523,11 +524,13 @@ public class AudioManager : MonoBehaviour
             energyConsumptionRate = 10f,
             energyRecoveryRate = 5f,
         });
+        var drumMachineDataInstrumentAddOrder = new FixedList32Bytes<byte>();
+        drumMachineDataInstrumentAddOrder.Add((byte)startingMachineDrumContent);
         ecb.AddComponent<DrumMachineData>(new_DMachine, new DrumMachineData
         {
             equipmentIdx = (ushort)NumOfEquipments,
-            machineDrumContent = MachineDrumContent.SnareDrum | MachineDrumContent.BaseDrum | MachineDrumContent.HighHat,
-            InstrumentAddOrder = new FixedList32Bytes<byte> { 2,1,0 },
+            //machineDrumContent = (MachineDrumContent)startingMachineDrumContent,
+            InstrumentsInAddOrder = drumMachineDataInstrumentAddOrder,
         });
         UIManager.Instance.equipmentToolBar.transform.GetChild(NumOfEquipments-1).GetComponent<EquipmentUIelement>().thisEquipmentE = new_DMachine;
 

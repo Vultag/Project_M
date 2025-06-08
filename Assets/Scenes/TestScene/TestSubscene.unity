@@ -1708,9 +1708,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   HP: 0
-  propellerMaxStrenght: 0.012
+  propellerMaxStrenght: 0.004
   propellerBackpedalRelativeStrenght: 0.25
-  rotate_speed: 0.006
+  rotate_speed: 0.00175
   MainCanon: {fileID: 4375985069861810925}
   WeaponPrefab: {fileID: 4375985068073297386, guid: 50ea754e5d2005047b35cc12dddc1187, type: 3}
   DrumMachinePrefab: {fileID: 4897024808156815019, guid: 6f62320945360f44fa4ea51503e5a11a, type: 3}
@@ -1764,7 +1764,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   active: 1
-  SpawnRate: 3
+  SpawnRate: 1
   SpawnRangeRadius: 10
   MonsterPrefab: {fileID: 3505441550876786229, guid: e4dd871981676b24bbfe2b95dab246f6, type: 3}
 --- !u!1001 &1788238682
