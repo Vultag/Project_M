@@ -1,12 +1,10 @@
-using System.Collections;
-using System.Collections.Generic;
+
 using MusicNamespace;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using static UnityEngine.EventSystems.EventTrigger;
 
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]

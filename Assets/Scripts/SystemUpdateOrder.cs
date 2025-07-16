@@ -27,6 +27,10 @@ public partial struct ApplyPhysicsSystem : ISystem { }
 public partial struct TreeInsersionSystem : ISystem { }
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
+[UpdateAfter(typeof(TreeInsersionSystem))]
+public partial struct FlowfieldSystem : ISystem { }
+
+[UpdateInGroup(typeof(GameSimulationSystemGroup))]
 public partial struct ProjectileSystem : ISystem { }
 
 

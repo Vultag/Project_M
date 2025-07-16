@@ -1,27 +1,10 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Globalization;
-using System.Linq;
-using System.Xml.Linq;
-using NUnit.Framework;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Entities.UniversalDelegates;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Transforms;
-using Unity.VisualScripting;
-using UnityEditor.Search;
 using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.Scripting;
-using static UnityEngine.EventSystems.EventTrigger;
-using static UnityEngine.Rendering.DebugUI;
-using static UnityEngine.Rendering.ProbeTouchupVolume;
-using Color = UnityEngine.Color;
 
 //public enum CollisionPairType
 //{

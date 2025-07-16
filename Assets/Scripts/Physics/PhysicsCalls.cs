@@ -10,7 +10,6 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEngine.Rendering.ProbeTouchupVolume;
 
 
 public struct PhysicsCalls
@@ -328,6 +327,155 @@ public struct PhysicsCalls
         comparequeue.Dispose();
         return false;
     }
+    public static bool IsShapeOverlaping(float2 position, float rotation, BoxShapeData boxData, AABB boxAABB, PhysicsUtilities.CollisionLayer layer,
+    in EntityManager entityManager)
+    {
+        ///copying entire tree ?? OPTI
+        DynamicAABBTree AABBtree = (layer & PhysicsUtilities.CollisionLayer.StaticObstacleLayer) == PhysicsUtilities.CollisionLayer.StaticObstacleLayer ? TreeInsersionSystem.StaticBodiesAABBtree : TreeInsersionSystem.DynamicBodiesAABBtree;
+        int treeNodeCount = AABBtree.nodes.Length;
+
+        NativeQueue<int> comparequeue = new NativeQueue<int>(Allocator.Temp);
+
+        comparequeue.Enqueue(AABBtree.rootIndex);
+        /*if there is a only a single body to check*/
+        if (treeNodeCount <= 1)
+        {
+            if (treeNodeCount == 1)
+            {
+                AABBTreeNode node = AABBtree.nodes[comparequeue.Dequeue()];
+                if (PhysicsUtilities.Proximity(AABBtree.nodes[0].box, boxAABB) < 0 && (AABBtree.nodes[0].layerMask & layer) != 0)
+                {
+                    var shape = entityManager.GetComponentData<ShapeData>(AABBtree.nodes[0].entity);
+                    switch (shape.shapeType)
+                    {
+                        case ShapeType.Circle:
+                            if (NarrowPhaseCheck(shape.Position,
+                              entityManager.GetComponentData<CircleShapeData>(AABBtree.nodes[0].entity),
+                              position, rotation, boxData))
+                            {
+                                comparequeue.Dispose();
+                                return true;
+                            }
+                            break;
+                        case ShapeType.Box:
+                            if (NarrowPhaseCheck(position, rotation, boxData,
+                                shape.Position, shape.Rotation,
+                                entityManager.GetComponentData<BoxShapeData>(AABBtree.nodes[0].entity)
+                                ))
+                            {
+                                comparequeue.Dispose();
+                                return true;
+                            }
+                            break;
+                    }
+
+
+                }
+            }
+            else
+            {
+                comparequeue.Dispose();
+                return false;
+            }
+
+        }
+        /*Gather all the intersecting AABB in unordered list*/
+        while (comparequeue.Count > 0)
+        {
+
+            AABBTreeNode node = AABBtree.nodes[comparequeue.Dequeue()];
+
+            if (node.isLeaf == false)
+            {
+                //if (node.LeftChild == -1 || node.RightChild == -1)
+                //    Debug.Log("mmm");
+
+                float nodeA = node.LeftChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.LeftChild].box, boxAABB) : -1;
+                float nodeB = node.RightChild != -1 ? PhysicsUtilities.Proximity(AABBtree.nodes[node.RightChild].box, boxAABB) : -1;
+
+                //Debug.Log(nodeA);
+                //Debug.Log(nodeB);
+                //if (nodeA == 1 && nodeB == 1)
+                //{
+                //    Debug.Log(nodeA);
+                //    Debug.Log(nodeB);
+                //}
+
+                if (nodeA > 0)
+                {
+                    if (AABBtree.nodes[node.LeftChild].isLeaf == true)
+                    {
+                        if ((AABBtree.nodes[node.LeftChild].layerMask & layer) != 0)
+                        {
+                            var shape = entityManager.GetComponentData<ShapeData>(AABBtree.nodes[node.LeftChild].entity);
+                            switch (shape.shapeType)
+                            {
+                                case ShapeType.Circle:
+                                    if (NarrowPhaseCheck(shape.Position,
+                                      entityManager.GetComponentData<CircleShapeData>(AABBtree.nodes[node.LeftChild].entity),
+                                      position, rotation, boxData))
+                                    {
+                                        comparequeue.Dispose();
+                                        return true;
+                                    }
+                                    break;
+                                case ShapeType.Box:
+
+                                    if (NarrowPhaseCheck(position, rotation, boxData,
+                                        shape.Position, shape.Rotation,
+                                        entityManager.GetComponentData<BoxShapeData>(AABBtree.nodes[node.LeftChild].entity)
+                                        ))
+                                    {
+                                        comparequeue.Dispose();
+                                        return true;
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                        comparequeue.Enqueue(node.LeftChild);
+                }
+                if (nodeB > 0)
+                {
+                    if (AABBtree.nodes[node.RightChild].isLeaf == true)
+                    {
+                        if ((AABBtree.nodes[node.RightChild].layerMask & layer) != 0)
+                        {
+                            var shape = entityManager.GetComponentData<ShapeData>(AABBtree.nodes[node.RightChild].entity);
+                            switch (shape.shapeType)
+                            {
+                                case ShapeType.Circle:
+                                    if (NarrowPhaseCheck(shape.Position,
+                                      entityManager.GetComponentData<CircleShapeData>(AABBtree.nodes[node.RightChild].entity),
+                                      position, rotation, boxData))
+                                    {
+                                        comparequeue.Dispose();
+                                        return true;
+                                    }
+                                    break;
+                                case ShapeType.Box:
+                                    if (NarrowPhaseCheck(position, rotation, boxData,
+                                        shape.Position, shape.Rotation,
+                                        entityManager.GetComponentData<BoxShapeData>(AABBtree.nodes[node.RightChild].entity)
+                                        ))
+                                    {
+                                        comparequeue.Dispose();
+                                        return true;
+                                    }
+                                    break;
+                            }
+                        }
+                    }
+                    else
+                        comparequeue.Enqueue(node.RightChild);
+                }
+            }
+        }
+
+        comparequeue.Dispose();
+        return false;
+    }
 
     private static bool NarrowPhaseCheck(float2 posA, CircleShapeData circleShapeA, float2 posB, CircleShapeData circleShapeB)
     {
@@ -342,6 +490,7 @@ public struct PhysicsCalls
     }
     private static bool NarrowPhaseCheck(float2 posA, CircleShapeData circleShapeA, float2 posB, float rotB, BoxShapeData boxShapeB)
     {
+
         // Compute rotation matrix from rotation angle
         float2x2 rotMatrix = PhysicsUtilities.RotationMatrix(rotB * Mathf.Deg2Rad);
         float2x2 invRotMatrix = math.transpose(rotMatrix);
@@ -360,7 +509,74 @@ public struct PhysicsCalls
 
         if (distSq >= radius * radius)
             return false;
+
         return true;
+    }
+    private static bool NarrowPhaseCheck(float2 posA, float rotA, BoxShapeData boxShapeA,float2 posB, float rotB, BoxShapeData boxShapeB)
+    {
+        float2x2 rotA_Mat = PhysicsUtilities.RotationMatrix(rotA * Mathf.Deg2Rad);
+        float2x2 rotB_Mat = PhysicsUtilities.RotationMatrix(rotB * Mathf.Deg2Rad);
+
+        float2 halfA = boxShapeA.dimentions * 0.5f;
+        float2 halfB = boxShapeB.dimentions * 0.5f;
+
+        float2 delta = posA - posB;
+
+        // Local axes in world space
+        float2 axisA_X = rotA_Mat.c0;
+        float2 axisA_Y = rotA_Mat.c1;
+        float2 axisB_X = rotB_Mat.c0;
+        float2 axisB_Y = rotB_Mat.c1;
+
+        // 1. Test axis A.X
+        {
+            float2 axis = axisA_X;
+            float projectionA = halfA.x;
+            float projectionB =
+                math.abs(math.dot(axis, axisB_X)) * halfB.x +
+                math.abs(math.dot(axis, axisB_Y)) * halfB.y;
+            float distance = math.abs(math.dot(delta, axis));
+            if (distance > projectionA + projectionB)
+                return false;
+        }
+
+        // 2. Test axis A.Y
+        {
+            float2 axis = axisA_Y;
+            float projectionA = halfA.y;
+            float projectionB =
+                math.abs(math.dot(axis, axisB_X)) * halfB.x +
+                math.abs(math.dot(axis, axisB_Y)) * halfB.y;
+            float distance = math.abs(math.dot(delta, axis));
+            if (distance > projectionA + projectionB)
+                return false;
+        }
+
+        // 3. Test axis B.X
+        {
+            float2 axis = axisB_X;
+            float projectionA =
+                math.abs(math.dot(axis, axisA_X)) * halfA.x +
+                math.abs(math.dot(axis, axisA_Y)) * halfA.y;
+            float projectionB = halfB.x;
+            float distance = math.abs(math.dot(delta, axis));
+            if (distance > projectionA + projectionB)
+                return false;
+        }
+
+        // 4. Test axis B.Y
+        {
+            float2 axis = axisB_Y;
+            float projectionA =
+                math.abs(math.dot(axis, axisA_X)) * halfA.x +
+                math.abs(math.dot(axis, axisA_Y)) * halfA.y;
+            float projectionB = halfB.y;
+            float distance = math.abs(math.dot(delta, axis));
+            if (distance > projectionA + projectionB)
+                return false;
+        }
+
+        return true; // Overlaps on all axes
     }
 
 }
