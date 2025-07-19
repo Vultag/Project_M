@@ -1,10 +1,13 @@
 using Unity.Burst;
 using Unity.Entities;
+using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 
+[UpdateInGroup(typeof(GameSimulationSystemGroup))]
+[UpdateBefore(typeof(HealthSystem))]
 [BurstCompile]
 public partial struct ProjectileSystem : ISystem
 {
@@ -22,14 +25,13 @@ public partial struct ProjectileSystem : ISystem
 
         foreach (var (projectileData,shape,trans,entity) in SystemAPI.Query<RefRW<ProjectileInstanceData>,RefRW<ShapeData>, RefRW<LocalTransform>>().WithEntityAccess())
         {
-            shape.ValueRW.PreviousPosition = shape.ValueRO.Position;
-            shape.ValueRW.Position += (Vector2)(projectileData.ValueRO.direction * projectileData.ValueRO.speed);
-            trans.ValueRW.Position.xy = shape.ValueRO.Position;
+            trans.ValueRW.Position += new float3(projectileData.ValueRO.direction * projectileData.ValueRO.speed,0);
+            shape.ValueRW.Position = trans.ValueRO.Position.xy;
             //body.ValueRW.Velocity = body.ValueRO.Velocity.normalized * projectileData.ValueRO.speed;
             projectileData.ValueRW.remainingLifeTime -= SystemAPI.Time.DeltaTime;
-            if(projectileData.ValueRO.remainingLifeTime < 0)
+            if (projectileData.ValueRO.remainingLifeTime < 0)
             {
-                PhysicsCalls.DestroyPhysicsEntity(ecb,entity);
+                PhysicsCalls.DestroyPhysicsEntity(ecb, entity);
             }
         }
     }

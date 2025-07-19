@@ -50,7 +50,9 @@ public struct ShapeData : IComponentData
     public float PreviousRotation;
     public PhysicsUtilities.CollisionLayer collisionLayer;
     public ShapeType shapeType;
-    public bool HasDynamics;
+
+    public PhysicsUtilities.CollisionLayer dynamicsLayer;
+
     public bool IsTrigger;
 
 }
@@ -70,7 +72,6 @@ public class PhyBodyAuthoring : MonoBehaviour
     [SerializeField,HideInInspector]
     public float radius;
 
-    public bool HasDynamics = true;
     public bool IsStaticBody = false;
     [SerializeField, HideInInspector]
     public float Mass = 1;
@@ -83,6 +84,7 @@ public class PhyBodyAuthoring : MonoBehaviour
 
 
     public PhysicsUtilities.CollisionLayer collisionLayer;
+    public PhysicsUtilities.CollisionLayer dynamicsLayer;
 
     private void OnDrawGizmos()
     {
@@ -143,7 +145,7 @@ public class PhyBodyAuthoring : MonoBehaviour
                 collisionLayer = authoring.collisionLayer,
                 shapeType = authoring.shapeType,
                 Rotation = authoring.transform.eulerAngles.z,
-                HasDynamics = authoring.HasDynamics,
+                dynamicsLayer = authoring.dynamicsLayer,
                 IsTrigger = authoring.IsTrigger
             });
 
@@ -165,7 +167,7 @@ public class PhyBodyAuthoring : MonoBehaviour
                     break;
 
             }
-            if (authoring.HasDynamics)
+            if (authoring.dynamicsLayer != 0)
             {
                 //Debug.Log(inertia);
                 AddComponent(entity, new PhyBodyData

@@ -25,12 +25,27 @@ public partial class PlayerSystem : SystemBase
 
     private EntityQuery CentralizedInputDataQuery;
 
+    private Entity damageEventEntity;
+
     protected override void OnCreate()
     {
         //input_actions = new PlayerControls();
         modeSwitchBaseCD = 7;
         modeSwitchCD = modeSwitchBaseCD;
         CentralizedInputDataQuery = EntityManager.CreateEntityQuery(typeof(CentralizedInputData));
+
+        // Check if the GlobalDamageEvent entity already exists
+        if (SystemAPI.HasSingleton<GlobalDamageEvent>())
+        {
+            // If it exists, get the singleton entity
+            damageEventEntity = SystemAPI.GetSingletonEntity<GlobalDamageEvent>();
+        }
+        else
+        {
+            // If not, create the entity and add the GlobalDamageEvent buffer
+            damageEventEntity = World.EntityManager.CreateEntity();
+            World.EntityManager.AddBuffer<GlobalDamageEvent>(damageEventEntity); // Add the buffer to the new entity
+        }
     }
     protected override void OnStartRunning()
     {
@@ -68,6 +83,7 @@ public partial class PlayerSystem : SystemBase
 
     protected override void OnUpdate()
     {
+        var damageBuffer = SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity);
 
         //var moveDirection = InputManager.playerMouvement;
 
@@ -75,7 +91,7 @@ public partial class PlayerSystem : SystemBase
 
         ///test physics move
         ///SET IN A INPUT EVENT ?
-        foreach (var (player_data, player_phy,trans) in SystemAPI.Query<RefRW<PlayerData>, RefRW<PhyBodyData>, RefRO<LocalTransform>>())
+        foreach (var (player_data, player_phy, player_shape,player_circle, trans,entity) in SystemAPI.Query<RefRW<PlayerData>, RefRW<PhyBodyData>, RefRO<ShapeData>,RefRO<CircleShapeData>, RefRO<LocalTransform>>().WithEntityAccess())
         {
 
             var inputs = EntityManager.GetComponentData<CentralizedInputData>(CentralizedInputDataQuery.GetSingletonEntity());
@@ -99,6 +115,17 @@ public partial class PlayerSystem : SystemBase
             newPropellerTrans.Scale = propellerCurrentScale;
 
             EntityManager.SetComponentData<LocalTransform>(player_data.ValueRO.Propeller, newPropellerTrans);
+
+            /// Moster damage
+            var monsterOverlappList = PhysicsCalls.CircleOverlapNode(player_shape.ValueRO.Position, player_circle.ValueRO.radius, PhysicsUtilities.CollisionLayer.MonsterLayer);
+            for (int i = 0; i < monsterOverlappList.Length; i++)
+            {
+                damageBuffer.Add(new GlobalDamageEvent
+                {
+                    Target = entity,
+                    DamageValue = 0.5f * SystemAPI.Time.DeltaTime
+                });
+            }
 
         }
 

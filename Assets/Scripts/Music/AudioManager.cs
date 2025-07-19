@@ -180,6 +180,18 @@ public class AudioManager : MonoBehaviour
 
     }
 
+    private void LateUpdate()
+    {
+        /// OPTI ?
+        /// player death trigger for mono world
+        if (Player_query.IsEmpty)
+        {
+            InputManager.playerControls.PlayerMap.Disable();
+            UIManager.Instance.uiInput.UI_Controls.Disable();
+            UIManager.Instance.canvas.gameObject.SetActive(false);
+            UIManager.Instance.PlayerHealthBar.SetActive(false);
+        }
+    }
     public void SelectSynth(ushort equipmentIndex, short synthIdx)
     {
 
@@ -289,6 +301,7 @@ public class AudioManager : MonoBehaviour
         var start_weapon = entityManager.GetComponentData<PlayerData>(player_entity).MainCanon;
 
         Entity new_weapon = entityManager.Instantiate(entityManager.GetComponentData<PlayerData>(player_entity).WeaponPrefab);
+        entityManager.GetBuffer<LinkedEntityGroup>(player_entity).Add(new_weapon);
         //Entity new_weapon = start_weapon;
 
         NativeArray<Entity> equipmentEntities = new NativeArray<Entity>(NumOfEquipments, Allocator.Persistent);
@@ -465,6 +478,7 @@ public class AudioManager : MonoBehaviour
         Entity player_entity = Player_query.GetSingletonEntity();
         var playerData = entityManager.GetComponentData<PlayerData>(player_entity);
         Entity new_DMachine = entityManager.Instantiate(entityManager.GetComponentData<PlayerData>(player_entity).DrumMachinePrefab);
+        entityManager.GetBuffer<LinkedEntityGroup>(player_entity).Add(new_DMachine);
         NativeArray<Entity> equipmentEntities = new NativeArray<Entity>(NumOfEquipments, Allocator.Persistent);
         for (int i = 0; i < AudioManager.AuxillaryEquipmentEntities.Length; i++)
         {

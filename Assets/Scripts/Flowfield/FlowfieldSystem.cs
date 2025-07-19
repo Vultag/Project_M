@@ -55,7 +55,7 @@ public partial struct FlowfieldSystem : ISystem
         RequiresRebuild = true;
         FlowfieldQuery = state.EntityManager.CreateEntityQuery(typeof(FlowfieldTag));
         TargetQuery = state.EntityManager.CreateEntityQuery(typeof(PlayerData));
-        state.RequireForUpdate<FlowfieldTag>();
+        state.RequireForUpdate<PlayerData>();
     }
 
     public void OnDestroy(ref SystemState state)

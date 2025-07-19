@@ -67,17 +67,6 @@ public partial struct PhyResolutionSystem : ISystem//, ISystemStartStop
 
     }
 
-
-    //void ISystemStartStop.OnStartRunning(ref SystemState state)
-    //{
-    //}
-
-
-
-    //void ISystemStartStop.OnStopRunning(ref SystemState state)
-    //{
-    //}
-
     public void OnUpdate(ref SystemState state)
     {
         //return;
@@ -265,14 +254,15 @@ public partial struct CircleVsCircleCollisionResolutionJob : IJobParallelFor//IJ
         float penetration = radii - dist;
 
         //bool TriggerEvent = newvelshapeA.ValueRO.IsTrigger | newvelshapeB.ValueRO.IsTrigger;
-        bool Dynamics = shapeA.ValueRO.HasDynamics & shapeB.ValueRO.HasDynamics;
+        //bool Dynamics = shapeA.ValueRO.HasDynamics & shapeB.ValueRO.HasDynamics;
+        bool Dynamics = (shapeA.ValueRO.collisionLayer & shapeB.ValueRO.dynamicsLayer)!=0;
 
         /// Trigger event collecting
         /// SOME UNINTENDED EVENT MIGHT BE ADDED WHEN TWO TRIGGER -> FIX
         if (shapeA.ValueRO.IsTrigger)
         {
             ///(Add() returns true if the element was not already present!)
-            if (!processedTriggerPairs.Add(ColPair[i]))
+            if (processedTriggerPairs.Add(ColPair[i]))
             {
                 triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityA, ReciverEntity = entityB });
             }
@@ -281,7 +271,7 @@ public partial struct CircleVsCircleCollisionResolutionJob : IJobParallelFor//IJ
         {
             var col = new CollisionPair { EntityA = ColPair[i].EntityB, EntityB = ColPair[i].EntityA };
             ///(Add() returns true if the element was not already present!)
-            if (!processedTriggerPairs.Add(col))
+            if (processedTriggerPairs.Add(col))
             {
                 triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityB, ReciverEntity = entityA });
             }
@@ -391,7 +381,7 @@ public partial struct CircleVsBoxImpulseResolutionJob : IJobParallelFor
         if (shapeA.ValueRO.IsTrigger)
         {
             ///(Add() returns true if the element was not already present!)
-            if (!processedTriggerPairs.Add(ColPair[index]))
+            if (processedTriggerPairs.Add(ColPair[index]))
             {
                 triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityA, ReciverEntity = entityB });
             }
@@ -400,14 +390,18 @@ public partial struct CircleVsBoxImpulseResolutionJob : IJobParallelFor
         {
             var col = new CollisionPair { EntityA = ColPair[index].EntityB, EntityB = ColPair[index].EntityA };
             ///(Add() returns true if the element was not already present!)
-            if (!processedTriggerPairs.Add(col))
+            if (processedTriggerPairs.Add(col))
             {
                 triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityB, ReciverEntity = entityA });
             }
         }
 
-        if (!shapeA.ValueRO.HasDynamics || !shapeB.ValueRO.HasDynamics)
+        //if (!shapeA.ValueRO.HasDynamics || !shapeB.ValueRO.HasDynamics)
+        //    return;
+        if ((shapeA.ValueRO.collisionLayer & shapeB.ValueRO.dynamicsLayer) == 0)
+        {
             return;
+        }
 
         ///https://youtu.be/VbvdoLQQUPs
 
@@ -556,7 +550,7 @@ public partial struct BoxVsBoxImpulseResolutionJob : IJobParallelFor
         if (shapeA.ValueRO.IsTrigger)
         {
             ///(Add() returns true if the element was not already present!)
-            if (!processedTriggerPairs.Add(ColPair[index]))
+            if (processedTriggerPairs.Add(ColPair[index]))
             {
                 triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityA, ReciverEntity = entityB });
             }
@@ -565,13 +559,13 @@ public partial struct BoxVsBoxImpulseResolutionJob : IJobParallelFor
         {
             var col = new CollisionPair { EntityA = ColPair[index].EntityB, EntityB = ColPair[index].EntityA };
             ///(Add() returns true if the element was not already present!)
-            if (!processedTriggerPairs.Add(col))
+            if (processedTriggerPairs.Add(col))
             {
                 triggerEvents.AddNoResize(new TriggerEvent { EmitterEntity = entityB, ReciverEntity = entityA });
             }
         }
 
-        if (!shapeA.ValueRO.HasDynamics || !shapeB.ValueRO.HasDynamics)
+        if ((shapeA.ValueRO.collisionLayer & shapeB.ValueRO.dynamicsLayer) == 0)
             return;
 
         /// position correction 

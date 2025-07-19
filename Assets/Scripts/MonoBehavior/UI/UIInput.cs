@@ -14,7 +14,8 @@ public partial class UIInput : MonoBehaviour
 
     public Action<int> OnUpdateTempo;
 
-    PlayerControls.UI_MapActions UI_Controls;
+    [HideInInspector]
+    public PlayerControls.UI_MapActions UI_Controls;
 
     public static bool MouseOverUI;
 

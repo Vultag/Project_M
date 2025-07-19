@@ -1,5 +1,7 @@
 
 using System;
+using System.Linq;
+using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
 
@@ -25,14 +27,18 @@ public struct TriggerPair : IEquatable<TriggerPair>
     }
 }
 
-[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
-[UpdateAfter(typeof(TriggerStateSystem))]
 public partial struct TriggerProcessingSystem : ISystem
 {
     private Entity damageEventEntity;
 
+    private NativeHashSet<(Entity,Entity)> activeTriggers;
+    private NativeHashSet<(Entity, Entity)> nextFrameTriggers;
+
     public void OnCreate(ref SystemState state)
     {
+        activeTriggers = new NativeHashSet<(Entity, Entity)>(128, Allocator.Persistent);
+        nextFrameTriggers = new NativeHashSet<(Entity, Entity)>(128, Allocator.Persistent);
+
         // Check if the GlobalDamageEvent entity already exists
         if (SystemAPI.HasSingleton<GlobalDamageEvent>())
         {
@@ -57,30 +63,28 @@ public partial struct TriggerProcessingSystem : ISystem
         Entity triggerEventEntity = SystemAPI.GetSingletonEntity<TriggerEvent>();
         DynamicBuffer<TriggerEvent> triggerBuffer = SystemAPI.GetBuffer<TriggerEvent>(triggerEventEntity);
 
-        // Access the ActiveTriggers map
-        var activeTriggers = TriggerStateSystem.TriggerMap;
-
-        foreach (var trigger in triggerBuffer)
+        for (int i = triggerBuffer.Length - 1; i >= 0; i--)
         {
-            Entity emitterEntity = trigger.EmitterEntity;
-            Entity reciverEntity = trigger.ReciverEntity;
+            Entity emitterEntity = triggerBuffer[i].EmitterEntity;
+            Entity reciverEntity = triggerBuffer[i].ReciverEntity;
+
+            nextFrameTriggers.Add((triggerBuffer[i].EmitterEntity, triggerBuffer[i].ReciverEntity));
 
             // Check if this collision has already triggered
-            if (activeTriggers.ContainsKey(emitterEntity) && activeTriggers[emitterEntity] == reciverEntity)
+            if (activeTriggers.Contains((triggerBuffer[i].EmitterEntity, triggerBuffer[i].ReciverEntity)))
             {
                 //Debug.Log("skip");
                 continue; // Skip if already processed
             }
-            // Mark this collision as processed
-            activeTriggers[emitterEntity] = reciverEntity;
 
             var triggerType = state.EntityManager.GetComponentData<TriggerData>(emitterEntity).triggerType;
+            var damageBuffer = SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity);
 
             var uiManager = UIManager.Instance;
             /// OPTI : switch on non contiguous enum(flag) : no jump table (bad)
             switch (triggerType)
             {
-                case TriggerType.DamageEffect:
+                case TriggerType.ProjectileDamageEffect:
                     ProjectileInstanceData newProjectileData = state.EntityManager.GetComponentData<ProjectileInstanceData>(emitterEntity);
                     if (!state.EntityManager.HasComponent<HealthData>(reciverEntity))
                     {
@@ -88,7 +92,6 @@ public partial struct TriggerProcessingSystem : ISystem
                         ecb.SetComponent<ProjectileInstanceData>(emitterEntity, newProjectileData);
                         continue;
                     }
-                    var damageBuffer = SystemAPI.GetBuffer<GlobalDamageEvent>(damageEventEntity);
                     damageBuffer.Add(new GlobalDamageEvent { 
                         Target = reciverEntity,
                         DamageValue = SystemAPI.GetComponent<ProjectileInstanceData>(emitterEntity).damage
@@ -97,6 +100,22 @@ public partial struct TriggerProcessingSystem : ISystem
                     newProjectileData.remainingLifeTime = newProjectileData.remainingLifeTime * Mathf.Min(newProjectileData.penetrationCapacity,1);
                     ecb.SetComponent<ProjectileInstanceData>(emitterEntity, newProjectileData);
                     break;
+                case TriggerType.CollisionDamageEffect:
+
+                    /// NOT USED FOR NOW
+                    /// initially inteneded for monster damage
+
+                    if (!state.EntityManager.HasComponent<HealthData>(reciverEntity) || !state.EntityManager.HasComponent<MonsterData>(emitterEntity))
+                    {
+                        continue;
+                    }
+                    damageBuffer.Add(new GlobalDamageEvent
+                    {
+                        Target = reciverEntity,
+                        DamageValue = 3f
+                    });
+                    break;
+
                 case TriggerType.WeaponCollectible:
                     //Debug.Log("collect weapon");
                     var weaponCollectibleData = SystemAPI.GetComponent<WeaponCollectibleData>(emitterEntity);
@@ -115,10 +134,21 @@ public partial struct TriggerProcessingSystem : ISystem
                     break;
             }
 
-        }
 
+        }
+        /// Swap buffers
+        var temp = activeTriggers;
+        activeTriggers = nextFrameTriggers;
+        nextFrameTriggers = temp;
+        nextFrameTriggers.Clear();
         // Clear buffer after processing
         triggerBuffer.Clear();
+    }
+
+    public void OnDestroy(ref SystemState state)
+    {
+        activeTriggers.Dispose();
+        nextFrameTriggers.Dispose();
     }
 
 

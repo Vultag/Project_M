@@ -15,7 +15,6 @@ using UnityEngine.UIElements;
 public struct PhysicsCalls
 {
 
-
     public static void DestroyPhysicsEntity(EntityCommandBuffer ecb, Entity entity)
     {
 

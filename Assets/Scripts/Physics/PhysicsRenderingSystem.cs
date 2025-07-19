@@ -44,7 +44,7 @@ public partial struct PhysicsRenderingSystem : ISystem
         }
 
 
-        foreach (var (shape, trans) in SystemAPI.Query<RefRW<ShapeData>, RefRW<LocalTransform>>().WithAny<PhyBodyData>())
+        foreach (var (shape, trans) in SystemAPI.Query<RefRW<ShapeData>, RefRW<LocalTransform>>())
         {
             float fixedDeltaTime = 1f / 60f; // Assuming Fixed Timestep = (60Hz physics update)
             float alpha = ((float)SystemAPI.Time.ElapsedTime% fixedDeltaTime) / fixedDeltaTime;

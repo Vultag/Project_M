@@ -13,7 +13,8 @@ public struct TriggerData : IComponentData
 [Flags]
 public enum TriggerType : byte
 {
-    DamageEffect = 1 << 0,
-    WeaponCollectible = 1 << 1,
-    DrumMachineCollectibe = 1 << 2,
+    ProjectileDamageEffect = 1 << 0,
+    CollisionDamageEffect = 1 << 1,
+    WeaponCollectible = 1 << 2,
+    DrumMachineCollectibe = 1 << 3,
 }

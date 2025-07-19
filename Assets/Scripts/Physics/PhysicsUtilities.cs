@@ -28,25 +28,25 @@ public struct PhysicsUtilities
     [Flags]
     public enum CollisionLayer
     {
-        None = (1 << 0),
+        //None = (1 << 0),
         //All = ~0, 
-        PlayerLayer = (1 << 1), 
-        MonsterLayer = (1 << 2),  
-        CollectibleLayer = (1 << 3),
-        ProjectileLayer = (1 << 4),
-        StaticObstacleLayer = (1 << 5),
-        DynamicObstacleLayer = (1 << 6),
+        PlayerLayer = (1 << 0), 
+        MonsterLayer = (1 << 1),  
+        CollectibleLayer = (1 << 2),
+        ProjectileLayer = (1 << 3),
+        StaticObstacleLayer = (1 << 4),
+        DynamicObstacleLayer = (1 << 5),
     }
     /// MOVE AWAY
     // Precomputed collision masks
-    private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[7]
+    private static readonly CollisionLayer[] CollisionMasks = new CollisionLayer[6]
     {
-        CollisionLayer.None,
+        //CollisionLayer.None,
         CollisionLayer.MonsterLayer | CollisionLayer.CollectibleLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer,
         CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer |  CollisionLayer.ProjectileLayer | CollisionLayer.StaticObstacleLayer| CollisionLayer.DynamicObstacleLayer,
         CollisionLayer.PlayerLayer,
-        CollisionLayer.MonsterLayer,
-        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer,
+        CollisionLayer.MonsterLayer | CollisionLayer.StaticObstacleLayer,
+        CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer | CollisionLayer.ProjectileLayer,
         CollisionLayer.PlayerLayer | CollisionLayer.MonsterLayer | CollisionLayer.StaticObstacleLayer | CollisionLayer.DynamicObstacleLayer,
     };
 

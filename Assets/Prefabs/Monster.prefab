@@ -113,10 +113,10 @@ MonoBehaviour:
   shapeType: 0
   dimentions: {x: 1, y: 1}
   radius: 0.5
-  HasDynamics: 1
   IsStaticBody: 0
   Mass: 1
   restitution: 0.5
   IsTrigger: 0
   triggerType: 0
-  collisionLayer: 4
+  collisionLayer: 2
+  dynamicsLayer: 18

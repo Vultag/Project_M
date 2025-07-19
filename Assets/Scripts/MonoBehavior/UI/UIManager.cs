@@ -110,6 +110,9 @@ public class UIManager : MonoBehaviour
 
     float TimeForShaderSync = 0;
 
+    public GameObject PlayerHealthBar;
+    public UIInput uiInput;
+
     private void Awake()
     {
         if (Instance == null)

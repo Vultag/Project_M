@@ -15,6 +15,10 @@ public partial class FixedStepGameSimulationSystemGroup : ComponentSystemGroup{}
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
 public partial struct PhyResolutionSystem : ISystem { }
 
+[UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup))]
+[UpdateAfter(typeof(PhyResolutionSystem))]
+public partial struct TriggerProcessingSystem : ISystem { }
+
 [UpdateInGroup(typeof(FixedStepGameSimulationSystemGroup), OrderLast = true)]
 public partial struct ApplyPhysicsSystem : ISystem { }
 
@@ -30,8 +34,8 @@ public partial struct TreeInsersionSystem : ISystem { }
 [UpdateAfter(typeof(TreeInsersionSystem))]
 public partial struct FlowfieldSystem : ISystem { }
 
-[UpdateInGroup(typeof(GameSimulationSystemGroup))]
-public partial struct ProjectileSystem : ISystem { }
+//[UpdateInGroup(typeof(GameSimulationSystemGroup))]
+//public partial struct ProjectileSystem : ISystem { }
 
 
 [UpdateInGroup(typeof(GameSimulationSystemGroup))]
